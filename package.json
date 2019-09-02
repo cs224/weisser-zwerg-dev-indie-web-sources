@@ -1,0 +1,19 @@
+{
+  "name": "cs224-weisser-zwerg-dev-indie-web-sources",
+  "version": "1.0.0",
+  "description": "weisser-zwerg.dev content",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cs224/cs224-weisser-zwerg-dev-indie-web-sources.git"
+  },
+  "author": "cs224@weisser-zwerg.dev",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cs224/cs224-weisser-zwerg-dev-indie-web-sources/issues"
+  },
+  "homepage": "https://github.com/cs224/cs224-weisser-zwerg-dev-indie-web-sources#readme"
+}
