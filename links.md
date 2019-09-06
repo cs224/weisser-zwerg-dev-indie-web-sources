@@ -4,3 +4,9 @@
   * [11ty theme](https://bryanlrobinson.com/blog/create-11ty-theme-from-static-html-template/)
   * [Creating A Blog With Eleventy](https://keepinguptodate.com/pages/2019/06/creating-blog-with-eleventy/)
   * [Static Indieweb pt1: Syndicating Content](https://mxb.dev/blog/syndicating-content-to-twitter-with-netlify-functions/)
+
+
+        {% for post in collections.post %}
+            {{ post }}
+        <li><a href=""></a>test</li>
+        {% endfor %}

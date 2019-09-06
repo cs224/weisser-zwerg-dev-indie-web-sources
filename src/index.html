@@ -21,6 +21,8 @@ description: "Blog about software development, computer science and technology i
 </div>
 <div class="row">
     <ul>
-        <li><a href="/posts/local-discourse-on-vagrant">2019-09-06</a> Local discourse instance on vagrant for embedding in your front-end development project</li>
+        {% for post in collections.post %}
+        <li><a href="{{ post.url | url }}">{{ post.data.creationdate | dateIso }}</a> {{ post.data.title }}</li>
+        {% endfor %}
     </ul>
 </div>
