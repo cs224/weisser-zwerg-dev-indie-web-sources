@@ -6,6 +6,7 @@
   "scripts": {
     "sass": "node-sass scss -o src/assets/css",
     "serve": "eleventy --serve",
+    "serve_": "npx http-server ./dist",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npm run sass && rm -rf dist && npx @11ty/eleventy",
     "deploy_": "firebase deploy --only hosting --project cs224-weisser-zwerg-dev",
@@ -23,6 +24,7 @@
   "homepage": "https://github.com/cs224/cs224-weisser-zwerg-dev-indie-web-sources#readme",
   "devDependencies": {
     "@11ty/eleventy": "^0.9.0",
+    "http-server": "^0.11.1",
     "node-sass": "^4.12.0"
   },
   "dependencies": {

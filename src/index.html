@@ -1,17 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta content="width=device-width,initial-scale=1,shrink-to-fit=no" name="viewport">
-    <title>Weisser Zwerg</title>
-    <link href="./assets/css/main.css" rel="stylesheet">
-</head>
-<body class="container">
-
-<div class="row">
-    <div class="col w-100 headlinewhite text-center" style="background-color: #000000">Weisser Zwerg</div>
-</div>
-
+---
+layout: "base.njk"
+title: "Weisser Zwerg"
+description: "Blog about software development, computer science and technology in general."
+---
 <div class="row mt-4">
     <span class="small_Fett">I d e n t i t y</span>
 </div>
@@ -20,9 +11,16 @@
 </div>
 <div class="row">
     <ul>
-        <li><a href="https://github.com/cs224" rel="me" class="link">Github</a></li>
+        <li><a href="https://github.com/cs224" rel="me">Github</a></li>
+        <li><a href="mailto:cs224@weisser-zwerg.dev" rel="me">cs224@weisser-zwerg.dev</a></li>
     </ul>
 </div>
 
-</body>
-</html>
+<div class="row mt-4">
+    <span class=headline>Blog Posts</span>
+</div>
+<div class="row">
+    <ul>
+        <li><a href="/posts/local-discourse-on-vagrant">2019-09-06</a> Local discourse instance on vagrant for embedding in your front-end development project</li>
+    </ul>
+</div>

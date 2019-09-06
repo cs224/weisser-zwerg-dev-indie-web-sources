@@ -1,41 +1,17 @@
 @import '../node_modules/bootstrap-scss/bootstrap';
 
 .headline {
-  FONT-WEIGHT: bold; FONT-SIZE: 13px; COLOR: #336699; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif; FONT-VARIANT: normal
+  font-weight: bold; color: #336699;
 }
-.link {
-  FONT-SIZE: 11px; COLOR: #ff9900; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif; TEXT-DECORATION: none
-}
-.small {
-  FONT-SIZE: 11px; COLOR: #000000; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif; TEXT-DECORATION: none
-}
-.small_right {
-  FONT: 10px Verdana, Arial, Helvetica, sans-serif; COLOR: #000000
-}
-.smallwhite {
-  FONT-SIZE: 10px; COLOR: #ffffff; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif; TEXT-DECORATION: none
-}
+
 .headlinewhite {
-  FONT-SIZE: 20px; COLOR: #ffffff; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif; TEXT-DECORATION: none
+  font-weight: bold; color: #ffffff;
 }
-.small_Fett {
-  FONT: bold 11px Verdana, Arial, Helvetica, sans-serif; COLOR: #000000
+
+a {
+  color: #ff9900;
 }
-.link_Fett {
-  FONT: bold 11px/19px Verdana, Arial, Helvetica, sans-serif; COLOR: #ff9900; TEXT-DECORATION: none
-}
-.formular {
-  FONT-SIZE: 10px; FONT-STYLE: normal; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif
-}
-.tbhead {
-  FONT-WEIGHT: bolder; FONT-SIZE: 14px; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif
-}
-.tbrow {
-  FONT-SIZE: 12px; LINE-HEIGHT: 130%; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif
-}
-.smallital {
-  FONT-SIZE: 11px; COLOR: #000000; FONT-STYLE: italic; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif; TEXT-DECORATION: none
-}
-.smallrasta {
-  FONT-SIZE: 9px; COLOR: #000000; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif; TEXT-DECORATION: none
+
+.bg-black {
+  background-color: #000000 !important;
 }
