@@ -26,3 +26,12 @@
     * [webmention](https://github.com/converspace/webmention/blob/master/README.md)
         * [send-webmentions](https://indiewebify.me/send-webmentions/)
         * [webmention-implementation-guide](https://indieweb.org/webmention-implementation-guide)
+        * [your-first-webmention](https://aaronparecki.com/2018/06/30/11/your-first-webmention)
+            * [check status](https://webmention.io/aaronpk/webmention/ZwI73EQTJHuTuqI7l9ta)
+            * [Quill](https://quill.p3k.io/) is a simple app for posting text notes to your website.
+        * [Troubleshooting webmentions](http://forum.grabaperch.com/forum/09-11-2018-troubleshooting-webmentions-i-can-successfully-receive-but-automated-send-is-not-working)
+        * [Qubyte Codes](https://qubyte.codes/blog/a-new-service-to-handle-webmention-dispatch-for-you) - A new service to handle webmention dispatch for you
+        * [webmention.app](https://webmention.app/) Automate your outgoing webmentions
+            * [test](https://webmention.app/check/?url=https%3A%2F%2Fweisser-zwerg.dev%2Fposts%2Fwebmention-test%2F)
+        
+* [openid](https://openid.indieauth.com/openid)

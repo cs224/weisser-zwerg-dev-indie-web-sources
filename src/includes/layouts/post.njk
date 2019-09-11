@@ -43,6 +43,24 @@
                 </ul>
                 </p>
                 {% endif %}
+
+                <form class="webmention-form ui form" action="https://webmention.io/weisser-zwerg/webmention" method="post">
+                    <div class="fields">
+                        <div class="twelve wide field">
+                            <label>Have you written a <a href="https://indieweb.org/responses">response</a> to this? Let me know the URL:</label>
+                            <input type="url" name="source" class="url">
+                        </div>
+                        <div class="four wide field">
+                            <label>&nbsp;</label>
+                            <input type="submit" class="ui submit button" value="Send Webmention">
+                        </div>
+                    </div>
+                    <div class="status hidden">
+                        <div class="ui message"></div>
+                    </div>
+                    <input type="hidden" name="target" value="https://weisser-zwerg{{ page.url }}">
+                </form>
+
             </div>
         </div>
     </article>
