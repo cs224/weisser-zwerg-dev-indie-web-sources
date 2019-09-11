@@ -5,4 +5,8 @@ description: "The purpose of the page is to test webmention functionality."
 creationdate: 2019-09-06
 date: 2019-09-06
 tags: ['post']
+syndicatedAt: 
+    - url: "https://weisser-zwerg.dev"
+      name: "Weisser Zwerg Blog"
+categories: ['IndieWeb']
 ---

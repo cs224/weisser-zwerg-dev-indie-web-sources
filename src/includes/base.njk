@@ -39,11 +39,11 @@
     <a href="/" style="text-decoration: none"><h1 class="headlinewhite" >Weisser Zwerg</h1></a>
 </header>
 
-<main class="container" style="flex-grow: 1;">
-    {% block content %}
+{% block content %}
+    <main class="container" style="flex-grow: 1;">
         {{ content | safe }}
-    {% endblock content %}
-</main>
+    </main>
+{% endblock content %}
 
 <footer class="container" >
     <div class="row">

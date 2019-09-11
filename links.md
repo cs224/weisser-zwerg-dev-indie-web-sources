@@ -19,3 +19,10 @@
     * [Page Template](https://bootstrapcreative.com/wp-bc/wp-content/themes/wp-bootstrap/snippets/b4hp01.zip)
 * [Provide an image for WhatsApp link sharing](https://stackoverflow.com/questions/19778620/provide-an-image-for-whatsapp-link-sharing)
     * [The Open Graph protocol](https://ogp.me/)
+
+* [indiewebify.me](https://indiewebify.me)
+    * [microformats2](https://indieweb.org/microformats2)
+        * [microformats.org](http://microformats.org/wiki/p-category)
+    * [webmention](https://github.com/converspace/webmention/blob/master/README.md)
+        * [send-webmentions](https://indiewebify.me/send-webmentions/)
+        * [webmention-implementation-guide](https://indieweb.org/webmention-implementation-guide)

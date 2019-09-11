@@ -8,15 +8,43 @@
 
 
 {% block content %}
-    <article class="h-entry">
-        <h1 class="p-name">{{ title }}</h1>
-        <p>Published by <a class="p-author h-card" href="http://weisser-zwerg.dev">Weisser Zwerg Blog</a> on <time class="dt-published" datetime="{{ creationdate | dateIso }}">{{ creationdate | dateReadable }}</time></p>
+<main class="container d-flex" style="flex-grow: 1;">
+    <article class="h-entry d-flex">
+        <!-- https://stackoverflow.com/questions/1122381/how-to-force-child-div-to-be-100-of-parent-divs-height-without-specifying-pare/23300532#23300532 -->
+        <div class="d-flex flex-column justify-content-between">
+            <div>
+                <h1 class="p-name"><a class="u-url" href="{{ page.url }}" style="text-decoration: none; color: black">{{ title }}</a></h1>
+                <p>Published by <a class="p-author h-card" href="http://weisser-zwerg.dev">Weisser Zwerg Blog</a> on <time class="dt-published" datetime="{{ creationdate | dateIso }}">{{ creationdate | dateReadable }}</time></p>
 
-        <p class="p-summary">{{ description }}</p>
+                <p class="p-summary">{{ description }}</p>
 
-        <div class="e-content">
-            {{ content | safe }}
+                <div class="e-content">
+                    {{ content | safe }}
+                </div>
+            </div>
+            <div>
+                {% if syndicatedAt.length > 0 %}
+                <p style="margin:0; paddding:0">
+                    Syndicated at:
+                <ul style="margin:0; paddding:0">
+                    {% for syndication in syndicatedAt %}
+                        <li style="margin:0; paddding:0"><a rel="syndication" class="u-syndication" href="{{ syndication.url }}">{{ syndication.name }}</a></li>
+                    {% endfor %}
+                </ul>
+                </p>
+                {% endif %}
+                {% if categories.length > 0 %}
+                <p style="margin:0; paddding:0">
+                    Tags:
+                <ul style="margin:0; paddding:0">
+                    {% for category in categories %}
+                        <li style="margin:0; paddding:0"><span class="p-category">{{ category }}</span></li>
+                    {% endfor %}
+                </ul>
+                </p>
+                {% endif %}
+            </div>
         </div>
     </article>
+</main>
 {% endblock content %}
-
