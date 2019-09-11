@@ -19,10 +19,11 @@
 
     <meta property="og:title" content="{{ title }}">
     <meta property="og:description" content="{{ description }}">
+    {% block blockHeader %}
     <meta property="og:type" content="website">
-    <meta property="og:url" content="/">
-
-    <meta property="og:updated_time" content="2019-07-07T06:59:53+02:00">
+    {% endblock blockHeader %}
+    <meta property="og:url" content="https://weisser-zwerg.dev{{ page.url }}">
+    <meta property="og:updated_time" content="{{ page.date | dateIso }}">
 
     <meta itemprop="name" content="{{ title }}">
     <meta itemprop="description" content="{{ description }}">
@@ -33,14 +34,25 @@
 
     <link href="/css/main.css" rel="stylesheet">
 </head>
-<body>
-<header class="col w-100 text-center bg-black p-3 mb-2">
+<body style="display: flex; flex-direction: column; min-height: 100vh;">
+<header class="col w-100 text-center bg-black p-3 mb-2" style="max-height: 5rem">
     <a href="/" style="text-decoration: none"><h1 class="headlinewhite" >Weisser Zwerg</h1></a>
 </header>
 
-<main class="container">
-{{ content | safe }}
+<main class="container" style="flex-grow: 1;">
+    {% block content %}
+        {{ content | safe }}
+    {% endblock content %}
 </main>
+
+<footer class="container" >
+    <div class="row">
+        <ul class="h-card">
+            <li style="padding-left: 0;"><a class="p-name u-url" href="https://weisser-zwerg.dev">Weisser Zwerg Blog</a></li>
+            <li style="padding-left: 0;"><a class="u-email" href="mailto:cs224@weisser-zwerg.dev">cs224@weisser-zwerg.dev</a></li>
+        </ul>
+    </div>
+</footer>
 
 </body>
 </html>

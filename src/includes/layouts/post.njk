@@ -1,0 +1,22 @@
+{% extends "base.njk" %}
+
+
+{% block blockHeader %}
+<meta property="og:type" content="article">
+<meta property="article:author" content="https://weisser-zwerg.dev">
+{% endblock blockHeader %}
+
+
+{% block content %}
+    <article class="h-entry">
+        <h1 class="p-name">{{ title }}</h1>
+        <p>Published by <a class="p-author h-card" href="http://weisser-zwerg.dev">Weisser Zwerg Blog</a> on <time class="dt-published" datetime="{{ creationdate | dateIso }}">{{ creationdate | dateReadable }}</time></p>
+
+        <p class="p-summary">{{ description }}</p>
+
+        <div class="e-content">
+            {{ content | safe }}
+        </div>
+    </article>
+{% endblock content %}
+
