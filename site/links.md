@@ -5,6 +5,8 @@
   * [Creating A Blog With Eleventy](https://keepinguptodate.com/pages/2019/06/creating-blog-with-eleventy/)
   * [7ty.tech](https://github.com/planetoftheweb/seven)
   * [Static Indieweb pt1: Syndicating Content](https://mxb.dev/blog/syndicating-content-to-twitter-with-netlify-functions/)
+  * [eleventy-base-blog](https://github.com/11ty/eleventy-base-blog)
+
 
 ## Useful Links
 

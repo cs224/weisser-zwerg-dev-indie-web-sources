@@ -1,8 +1,13 @@
 const moment = require('moment');
+const { DateTime } = require("luxon");
 
 moment.locale('en');
 
+const pluginRss = require("@11ty/eleventy-plugin-rss");
+
 module.exports = function(eleventyConfig) {
+    eleventyConfig.addPlugin(pluginRss);
+
     eleventyConfig.addPassthroughCopy({ "./src/assets": "/" });
 
     eleventyConfig.addFilter('dateIso', date => {
@@ -12,6 +17,10 @@ module.exports = function(eleventyConfig) {
 
     eleventyConfig.addFilter('dateReadable', date => {
         return moment(date).format('LL'); // E.g. May 31, 2019
+    });
+
+    eleventyConfig.addFilter('htmlDateString', (dateObj) => {
+        return DateTime.fromJSDate(dateObj, {zone: 'utc'}).toFormat('yyyy-LL-dd');
     });
 
     eleventyConfig.addShortcode('excerpt', article => extractExcerpt(article));
