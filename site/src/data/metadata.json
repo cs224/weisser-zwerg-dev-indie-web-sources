@@ -1,0 +1,16 @@
+{
+  "title": "Weisser Zwerg",
+  "url": "https://weisser-zwerg.dev",
+  "description": "Blog about software development, computer science and technology in general.",
+  "feed": {
+    "subtitle": "I am writing about my experiences around software development, computer science and technology in general.",
+    "filename": "feed.xml",
+    "path": "/feed/feed.xml",
+    "url": "https://weisser-zwerg.dev/feed/feed.xml",
+    "id": "https://weisser-zwerg.dev"
+  },
+  "author": {
+    "name": "cs224",
+    "email": "cs224@weisser-zwerg.dev"
+  }
+}

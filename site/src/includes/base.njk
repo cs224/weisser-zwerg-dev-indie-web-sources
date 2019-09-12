@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta content="width=device-width,initial-scale=1,shrink-to-fit=no" name="viewport">
-    <title>{{ title }}</title>
+    <title>{{ title or metadata.title }}</title>
     <meta name="HandheldFriendly" content="True">
     <meta name="MobileOptimized" content="320">
     <meta name="ROBOTS" content="INDEX, FOLLOW">
@@ -17,20 +17,20 @@
     <meta name="msapplication-TileColor" content="#da532c">
     <meta name="theme-color" content="#ffffff">
 
-    <meta property="og:title" content="{{ title }}">
-    <meta property="og:description" content="{{ description }}">
+    <meta property="og:title" content="{{ title or metadata.title }}">
+    <meta property="og:description" content="{{ description or metadata.description }}">
     {% block blockHeader %}
     <meta property="og:type" content="website">
     {% endblock blockHeader %}
     <meta property="og:url" content="https://weisser-zwerg.dev{{ page.url }}">
     <meta property="og:updated_time" content="{{ page.date | dateIso }}">
 
-    <meta itemprop="name" content="{{ title }}">
-    <meta itemprop="description" content="{{ description }}">
+    <meta itemprop="name" content="{{ title or metadata.title }}">
+    <meta itemprop="description" content="{{ description or metadata.description }}">
 
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="{{ title }}">
-    <meta name="twitter:description" content="{{ description }}">
+    <meta name="twitter:title" content="{{ title or metadata.title }}">
+    <meta name="twitter:description" content="{{ description or metadata.description }}">
 
     <link href="/css/main.css" rel="stylesheet">
 
@@ -39,7 +39,7 @@
 </head>
 <body style="display: flex; flex-direction: column; min-height: 100vh;">
 <header class="col w-100 text-center bg-black p-3 mb-2" style="max-height: 5rem">
-    <a href="/" style="text-decoration: none"><h1 class="headlinewhite" >Weisser Zwerg</h1></a>
+    <a href="/" style="text-decoration: none"><h1 class="headlinewhite" >{{ metadata.title }}</h1></a>
 </header>
 
 {% block content %}
@@ -51,8 +51,8 @@
 <footer class="container" >
     <div class="row">
         <ul class="h-card">
-            <li style="padding-left: 0;"><a class="p-name u-url" href="https://weisser-zwerg.dev">Weisser Zwerg Blog</a></li>
-            <li style="padding-left: 0;"><a class="u-email" href="mailto:cs224@weisser-zwerg.dev">cs224@weisser-zwerg.dev</a></li>
+            <li style="padding-left: 0;"><a class="p-name u-url" href="{{ metadata.title }}">{{ metadata.title }}</a></li>
+            <li style="padding-left: 0;"><a class="u-email" href="mailto:{{ metadata.author.email }}">{{ metadata.author.email }}</a></li>
         </ul>
     </div>
 </footer>
