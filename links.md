@@ -33,5 +33,6 @@
         * [Qubyte Codes](https://qubyte.codes/blog/a-new-service-to-handle-webmention-dispatch-for-you) - A new service to handle webmention dispatch for you
         * [webmention.app](https://webmention.app/) Automate your outgoing webmentions
             * [test](https://webmention.app/check/?url=https%3A%2F%2Fweisser-zwerg.dev%2Fposts%2Fwebmention-test%2F)
+        * [using-webmentions-on-static-sites](https://mxb.dev/blog/using-webmentions-on-static-sites/)
         
 * [openid](https://openid.indieauth.com/openid)
