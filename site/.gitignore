@@ -97,3 +97,4 @@ node_modules/
 dist
 .firebase
 main.css
+.env
