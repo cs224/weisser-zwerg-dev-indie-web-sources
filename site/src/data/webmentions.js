@@ -45,7 +45,8 @@ async function fetchWebmentions(since, perPage = 10000) {
 
 // Merge fresh webmentions with cached entries, unique per id
 function mergeWebmentions(a, b) {
-    return unionBy(a.children, b.children, 'wm-id')
+    const merge = unionBy(a.children, b.children, 'wm-id');
+    return merge;
 }
 
 // save combined webmentions in cache file
@@ -71,7 +72,7 @@ function readFromCache() {
 
         return {
             lastFetched: cachedWebmentions.lastFetched,
-            children: cachedWebmentions
+            children: cachedWebmentions.children
         }
     }
 
