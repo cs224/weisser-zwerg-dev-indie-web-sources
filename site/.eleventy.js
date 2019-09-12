@@ -1,6 +1,9 @@
 const moment = require('moment');
 const { DateTime } = require("luxon");
 
+const filters = require('./_eleventy/filters.js')
+const shortcodes = require('./_eleventy/shortcodes.js')
+
 moment.locale('en');
 
 const pluginRss = require("@11ty/eleventy-plugin-rss");
@@ -23,7 +26,18 @@ module.exports = function(eleventyConfig) {
         return DateTime.fromJSDate(dateObj, {zone: 'utc'}).toFormat('yyyy-LL-dd');
     });
 
+    // Filters
+    Object.keys(filters).forEach(filterName => {
+        console.log(filterName);
+        eleventyConfig.addFilter(filterName, filters[filterName])
+    })
+
     eleventyConfig.addShortcode('excerpt', article => extractExcerpt(article));
+
+    // Shortcodes
+    Object.keys(shortcodes).forEach(shortCodeName => {
+        eleventyConfig.addShortcode(shortCodeName, shortcodes[shortCodeName])
+    })
 
     return {
         passthroughFileCopy: true,

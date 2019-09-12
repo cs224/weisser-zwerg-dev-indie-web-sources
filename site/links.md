@@ -6,6 +6,7 @@
   * [7ty.tech](https://github.com/planetoftheweb/seven)
   * [Static Indieweb pt1: Syndicating Content](https://mxb.dev/blog/syndicating-content-to-twitter-with-netlify-functions/)
   * [eleventy-base-blog](https://github.com/11ty/eleventy-base-blog)
+  * [maxboeck/mxb](https://github.com/maxboeck/mxb/)
 
 
 ## Useful Links

@@ -7,10 +7,14 @@
     "filename": "feed.xml",
     "path": "/feed/feed.xml",
     "url": "https://weisser-zwerg.dev/feed/feed.xml",
-    "id": "https://weisser-zwerg.dev"
+    "id": "https://weisser-zwerg.dev/"
   },
   "author": {
     "name": "cs224",
     "email": "cs224@weisser-zwerg.dev"
-  }
+  },
+
+  "lang": "en",
+  "locale": "en_US",
+  "domain": "weisser-zwerg.dev"
 }

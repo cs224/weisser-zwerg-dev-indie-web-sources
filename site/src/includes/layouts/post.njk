@@ -60,7 +60,8 @@
                     </div>
                     <input type="hidden" name="target" value="https://weisser-zwerg{{ page.url }}">
                 </form>
-
+                {%- set webmentionUrl -%}{{ page.url | url | absoluteUrl(metadata.url) }}{%- endset -%}
+                {% include 'webmentions.njk' %}
             </div>
         </div>
     </article>

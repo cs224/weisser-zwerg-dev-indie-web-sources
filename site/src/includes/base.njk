@@ -36,6 +36,8 @@
 
     <link rel="webmention" href="https://webmention.io/weisser-zwerg.dev/webmention" />
     <link rel="pingback" href="https://webmention.io/weisser-zwerg.dev/xmlrpc" />
+
+    <link rel="alternate" href="{{ metadata.feed.path | url }}" type="application/atom+xml" title="{{ metadata.title }}">
 </head>
 <body style="display: flex; flex-direction: column; min-height: 100vh;">
 <header class="col w-100 text-center bg-black p-3 mb-2" style="max-height: 5rem">
