@@ -8,7 +8,7 @@
     "serve": "env-cmd eleventy --serve",
     "serve_": "env-cmd http-server ./dist",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npm run sass && rm -rf dist && NODE_ENV=production env-cmd @11ty/eleventy",
+    "build": "npm run sass && rm -rf dist && NODE_ENV=production npx env-cmd npx @11ty/eleventy",
     "build_": "env-cmd @11ty/eleventy",
     "deploy_": "firebase deploy --only hosting --project cs224-weisser-zwerg-dev",
     "deploy": "npm run build && firebase deploy --only hosting --project cs224-weisser-zwerg-dev"
