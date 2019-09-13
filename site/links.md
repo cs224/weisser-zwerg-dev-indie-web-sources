@@ -61,3 +61,4 @@
 * [staticman](https://vincenttam.gitlab.io/tags/staticman/)
     * [Detail Guide for Github Staticman App](https://github.com/eduardoboucas/staticman/issues/310)
     * [register](https://api.staticman.net/v3/entry/github/cs224/weisser-zwerg-dev-indie-web-sources/master/properties)
+    * [staticman-recaptcha](https://github.com/eduardoboucas/staticman-recaptcha)

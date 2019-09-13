@@ -99,3 +99,4 @@ dist
 main.css
 .env
 *~
+/dummy.json

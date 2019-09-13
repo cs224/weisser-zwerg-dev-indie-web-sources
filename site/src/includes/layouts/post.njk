@@ -51,13 +51,19 @@
                 </p>
                 {% endif %}
 
-                <form method="POST" action="https://api.staticman.net/v3/entry/github/cs224/weisser-zwerg-dev-indie-web-sources/master/properties">
-                    <input name="options[redirect]" type="hidden" value="{{ page.url | url | absoluteUrl(metadata.url) }}">
+
+                <form method="POST" action="{{ metadata.staticmanUrl }}">
+                    <input name="options[redirect]" type="hidden" value="{{ page.url | url }}">
                     <!-- e.g. "2016-01-02-this-is-a-post" -->
                     <input name="options[slug]" type="hidden" value="{{ page.slug }}">
+                    <input type="hidden" name="options[reCaptcha][siteKey]" value="{{ metadata.recaptachaSitekey }}">
+                    <input type="hidden" name="options[reCaptcha][secret]" value="{{ metadata.recaptachaSecretEncrypted }}">
                     <label><input name="fields[name]" type="text">Name</label>
                     <label><input name="fields[email]" type="email">E-mail</label>
                     <label><textarea name="fields[message]"></textarea>Message</label>
+
+                    <div class="g-recaptcha" data-sitekey="{{ metadata.recaptachaSitekey }}"></div>
+                    <script src='https://www.google.com/recaptcha/api.js'></script>
 
                     <button type="submit">Go!</button>
                 </form>
