@@ -57,3 +57,7 @@
 * [openid](https://openid.indieauth.com/openid)
 
 * [amp-social-share](https://amp.dev/documentation/examples/components/amp-social-share/)
+
+* [staticman](https://vincenttam.gitlab.io/tags/staticman/)
+    * [Detail Guide for Github Staticman App](https://github.com/eduardoboucas/staticman/issues/310)
+    * [register](https://api.staticman.net/v3/entry/github/cs224/weisser-zwerg-dev-indie-web-sources/master/properties)
