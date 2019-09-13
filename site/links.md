@@ -55,3 +55,5 @@
         * [using-webmentions-on-static-sites](https://mxb.dev/blog/using-webmentions-on-static-sites/)
         
 * [openid](https://openid.indieauth.com/openid)
+
+* [amp-social-share](https://amp.dev/documentation/examples/components/amp-social-share/)
