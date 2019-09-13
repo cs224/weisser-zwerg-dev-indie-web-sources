@@ -17,10 +17,12 @@ eleventyExcludeFromCollections: true
     {%- for post in collections.post %}
         {% set absolutePostUrl %}{{ post.url | url | absoluteUrl(metadata.url) }}{% endset %}
         <entry>
+            <id>{{ absolutePostUrl }}</id>
+            <pubDate>{{ post.data.creationdate | rssDate }}</pubDate>
+            <updated>{{ post.date | rssDate }}</updated>
+            <link rel="alternate" type="text/html" href="{{ absolutePostUrl }}"/>
             <title>{{ post.data.title }}</title>
             <link href="{{ absolutePostUrl }}"/>
-            <updated>{{ post.date | rssDate }}</updated>
-            <id>{{ absolutePostUrl }}</id>
             <content type="html">{{ post.templateContent | htmlToAbsoluteUrls(absolutePostUrl) }}</content>
         </entry>
     {%- endfor %}

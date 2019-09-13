@@ -8,10 +8,11 @@
     "serve": "env-cmd eleventy --serve",
     "serve_": "env-cmd http-server ./dist",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npm run sass && rm -rf dist && NODE_ENV=production npx env-cmd npx @11ty/eleventy",
+    "build": "npm run sass && rm -rf dist && NODE_ENV=dev npx env-cmd npx @11ty/eleventy",
     "build_": "env-cmd @11ty/eleventy",
     "deploy_": "firebase deploy --only hosting --project cs224-weisser-zwerg-dev",
-    "deploy": "npm run build && firebase deploy --only hosting --project cs224-weisser-zwerg-dev"
+    "deploy": "npm run build && firebase deploy --only hosting --project cs224-weisser-zwerg-dev",
+    "postdeploy": "webmention dist/feed/feed.xml --limit 10 --debug"
   },
   "repository": {
     "type": "git",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@11ty/eleventy": "^0.9.0",
     "@11ty/eleventy-plugin-rss": "^1.0.7",
+    "@remy/webmention": "^1.4.0",
     "bootstrap-scss": "^4.3.1",
     "dotenv": "^8.1.0",
     "env-cmd": "^10.0.1",
