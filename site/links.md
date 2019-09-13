@@ -7,7 +7,23 @@
   * [Static Indieweb pt1: Syndicating Content](https://mxb.dev/blog/syndicating-content-to-twitter-with-netlify-functions/)
   * [eleventy-base-blog](https://github.com/11ty/eleventy-base-blog)
   * [maxboeck/mxb](https://github.com/maxboeck/mxb/)
+  * [display-webmentions](https://www.amitgawande.com/display-webmentions/)
 
+* [blog.amitgawande.com](https://blog.amitgawande.com/)
+    * on [github](https://github.com/am1t/blot-musings)
+
+* [ramblinggit](https://ramblinggit.com/about/)
+    * [Indieseek.xyz Indieweb Directory](https://indieseek.xyz/)
+    * [mastodon.social](https://mastodon.social/@bradenslen)
+    * [An IndieWeb Webring](https://xn--sr8hvo.ws/)
+        * [Glitch is the friendly community where everyone builds the web](https://glitch.com/about/)
+        * [IndieWeb Webring on Glitch](https://glitch.com/~steady-sundial)
+
+* [schmarty](https://martymcgui.re/)
+    * on [indieweb.org](https://indieweb.org/User:Martymcgui.re)
+
+* [bridgy](https://github.com/snarfed/bridgy)
+    * [snarfed](https://github.com/snarfed) on github
 
 ## Useful Links
 
