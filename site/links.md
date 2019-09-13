@@ -7,6 +7,7 @@
   * [Static Indieweb pt1: Syndicating Content](https://mxb.dev/blog/syndicating-content-to-twitter-with-netlify-functions/)
   * [eleventy-base-blog](https://github.com/11ty/eleventy-base-blog)
   * [maxboeck/mxb](https://github.com/maxboeck/mxb/)
+  * [eduardoboucas.com](https://github.com/eduardoboucas/eduardoboucas.com)
   * [display-webmentions](https://www.amitgawande.com/display-webmentions/)
 
 * [blog.amitgawande.com](https://blog.amitgawande.com/)
@@ -24,6 +25,7 @@
 
 * [bridgy](https://github.com/snarfed/bridgy)
     * [snarfed](https://github.com/snarfed) on github
+
 
 ## Useful Links
 
@@ -62,3 +64,4 @@
     * [Detail Guide for Github Staticman App](https://github.com/eduardoboucas/staticman/issues/310)
     * [register](https://api.staticman.net/v3/entry/github/cs224/weisser-zwerg-dev-indie-web-sources/master/properties)
     * [staticman-recaptcha](https://github.com/eduardoboucas/staticman-recaptcha)
+    * [eduardoboucas.com](https://github.com/eduardoboucas/eduardoboucas.com)
