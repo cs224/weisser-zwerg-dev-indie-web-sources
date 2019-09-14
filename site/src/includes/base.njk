@@ -57,10 +57,17 @@
 
 <footer class="container" >
     <div class="row">
-        <ul class="h-card">
-            <li style="padding-left: 0;"><a class="p-name u-url" href="{{ metadata.title }}">{{ metadata.title }}</a></li>
+        <ul class="h-card  mb-0">
+            <li style="padding-left: 0;"><a class="p-name u-url u-uid" href="{{ metadata.url }}">{{ metadata.title }}</a><img src="/android-chrome-192x192.png" width="80" class="u-photo" alt="Weisser Zwerg" style="display: none"></li>
             <li style="padding-left: 0;"><a class="u-email" href="mailto:{{ metadata.author.email }}">{{ metadata.author.email }}</a></li>
+            <li style="display:none"><a class="u-url" rel="me authn" href="https://github.com/cs224">Github</a></li>
+            <li style="display:none"><a class="u-url" rel="me" href="https://mastodon.social/@cs224">Mastodon</a></li>
+            <li style="display:none"><a class="u-url" rel="me" href="https://xn--sr8hvo.ws/%F0%9F%9A%B2%F0%9F%8D%A5%F0%9F%A4%97">Profile on the IndieWeb Webring</a></li>
+            <li style="display:none"><a href="https://xn--sr8hvo.ws/directory">IndieWeb Webring Directory</a></li> 
         </ul>
+    </div>
+    <div class="row w-100 text-center justify-content-center">
+        <a href="https://xn--sr8hvo.ws/%F0%9F%9A%B2%F0%9F%8D%A5%F0%9F%A4%97/previous">←</a>An IndieWeb Webring 🕸💍<a href="https://xn--sr8hvo.ws/%F0%9F%9A%B2%F0%9F%8D%A5%F0%9F%A4%97/next">→</a>
     </div>
 </footer>
 
