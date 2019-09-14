@@ -26,6 +26,10 @@ module.exports = function(eleventyConfig) {
         return DateTime.fromJSDate(dateObj, {zone: 'utc'}).toFormat('yyyy-LL-dd');
     });
 
+    eleventyConfig.addFilter('url_encode', parameter => {
+        return encodeURI(parameter);
+    });
+
     // Filters
     Object.keys(filters).forEach(filterName => {
         console.log(filterName);
