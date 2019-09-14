@@ -30,6 +30,20 @@ module.exports = function(eleventyConfig) {
         return encodeURI(parameter);
     });
 
+    eleventyConfig.addFilter('urlToSlug', inputUrl => {
+        const pathElements = inputUrl.trim().split('/');
+        let lastElement = null;
+        for(const pe of pathElements) {
+            if(pe.trim() != '')
+                lastElement = pe.trim();
+        }
+        if(lastElement.includes('.')) {
+            const elements = lastElement.splice('.');
+            lastElement = elements[0];
+        }
+        return lastElement;
+    });
+
     // Filters
     Object.keys(filters).forEach(filterName => {
         console.log(filterName);

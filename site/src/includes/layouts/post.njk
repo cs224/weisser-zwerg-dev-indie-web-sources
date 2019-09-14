@@ -9,12 +9,13 @@
 
 {% block content %}
 <main class="container d-flex" style="flex-grow: 1;">
-    <article class="h-entry d-flex">
+    <article class="h-entry d-flex" style="width:100%">
         <!-- https://stackoverflow.com/questions/1122381/how-to-force-child-div-to-be-100-of-parent-divs-height-without-specifying-pare/23300532#23300532 -->
-        <div class="d-flex flex-column justify-content-between">
+        <div class="d-flex flex-column justify-content-between"  style="width:100%">
             <div>
                 <h1 class="p-name"><a class="u-url" href="{{ page.url }}" style="text-decoration: none; color: black">{{ title }}</a></h1>
-                <p>Published by <a class="p-author h-card" href="http://weisser-zwerg.dev">Weisser Zwerg Blog</a> on <time class="dt-published" datetime="{{ creationdate | dateIso }}">{{ creationdate | dateReadable }}</time></p>
+
+                <p>Published by <a class="p-author h-card" href="http://weisser-zwerg.dev">Weisser Zwerg Blog<img src="/android-chrome-192x192.png" width="80" class="u-photo" alt="Weisser Zwerg" style="display: none"></a> on <time class="dt-published" datetime="{{ creationdate | dateIso }}">{{ creationdate | dateReadable }}</time></p>
 
                 <p class="p-summary">{{ description }}</p>
 
@@ -70,24 +71,16 @@
                 </p>
                 {% endif %}
 
-                <form class="webmention-form ui form" action="https://webmention.io/weisser-zwerg/webmention" method="post">
-                    <div class="fields">
-                        <div class="twelve wide field">
-                            <label>Have you written a <a href="https://indieweb.org/responses">response</a> to this? Let me know the URL:</label>
-                            <input type="url" name="source" class="url">
-                        </div>
-                        <div class="four wide field">
-                            <label>&nbsp;</label>
-                            <input type="submit" class="ui submit button" value="Send Webmention">
-                        </div>
-                    </div>
-                    <div class="status hidden">
-                        <div class="ui message"></div>
-                    </div>
-                    <input type="hidden" name="target" value="https://weisser-zwerg{{ page.url }}">
-                </form>
+
+                <p>
+                    Have you written a <a href="https://indieweb.org/responses">response</a> to this? Let me know the URL via <a href="https://telegraph.p3k.io/send-a-webmention" target="_blank" rel="noopener noreferrer">telegraph</a>.
+                </p>
+
                 {%- set webmentionUrl -%}{{ page.url | url | absoluteUrl(metadata.url) }}{%- endset -%}
                 {% include 'webmentions.njk' %}
+
+                <script src="https://utteranc.es/client.js" repo="cs224/weisser-zwerg-dev-indie-web-sources" issue-term="{{ absoluteUrl | urlToSlug }}" label="Comment" theme="github-light" crossorigin="anonymous" async></script>
+
             </div>
         </div>
     </article>

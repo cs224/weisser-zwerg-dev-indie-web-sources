@@ -1,6 +1,6 @@
 {% set mentions = webmentions.children | webmentionsByUrl(webmentionUrl) %}
 <div
-        class="webmentions{% if layout == 'note' %} webmentions--expanded{% endif %}"
+        class="webmentions"
         id="webmentions"
         data-url="{{ webmentionUrl }}"
         data-last-fetched="{{ webmentions.lastFetched }}"
