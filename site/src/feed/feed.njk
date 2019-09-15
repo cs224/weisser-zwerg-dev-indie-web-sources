@@ -20,9 +20,10 @@ eleventyExcludeFromCollections: true
             <id>{{ absolutePostUrl }}</id>
             <pubDate>{{ post.data.creationdate | rssDate }}</pubDate>
             <updated>{{ post.date | rssDate }}</updated>
+            <link href="{{ absolutePostUrl }}"/>
             <link rel="alternate" type="text/html" href="{{ absolutePostUrl }}"/>
             <title>{{ post.data.title }}</title>
-            <link href="{{ absolutePostUrl }}"/>
+            <summary>{{ description }}</summary>
             <content type="html">{{ post.templateContent | htmlToAbsoluteUrls(absolutePostUrl) }}</content>
         </entry>
     {%- endfor %}

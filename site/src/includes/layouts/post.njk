@@ -79,7 +79,9 @@
                 {%- set webmentionUrl -%}{{ page.url | url | absoluteUrl(metadata.url) }}{%- endset -%}
                 {% include 'webmentions.njk' %}
 
+                {% if env.node_env == "production" %}
                 <script src="https://utteranc.es/client.js" repo="cs224/weisser-zwerg-dev-indie-web-sources" issue-term="{{ absoluteUrl | urlToSlug }}" label="Comment" theme="github-light" crossorigin="anonymous" async></script>
+                {% endif %}
 
             </div>
         </div>

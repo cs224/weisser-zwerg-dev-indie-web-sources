@@ -8,6 +8,7 @@ moment.locale('en');
 
 const pluginRss = require("@11ty/eleventy-plugin-rss");
 
+
 module.exports = function(eleventyConfig) {
     eleventyConfig.addPlugin(pluginRss);
 
@@ -56,6 +57,19 @@ module.exports = function(eleventyConfig) {
     Object.keys(shortcodes).forEach(shortCodeName => {
         eleventyConfig.addShortcode(shortCodeName, shortcodes[shortCodeName])
     })
+
+
+    let markdownIt = require("markdown-it");
+    let markdownItEmoji = require("markdown-it-emoji");
+    let markdownItFootnote = require('markdown-it-footnote');
+    let options = {
+        html: true,
+        breaks: true,
+        linkify: true
+    };
+    let markdownLib = markdownIt(options).use(markdownItEmoji).use(markdownItFootnote);
+
+    eleventyConfig.setLibrary("md", markdownLib);
 
     return {
         passthroughFileCopy: true,

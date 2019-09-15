@@ -7,6 +7,9 @@
     <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,shrink-to-fit=no">
 
     <title>{{ title or metadata.title }}</title>
+{% if keywords %}
+    <meta name="keywords" content="{{ keywords or "" }}">
+{% endif %}
     <meta name="HandheldFriendly" content="True">
     <meta name="MobileOptimized" content="320">
     <meta name="ROBOTS" content="INDEX, FOLLOW">
