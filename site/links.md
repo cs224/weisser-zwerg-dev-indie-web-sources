@@ -25,7 +25,9 @@
 
 * [bridgy](https://github.com/snarfed/bridgy)
     * [snarfed](https://github.com/snarfed) on github
+    * [fed.brid.gy](https://fed.brid.gy/)
 
+* [Ben Werdmüller](https://werd.io/)
 
 ## Useful Links
 
@@ -57,6 +59,8 @@
         * [using-webmentions-on-static-sites](https://mxb.dev/blog/using-webmentions-on-static-sites/)
         
 * [openid](https://openid.indieauth.com/openid)
+    * [Ben Werdmüller](https://werd.io/)
+
 
 * [amp-social-share](https://amp.dev/documentation/examples/components/amp-social-share/)
 
@@ -65,3 +69,21 @@
     * [register](https://api.staticman.net/v3/entry/github/cs224/weisser-zwerg-dev-indie-web-sources/master/properties)
     * [staticman-recaptcha](https://github.com/eduardoboucas/staticman-recaptcha)
     * [eduardoboucas.com](https://github.com/eduardoboucas/eduardoboucas.com)
+
+* [#Friendica vs #Hubzilla vs #Mastodon](https://blog.windfluechter.net/content/blog/2018/08/25/1747-friendica-vs-hubzilla-vs-mastodon)
+* [Hubzilla versus Mastodon](https://www.hasecke.eu/post/hubzilla-vs-mastodon/)
+* [A quick guide to The Free Network](https://medium.com/we-distribute/a-quick-guide-to-the-free-network-c069309f334)
+    * [fediverse.party](https://fediverse.party/)
+    * [the-federation.info](https://the-federation.info/)
+    * [Hubzilla](https://zotlabs.org/page/hubzilla/hubzilla-project) : Hubzilla will diverse Aufgaben auf einmal lösen und verzettelt sich dabei.
+        * [Neu Hier](https://hub.libranet.de/wiki/pepecyb8806/Pepes(20)Knowledgebase/Home)
+    * [mastodon](https://mastodon.social/about) : Mastodon voll und ganz auf das Microblogging konzentriert und im Grunde das Konzept von Twitter imitiert,
+    * [friendi.ca](https://friendi.ca/)
+    * [diaspora](https://diasporafoundation.org/)
+    * [pixelfed](https://pixelfed.org/)
+    * [Fediverse.de](https://de.wikipedia.org/wiki/Fediverse)
+    * [Fediverse.en](https://en.wikipedia.org/wiki/Fediverse)
+    * [fed.brid.gy](https://fed.brid.gy/)
+    * [ActivityPub, ActivityStreams 2.0, WebSub, Micropub](https://www.w3.org/TR/social-web-protocols/)
+        * [ActivityPub](https://en.wikipedia.org/wiki/ActivityPub)
+        * [WebSub](https://en.wikipedia.org/wiki/WebSub) (formerly PubSubHubbub)
