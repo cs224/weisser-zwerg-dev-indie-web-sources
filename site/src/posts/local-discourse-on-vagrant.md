@@ -4,7 +4,7 @@ title: "Local discourse: vagrant, ansible, lxd, docker, discourse-embedding"
 description: "Local discourse instance on vagrant for your local tests to embed discourse in your front-end development project."
 creationdate: 2019-09-11
 keywords: vagrant, ansible, lxc, lxd, discourse, discourse-embedding
-date: 2019-09-11
+date: 2019-09-15
 tags: ['post']
 ---
 
@@ -43,14 +43,15 @@ The vagrant image gets the IP address 192.168.56.100 and I can refer to it as `d
 
 ## Additonal requirement: docker in LXD
 
-
-
 If we were to decide to go live with discourse as our commenting system we'd get a server from one of the cloud providers and use
 [LXD](https://linuxcontainers.org/lxd/introduction/) (Linux Containers: an operating-system-level virtualization) within that server to encapsulate the
 different aspects of our application, like discourse. Then within that LXD container we will run the discourse docker image.
 
 Since I looked last time into the docker in LXC/LXD[^lxd] container topic a lot has happened and I was pleasantly surprised about the progress
-they've made. You can run docker inside an unpriviliged LXC/LXD container by now.
+they've made. You can run docker inside an unpriviliged LXC/LXD container by now. Good (recent) articles are the following:
+
+* [Docker in LXD Guest](https://www.devendortech.com/articles/Docker_in_LXD_Guest.html)
+* [How can I run docker inside a LXD container?](https://lxd.readthedocs.io/en/latest/#how-can-i-run-docker-inside-a-lxd-container)
 
 The final set-up will look as follows:
 
@@ -60,8 +61,8 @@ And all you have to do for that is:
 
     > git clone https://github.com/cs224/local-discourse-on-vagrant.git
     > cd local-discourse-on-vagrant
-    > vagrant up
     > source env.sh
+    > pushd 00-basebox             && vagrant up                 && popd
     > pushd 00-basebox             && ansible-playbook setup.yml && popd
     > pushd 10-community-discourse && ansible-playbook setup.yml && popd
 
@@ -69,8 +70,186 @@ And you're ready to go.
 
 ## tl;dr some details
 
+### Pre-requisites
+
+Before you can start you will need to install:
+
+* [Virtualbox](https://www.virtualbox.org/wiki/Downloads)
+* [vagrant](https://www.vagrantup.com/docs/installation/)
+* [ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+
+You also need to set-up entries in your `/etc/hosts` file as already mentioned above:
+
+    192.168.1.194    joto.test www.joto.test
+    192.168.56.100   discourse.joto.test
+
+I could have made a variable out of the `joto` part of the domain name, but as this is anyway only a local install it does not matter and I left it as
+it is.
+
+### Vagrant plugins
+
+While this is not absolutely required it helps to keep a smooth vagrant workflow:
+
+    > vagrant plugin install vagrant-reload
+    > vagrant plugin install vagrant-vbguest
+
+### Vagrant Up
+
+The first step is to get the vagrant box going. You do this via:
+
+    > git clone https://github.com/cs224/local-discourse-on-vagrant.git
+    > cd local-discourse-on-vagrant
+    > source env.sh
+    > cd 00-basebox
+    > vagrant up
+
+At that point you should be able to login to the base box via:
+
+    > vagrant ssh
+
+You should also be able to login directly via ssh (necessary for ansible to work properly). To verify that please logout from the vagrant box again and try the following:
+
+    > ssh-add ~/.vagrant.d/insecure_private_key
+    > ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no vagrant@192.168.56.100
+    > ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p 2222 vagrant@localhost
+
+I don't know why the network interface `192.168.56.100` is not functional within vagrant from the start. I usual get the error message:
+
+    ssh: connect to host 192.168.56.100 port 22: Protocol not available
+
+To fix that I log-in into the vagrant box via `vagrant ssh` and ping the default route `192.168.56.1`:
+
+    > vagrant ssh
+    > ping 192.168.56.1
+
+After that the login via raw ssh works for me reliably. I tried to find a solution via Google, but could not find one. If you happen to know how to fix this issue, please let me know.
+
+Another issue, either in connection with the vagrant boxes network or with the ansible script, that I don't know where it is coming from is the fact that I first have to perform a manual
+`apt-get update` before running the ansible playbooks. The ansible playbook is doing the exact same thing, but somehow it does not work:
+
+    > vagrant ssh
+    > sudo apt-get update
+
+Without that I would get the following error message when I'd run ansible as shown further below:
+
+    > TASK [00-base : install snapd] ********************************************************************
+    > fatal: [master]: FAILED! => {"changed": false, "msg": "No package matching 'aptitude' is available"}
 
 
+### Ansible playbook
+
+#### Set-up the LXD environment and an LXC container
+
+Before we can run the ansible playbook we'll have to install some ansible pre-requisites:
+
+    > ansible-galaxy install -r requirements.yml
+
+After that you should be able to execute the ansible playbook for the base install:
+
+    > ansible-playbook setup.yml
+
+This should run smoothly to the end where you should get an info message like:
+
+    You can recreate the discourse-host via the following command: lxc launch -p ssh-vagrant-profile -p discourse-host-profile ubuntu:18.04 discourse-host
+
+At this point you have an lxd/lxc container running inside your vagrant host and you can login into it:
+
+    > vagrant ssh
+    > lxc exec discourse-host -- sudo --login --user vagrant
+
+You should see that you're now in the lxc container because your prompt changes from `vagrant@master` to `vagrant@discourse-host`:
+
+    vagrant@master:~$ lxc exec discourse-host -- sudo --login --user vagrant
+    To run a command as administrator (user "root"), use "sudo <command>".
+    See "man sudo_root" for details.
+
+    vagrant@discourse-host:~$
+
+Via `ip a s` you should be able to verify that inside the lxc container you have now the IP address `10.100.1.40`:
+
+    > ip a s
+
+You should also be able to login from the vagrant box (`vagrant@master`) to the lxc container via ssh:
+
+    > ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no vagrant@discourse.joto.test
+
+From the vagrant box you can issue a few lxc commands to look at some of the inner workings:
+
+    > lxc list
+    > lxc profile list
+    > lxc profile show ssh-vagrant-profile
+    > lxc profile show discourse-host-profile
+    > lxc config show discourse-host
+    > lxc config show --expanded discourse-host
+
+The profiles contain all the information needed to (re-)create the container. In case that you're unhappy with the container you can easily and
+quickly set-up another one via:
+
+    > lxc delete --force discourse-host
+    > lxc launch -p ssh-vagrant-profile -p discourse-host-profile ubuntu:18.04 discourse-host
+
+If you execute the above the pristine discourse-host is re-created within less than 20 seconds. This is possible, because the ubuntu:18.04 image is
+already cached.
+
+You can look at the disk image of the container via:
+
+    > sudo su
+    > cd /var/lib/lxd/storage-pools/default/containers/discourse-host/
+    > du -sh .
+
+The size of the image is something like `700M`.
+
+#### Provisioning discourse within the LXC container
+
+As next step we're ready to provision discourse within the LXC container. For that we have to change into the the `10-community-discourse` directory
+first:
+
+    > cd 10-community-discourse
+
+Before we can start with the privisioning we have to again install some ansible pre-requisites first:
+
+    > ansible-galaxy install -r requirements.yml
+
+After that you should be able to execute the ansible playbook for provisioning discourse inside the LXC container. Notice, that this works by proxying
+the ssh commands that ansible issues towards the LXC container through the ssh connection established between your workstation (outermost host) and
+the vagrant box. From your workstation (outermost host) the LXC container is not visible, e.g. you cannot do a `ping 10.100.1.40`. In a real-world
+scenario, if you were to use a similar set-up in production, you would do it the same way. You would only make some ports of the LXC container
+accessible to the outside world, but not route its IP address into the internet. A good article describing the details is [Running Ansible Through an
+SSH Bastion Host](https://blog.scottlowe.org/2015/12/24/running-ansible-through-ssh-bastion-host/)
+
+Here is how you execute the playbook.
+
+    > ansible-playbook setup.yml
+
+This will take some time (~ 10 minutes), because the set-up and configuration of discourse takes some time.
+
+As discourse requires a working SMTP mail infrastrucure the ansible playbook will also install [MailHog](https://github.com/mailhog/MailHog). This
+will make all e-mails sent by discourse visible via a web UI.
+
+After the playbook finishes you should be able to browse to http://discourse.joto.test/ and see the "register a new account to get started" screen. In
+order to complete the registration workflow you need to get access to the [MailHog](https://github.com/mailhog/MailHog) instance running inside the
+LXC container. I did not forward that port to the outside world and so you have to use the `local-discourse-on-vagrant/ssh-cmdline.sh` script. This
+will use ssh port forwarding to make port 8025 available on your `localhost`: http://localhost:8025.
+
+You could use the [LXD Proxy Device capability](https://www.linode.com/docs/applications/containers/beginners-guide-to-lxd/) to make `MailHog`
+available on the discourse.joto.test. This is how I forwarded port 80 from the LXC container to the outside world.
+
+Now you have everything to go through the "register a new account to get started" process. If you would go through that process for a real production
+instance you'd need to configure quite a lot of settings in discourse, but as you're only using it to get a feel for the discourse set-up you can go
+quickly through the setting screens.
+
+Once you're done I'll show you how to set-up the [embedding
+functionality](https://meta.discourse.org/t/embedding-discourse-comments-via-javascript/31963) of discourse. There are again some pitfalls you have to
+navigate around.
+
+### Configure Admin > Customize > Embedding
+
+Embedding
+
+
+## Detours that did not workout
+
+* [how-to-use-lxd-container-hostnames-on-the-host-in-ubuntu-18-04](https://blog.simos.info/how-to-use-lxd-container-hostnames-on-the-host-in-ubuntu-18-04)
 
 
 [^lxd]: LXC and LXD are two different command line interfaces to the same kernel functionalities: [linux

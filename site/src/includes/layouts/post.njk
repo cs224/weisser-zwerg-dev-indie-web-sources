@@ -2,8 +2,8 @@
 
 
 {% block blockHeader %}
-<meta property="og:type" content="article">
-<meta property="article:author" content="https://weisser-zwerg.dev">
+    <meta property="og:type" content="article">
+    <meta property="article:author" content="https://weisser-zwerg.dev">
 {% endblock blockHeader %}
 
 
@@ -15,7 +15,7 @@
             <div>
                 <h1 class="p-name"><a class="u-url" href="{{ page.url }}" style="text-decoration: none; color: black">{{ title }}</a></h1>
 
-                <p>Published by <a class="p-author h-card" href="http://weisser-zwerg.dev">Weisser Zwerg Blog<img src="/android-chrome-192x192.png" width="80" class="u-photo" alt="Weisser Zwerg" style="display: none"></a> on <time class="dt-published" datetime="{{ creationdate | dateIso }}">{{ creationdate | dateReadable }}</time></p>
+                <p>Published by <a class="p-author h-card" href="{{ absoluteUrl }}">Weisser Zwerg Blog<img src="/android-chrome-192x192.png" width="80" class="u-photo" alt="Weisser Zwerg" style="display: none"></a> on <time class="dt-published" datetime="{{ creationdate | dateIso }}">{{ creationdate | dateReadable }}</time></p>
 
                 <p class="p-summary">{{ description }}</p>
 
