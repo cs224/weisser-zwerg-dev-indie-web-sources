@@ -62,12 +62,16 @@ module.exports = function(eleventyConfig) {
     let markdownIt = require("markdown-it");
     let markdownItEmoji = require("markdown-it-emoji");
     let markdownItFootnote = require('markdown-it-footnote');
+    let markdownItAnchor = require('markdown-it-anchor');
     let options = {
         html: true,
-        breaks: true,
+        breaks: false,
         linkify: true
     };
-    let markdownLib = markdownIt(options).use(markdownItEmoji).use(markdownItFootnote);
+
+    const link_icon = '<svg class="octicon octicon-link" style="vertical-align: middle;" role="img" aria-hidden="true" width="16" height="16"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#octicon-link"></use></svg>'
+
+    let markdownLib = markdownIt(options).use(markdownItEmoji).use(markdownItFootnote).use(markdownItAnchor, {permalink: true, permalinkSymbol: link_icon, permalinkBefore: true});
 
     eleventyConfig.setLibrary("md", markdownLib);
 
@@ -111,3 +115,26 @@ function extractExcerpt(article) {
 
     return excerpt;
 };
+
+const anchoredHeaderRenderFn = (slug, opts, state, idx) => {
+    const space = () => Object.assign(new state.Token('text', '', 0), { content: ' ' })
+
+    const linkTokens = [
+        Object.assign(new state.Token('link_open', 'a', 1), {
+            attrs: [
+                ['class', opts.permalinkClass],
+                ['href', opts.permalinkHref(slug, state)],
+                ['aria-hidden', 'true']
+            ]
+        }),
+        Object.assign(new state.Token('html_block', '', 0), { content: opts.permalinkSymbol }),
+        new state.Token('link_close', 'a', -1)
+    ]
+
+    // `push` or `unshift` according to position option.
+    // Space is at the opposite side.
+    if (opts.permalinkSpace) {
+        linkTokens[position[!opts.permalinkBefore]](space())
+    }
+    state.tokens[idx + 1].children[position[opts.permalinkBefore]](...linkTokens)
+}

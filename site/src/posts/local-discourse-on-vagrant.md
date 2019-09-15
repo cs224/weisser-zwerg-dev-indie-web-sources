@@ -29,9 +29,9 @@ somehow related problem is that discourse embedding will only work if discourse 
 follows along with this is that you have to ensure correct name resolution into the vagrant image and into the inner-most docker images, because
 discourse will run in a docker image.
 
-Initially I thought I'd use a simple `/etc/hosts` based set-up and use "mydomain.dev" or "mydomain.local", but [I found out](https://webdevstudios
-.com/2017/12/12/google-chrome-63/) that chrome simply does not work with these top-level domains (Firefox was ok with them). After some digging I
-arrived at the conclusion that the only top-level domain (TLD) that worked for chrome is the `.test` TLD.
+Initially I thought I'd use a simple `/etc/hosts` based set-up and use "mydomain.dev" or "mydomain.local", but [I found
+out](https://webdevstudios.com/2017/12/12/google-chrome-63/) that chrome simply does not work with these top-level domains (Firefox was ok with
+them). After some digging I arrived at the conclusion that the only top-level domain (TLD) that worked for chrome is the `.test` TLD.
 
 My projects code-name is `joto`. I therefore set-up my outer-most `/etc/hosts` file as follows:
 
@@ -43,6 +43,8 @@ The vagrant image gets the IP address 192.168.56.100 and I can refer to it as `d
 
 ## Additonal requirement: docker in LXD
 
+
+
 If we were to decide to go live with discourse as our commenting system we'd get a server from one of the cloud providers and use
 [LXD](https://linuxcontainers.org/lxd/introduction/) (Linux Containers: an operating-system-level virtualization) within that server to encapsulate the
 different aspects of our application, like discourse. Then within that LXD container we will run the discourse docker image.
@@ -51,7 +53,24 @@ Since I looked last time into the docker in LXC/LXD[^lxd] container topic a lot 
 they've made. You can run docker inside an unpriviliged LXC/LXD container by now.
 
 The final set-up will look as follows:
+
 ![final set-up](/img/local-discourse-on-vagrant-setup.svg)
+
+And all you have to do for that is:
+
+    > git clone https://github.com/cs224/local-discourse-on-vagrant.git
+    > cd local-discourse-on-vagrant
+    > vagrant up
+    > source env.sh
+    > pushd 00-basebox             && ansible-playbook setup.yml && popd
+    > pushd 10-community-discourse && ansible-playbook setup.yml && popd
+
+And you're ready to go.
+
+## tl;dr some details
+
+
+
 
 
 [^lxd]: LXC and LXD are two different command line interfaces to the same kernel functionalities: [linux
