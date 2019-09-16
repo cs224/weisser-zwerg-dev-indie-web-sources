@@ -6,8 +6,13 @@ eleventyExcludeFromCollections: true
 <feed xmlns="http://www.w3.org/2005/Atom">
     <title>{{ metadata.title }}</title>
     <subtitle>{{ metadata.feed.subtitle }}</subtitle>
-    <link href="{{ metadata.feed.url }}" rel="self"/>
+    <link href="{{ metadata.feed.url }}" rel="self" type="application/atom+xml"/>
     <link href="{{ metadata.url }}"/>
+
+    <!-- PubSubHubbub Discovery -->
+    <link rel="hub" href="https://weisser-zwerg.superfeedr.com/" />
+    <!-- End Of PubSubHubbub Discovery -->
+
     <updated>{{ collections.post | rssLastUpdatedDate }}</updated>
     <id>{{ metadata.feed.id }}</id>
     <author>
