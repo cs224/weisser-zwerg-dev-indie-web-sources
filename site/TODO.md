@@ -13,3 +13,5 @@
 * neue Logos von Sarah
 * web-ring as SVG
 * mastodon social icon with link sharing
+* superfeedr ActivityPub
+* fed.brid.gy
