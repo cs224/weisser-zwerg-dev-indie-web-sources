@@ -19,9 +19,10 @@ keywords: "technology, computer-science, artificial-intelligence, machine-learni
 <div class="row mt-4">
     <span class=headline>Blog Posts</span>
 </div>
+
 <div class="row">
     <ul>
-        {% for post in collections.post %}
+        {% for post in collections.post | reverse %}
         <li><a href="{{ post.url | url }}">{{ post.data.creationdate | dateIso }}</a> {{ post.data.title }}</li>
         {% endfor %}
     </ul>

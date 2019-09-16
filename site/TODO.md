@@ -9,3 +9,7 @@
         * microformats
         * data-processing pipeline: webmention, ...
         * comment-system
+* data privacy page
+* neue Logos von Sarah
+* web-ring as SVG
+* mastodon social icon with link sharing

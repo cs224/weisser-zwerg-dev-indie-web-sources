@@ -7,10 +7,12 @@ const shortcodes = require('./_eleventy/shortcodes.js')
 moment.locale('en');
 
 const pluginRss = require("@11ty/eleventy-plugin-rss");
+const pluginSyntaxHighlight = require('@11ty/eleventy-plugin-syntaxhighlight')
 
 
 module.exports = function(eleventyConfig) {
     eleventyConfig.addPlugin(pluginRss);
+    eleventyConfig.addPlugin(pluginSyntaxHighlight);
 
     eleventyConfig.addPassthroughCopy({ "./src/assets": "/" });
 
@@ -58,6 +60,11 @@ module.exports = function(eleventyConfig) {
         eleventyConfig.addShortcode(shortCodeName, shortcodes[shortCodeName])
     })
 
+    // https://www.11ty.io/docs/collections/
+    eleventyConfig.addCollection("myCollectionsReverse", function(collection) {
+        return collection.getAllSorted().reverse();
+    });
+
 
     let markdownIt = require("markdown-it");
     let markdownItEmoji = require("markdown-it-emoji");
@@ -66,7 +73,8 @@ module.exports = function(eleventyConfig) {
     let options = {
         html: true,
         breaks: false,
-        linkify: true
+        linkify: true,
+        typographer: true
     };
 
     const link_icon = '<svg class="octicon octicon-link" style="vertical-align: middle;" role="img" aria-hidden="true" width="16" height="16"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#octicon-link"></use></svg>'
@@ -78,6 +86,7 @@ module.exports = function(eleventyConfig) {
     return {
         passthroughFileCopy: true,
         markdownTemplateEngine: "njk",
+        htmlTemplateEngine: "njk",
         templateFormats: ["html", "njk", "md"],
         dir: {
             input: "src",

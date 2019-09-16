@@ -244,8 +244,53 @@ navigate around.
 
 ### Configure Admin > Customize > Embedding
 
-Embedding
+In order to enable discoure for embedding you have to go to the admin console. This is the icon at the right top and if you click on it you see a
+wrench symbol and the "Admin" entry. Once you click on it you see a head-line with the following entries: Dashboard, Settings, Users, Badges, Emails,
+Logs, Customize, API, Backups, Plugins. You have to go to the "Customize" tab. When you do that a sub-headline opens with the following entries:
+Themes, Colors, Text, Email, Email Style, User Fields, Emoji, Permalinks, Embedding. You will have guessed it: you have to pick "Embedding".
 
+You have to use the `"+ Add Host"` button to add a config line. The entries to use are:
+
+    Allowed Hosts    : joto.test
+    Class Name       :
+    Path Whitelist   : /.*
+    Post to Category :
+
+Our front-end app in which we want to embed discourse is a react.js application created with
+[`create-react-app`](https://create-react-app.dev/). Normally under development mode the local web-server serves the page at port 3000. With our
+current configuration you can access this local development server via http://joto.test:3000. I tried quite a bit around to see if I can include the
+port either into the `Allowed Hosts` part of the embedding configuration or into the `Path Whitelist` part, but I was not able to get either
+working. Therefore to enable testing of the embedding you have to serve your app on port 80. I do that via
+[`socat`](https://medium.com/@copyconstruct/socat-29453e9fc8a6) on the outermost machine. You have to have sudo rights in order to do that:
+
+    sudo socat tcp-listen:80,reuseaddr,fork tcp:localhost:3000
+
+Next you have to continue to configure the embedding in discourse on the same page as where we configured the `"+ Add Host"` settings. You have to
+configure the `Username for topic creation` setting to one of the users on the discourse instance who is allowed to create topics. For me this is:
+
+    Username for topic creation : cs224
+
+And don't forget to click the `"Save Embedding Settings"` button on the very bottom.
+
+Finally you have to add the embedding block to your front-end web-app like so:
+
+```html
+<footer>
+    <div id='discourse-comments'></div>
+
+    <script type="text/javascript">
+        window.DiscourseEmbed = { discourseUrl: 'http://discourse.joto.test/', discourseEmbedUrl: 'http://joto.test/page.name.html'};
+
+        (function() {
+            var d = document.createElement('script'); d.type = 'text/javascript'; d.async = true;
+            d.src = window.DiscourseEmbed.discourseUrl + 'javascripts/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(d);
+        })();
+    </script>
+</footer>
+```
+
+You have to adapt the `page.name.html` to your situation and templating mechanism. After that the embedding should work now.
 
 ## Detours that did not workout
 

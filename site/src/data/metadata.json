@@ -18,7 +18,6 @@
   "locale": "en_US",
   "domain": "weisser-zwerg.dev",
 
-  "staticmanUrl": "https://api.staticman.net/v2/entry/cs224/weisser-zwerg-dev-indie-web-sources/master/comments",
-  "recaptachaSitekey"        : "6LcdPbgUAAAAAIuqfFCHAn96edMLdZhHOtExyEan",
-  "recaptachaSecretEncrypted": "Yy/I7quWx7NeYY/2CzpR3bBZOTsWRzouo2pbCbpSSgr47/NlK45YuFsHrXcVrGyA39Wc4AMdBSvvrOKDCdziCowgAEFoxuy4wsw6FWdMbHVl7dUMXI9E3nY9yffLn/sWK1z+bat4CIKcZ8pA6ic0IxBtiUwc2R56IgewCGzGPlM="
+  "analytics": true
+
 }
