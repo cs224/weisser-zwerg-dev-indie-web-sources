@@ -14,7 +14,8 @@
     "build_": "env-cmd @11ty/eleventy",
     "deploy_": "firebase deploy --only hosting --project cs224-weisser-zwerg-dev",
     "deploy": "npm run build && firebase deploy --only hosting --project cs224-weisser-zwerg-dev",
-    "postdeploy": "webmention dist/feed/feed.xml --limit 10 --debug"
+    "postdeploy": "webmention dist/feed/feed.xml --limit 10 --debug",
+    "superfeedr": "curl -d \"hub.mode=publish&hub.url=https://weisser-zwerg.dev/feed/feed.xml\" -X POST https://weisser-zwerg.superfeedr.com/"
   },
   "repository": {
     "type": "git",
