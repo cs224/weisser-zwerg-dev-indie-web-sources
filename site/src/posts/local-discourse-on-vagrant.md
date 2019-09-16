@@ -10,11 +10,11 @@ tags: ['post']
 
 ## Why
 
-I am working on a project where we consider to integratie [discourse](https://www.discourse.org/) for handling embedded discussions.
-Just as an example, have a look at the [home-assistant blog](https://www.home-assistant.io/blog/2019/08/28/release-98/) and scroll to the very bottom. 
-They use embedded discourse for that purpose.
+I am working on a project where we consider to integrate [discourse](https://www.discourse.org/) for handling embedded discussions.
+Just as an example, have a look at the [home-assistant blog](https://www.home-assistant.io/blog/2019/08/28/release-98/) and scroll to the very bottom.
+They are using embedded discourse for that purpose.
 
-For my local tests I wanted to set-up a local discourse instance. 
+For my local tests I wanted to set-up a local discourse instance.
 In principle, this is not too difficult if you use the [developing-with-vagrant](https://github.com/discourse/discourse_docker#developing-with-vagrant) vagrant image
 together with the [discourse_dev](https://github.com/discourse/discourse_docker/tree/master/image/discourse_dev) docker image. But first of all, this set-up does
 not fulfill all the requirements for testing the embedding of discourse (DNS names, ...) and second I wanted to get a feeling of what it means to set-up a production 
@@ -31,24 +31,24 @@ discourse will run in a docker image.
 
 Initially I thought I'd use a simple `/etc/hosts` based set-up and use "mydomain.dev" or "mydomain.local", but [I found
 out](https://webdevstudios.com/2017/12/12/google-chrome-63/) that chrome simply does not work with these top-level domains (Firefox was ok with
-them). After some digging I arrived at the conclusion that the only top-level domain (TLD) that worked for chrome is the `.test` TLD.
+them). After some digging, I arrived at the conclusion that the only top-level domain (TLD) that worked for chrome is the `.test` TLD.
 
 My projects code-name is `joto`. I therefore set-up my outer-most `/etc/hosts` file as follows:
 
     192.168.1.194    joto.test www.joto.test
     192.168.56.100   discourse.joto.test
 
-I therefore can develop my front-end app on my outer-most computer and test the discourse integration. I will have to refer to this web-site as `joto.test`.
-The vagrant image gets the IP address 192.168.56.100 and I can refer to it as `discourse.joto.test`.
+I therefore can develop my front-end app on my outer-most computer and test the discourse integration. I will have to refer to my development web-site
+as `joto.test`. The vagrant image gets the IP address 192.168.56.100 and I can refer to it as `discourse.joto.test`.
 
-## Additonal requirement: docker in LXD
+## Additional requirement: docker in LXD
 
-If we were to decide to go live with discourse as our commenting system we'd get a server from one of the cloud providers and use
-[LXD](https://linuxcontainers.org/lxd/introduction/) (Linux Containers: an operating-system-level virtualization) within that server to encapsulate the
-different aspects of our application, like discourse. Then within that LXD container we will run the discourse docker image.
+If we were to decide to go live with discourse as our commenting system we'd get a server from one of the cloud providers and use LXD[^lxd] within
+that server to encapsulate the different aspects of our application, like discourse. Then within that LXD container we would run the discourse docker
+image.
 
-Since I looked last time into the docker in LXC/LXD[^lxd] container topic a lot has happened and I was pleasantly surprised about the progress
-they've made. You can run docker inside an unpriviliged LXC/LXD container by now. Good (recent) articles are the following:
+Since I looked last time into the docker in LXC/LXD[^lxc-lxd] container topic a lot has happened and I was pleasantly surprised about the progress
+they've made. You can run docker inside an unprivileged LXC/LXD container by now. Good (recent) articles about docker-in-lxd are the following two:
 
 * [Docker in LXD Guest](https://www.devendortech.com/articles/Docker_in_LXD_Guest.html)
 * [How can I run docker inside a LXD container?](https://lxd.readthedocs.io/en/latest/#how-can-i-run-docker-inside-a-lxd-container)
@@ -88,7 +88,7 @@ it is.
 
 ### Vagrant plugins
 
-While this is not absolutely required it helps to keep a smooth vagrant workflow:
+While this is not absolutely required the following two vagrant plugins help to ensure a smooth vagrant workflow:
 
     > vagrant plugin install vagrant-reload
     > vagrant plugin install vagrant-vbguest
@@ -107,13 +107,14 @@ At that point you should be able to login to the base box via:
 
     > vagrant ssh
 
-You should also be able to login directly via ssh (necessary for ansible to work properly). To verify that please logout from the vagrant box again and try the following:
+You should also be able to login directly via ssh (necessary for ansible to work properly). To verify that standard ssh login works please logout from
+the vagrant box and try the following:
 
     > ssh-add ~/.vagrant.d/insecure_private_key
     > ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no vagrant@192.168.56.100
     > ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p 2222 vagrant@localhost
 
-I don't know why the network interface `192.168.56.100` is not functional within vagrant from the start. I usual get the error message:
+I don't know why the network interface `192.168.56.100` is not functional within vagrant from the start. I usually get the following error:
 
     ssh: connect to host 192.168.56.100 port 22: Protocol not available
 
@@ -124,8 +125,10 @@ To fix that I log-in into the vagrant box via `vagrant ssh` and ping the default
 
 After that the login via raw ssh works for me reliably. I tried to find a solution via Google, but could not find one. If you happen to know how to fix this issue, please let me know.
 
-Another issue, either in connection with the vagrant boxes network or with the ansible script, that I don't know where it is coming from is the fact that I first have to perform a manual
-`apt-get update` before running the ansible playbooks. The ansible playbook is doing the exact same thing, but somehow it does not work:
+Another issue, where I currently can't tell where it is coming from is the fact that I first have to perform a manual `apt-get update` before running
+the ansible playbooks.  The ansible playbook is doing the exact same thing at its very start, but somehow it does not work. The issue is either in
+connection with the vagrant boxes' network or with the ansible script. Again: if you happen to know how to fix this issue, please let me know.
+
 
     > vagrant ssh
     > sudo apt-get update
@@ -152,12 +155,12 @@ This should run smoothly to the end where you should get an info message like:
 
     You can recreate the discourse-host via the following command: lxc launch -p ssh-vagrant-profile -p discourse-host-profile ubuntu:18.04 discourse-host
 
-At this point you have an lxd/lxc container running inside your vagrant host and you can login into it:
+At this point you have a running lxd/lxc container inside your vagrant host and you can log-in:
 
     > vagrant ssh
     > lxc exec discourse-host -- sudo --login --user vagrant
 
-You should see that you're now in the lxc container because your prompt changes from `vagrant@master` to `vagrant@discourse-host`:
+You should see that you're inside the lxc container now because your prompt has changed from `vagrant@master` to `vagrant@discourse-host`:
 
     vagrant@master:~$ lxc exec discourse-host -- sudo --login --user vagrant
     To run a command as administrator (user "root"), use "sudo <command>".
@@ -188,8 +191,8 @@ quickly set-up another one via:
     > lxc delete --force discourse-host
     > lxc launch -p ssh-vagrant-profile -p discourse-host-profile ubuntu:18.04 discourse-host
 
-If you execute the above the pristine discourse-host is re-created within less than 20 seconds. This is possible, because the ubuntu:18.04 image is
-already cached.
+When you execute the above commands then a pristine discourse-host is re-created within less than 20 seconds. This is possible, because the
+ubuntu:18.04 image was already fetched earlier and it is cached now.
 
 You can look at the disk image of the container via:
 
@@ -201,12 +204,11 @@ The size of the image is something like `700M`.
 
 #### Provisioning discourse within the LXC container
 
-As next step we're ready to provision discourse within the LXC container. For that we have to change into the the `10-community-discourse` directory
-first:
+As next step we're ready to provision discourse within the LXC container. For that we have to change into the `10-community-discourse` directory:
 
     > cd 10-community-discourse
 
-Before we can start with the privisioning we have to again install some ansible pre-requisites first:
+and we have to install some ansible pre-requisites:
 
     > ansible-galaxy install -r requirements.yml
 
@@ -215,16 +217,16 @@ the ssh commands that ansible issues towards the LXC container through the ssh c
 the vagrant box. From your workstation (outermost host) the LXC container is not visible, e.g. you cannot do a `ping 10.100.1.40`. In a real-world
 scenario, if you were to use a similar set-up in production, you would do it the same way. You would only make some ports of the LXC container
 accessible to the outside world, but not route its IP address into the internet. A good article describing the details is [Running Ansible Through an
-SSH Bastion Host](https://blog.scottlowe.org/2015/12/24/running-ansible-through-ssh-bastion-host/)
+SSH Bastion Host](https://blog.scottlowe.org/2015/12/24/running-ansible-through-ssh-bastion-host/).
 
 Here is how you execute the playbook.
 
     > ansible-playbook setup.yml
 
-This will take some time (~ 10 minutes), because the set-up and configuration of discourse takes some time.
+This will take some time (~ 10 minutes), because the set-up and configuration of discourse is not fast.
 
-As discourse requires a working SMTP mail infrastrucure the ansible playbook will also install [MailHog](https://github.com/mailhog/MailHog). This
-will make all e-mails sent by discourse visible via a web UI.
+As discourse requires a working SMTP mail infrastructure the ansible playbook will also install [MailHog](https://github.com/mailhog/MailHog). This
+will first of all prevent that any real e-mails get sent out and it will make all e-mails sent by discourse visible via a web UI.
 
 After the playbook finishes you should be able to browse to http://discourse.joto.test/ and see the "register a new account to get started" screen. In
 order to complete the registration workflow you need to get access to the [MailHog](https://github.com/mailhog/MailHog) instance running inside the
@@ -232,10 +234,10 @@ LXC container. I did not forward that port to the outside world and so you have 
 will use ssh port forwarding to make port 8025 available on your `localhost`: http://localhost:8025.
 
 You could use the [LXD Proxy Device capability](https://www.linode.com/docs/applications/containers/beginners-guide-to-lxd/) to make `MailHog`
-available on the discourse.joto.test. This is how I forwarded port 80 from the LXC container to the outside world.
+available on the discourse.joto.test address. I used the proxy device functionality to forwarded port 80 from the LXC container to the outside world.
 
 Now you have everything to go through the "register a new account to get started" process. If you would go through that process for a real production
-instance you'd need to configure quite a lot of settings in discourse, but as you're only using it to get a feel for the discourse set-up you can go
+instance, you'd need to configure quite a lot of settings in discourse, but as you're only using it to get a feel for the discourse set-up you can go
 quickly through the setting screens.
 
 Once you're done I'll show you how to set-up the [embedding
@@ -244,7 +246,7 @@ navigate around.
 
 ### Configure Admin > Customize > Embedding
 
-In order to enable discoure for embedding you have to go to the admin console. This is the icon at the right top and if you click on it you see a
+In order to enable discourse for embedding you have to go to the admin console. This is the icon at the right top and if you click on it you see a
 wrench symbol and the "Admin" entry. Once you click on it you see a head-line with the following entries: Dashboard, Settings, Users, Badges, Emails,
 Logs, Customize, API, Backups, Plugins. You have to go to the "Customize" tab. When you do that a sub-headline opens with the following entries:
 Themes, Colors, Text, Email, Email Style, User Fields, Emoji, Permalinks, Embedding. You will have guessed it: you have to pick "Embedding".
@@ -256,12 +258,12 @@ You have to use the `"+ Add Host"` button to add a config line. The entries to u
     Path Whitelist   : /.*
     Post to Category :
 
-Our front-end app in which we want to embed discourse is a react.js application created with
-[`create-react-app`](https://create-react-app.dev/). Normally under development mode the local web-server serves the page at port 3000. With our
-current configuration you can access this local development server via http://joto.test:3000. I tried quite a bit around to see if I can include the
-port either into the `Allowed Hosts` part of the embedding configuration or into the `Path Whitelist` part, but I was not able to get either
-working. Therefore to enable testing of the embedding you have to serve your app on port 80. I do that via
-[`socat`](https://medium.com/@copyconstruct/socat-29453e9fc8a6) on the outermost machine. You have to have sudo rights in order to do that:
+Our front-end app in which we want to embed discourse is a react.js application created with [`create-react-app`](https://create-react-app.dev/)
+(CRA). Normally, under development mode, the local web-server of a CRA project serves the site on port 3000. With our current configuration you should
+be able to access this local development server via http://joto.test:3000. I tried quite a bit around to see if I can include the port either into the
+`Allowed Hosts` part of the embedding configuration or into the `Path Whitelist` part, but I was not able to get either working. Therefore, to enable
+testing of the embedding, you have to serve your app on port 80. I do that via [`socat`](https://medium.com/@copyconstruct/socat-29453e9fc8a6) on the
+outermost machine. You have to have sudo rights in order to do that:
 
     sudo socat tcp-listen:80,reuseaddr,fork tcp:localhost:3000
 
@@ -270,7 +272,7 @@ configure the `Username for topic creation` setting to one of the users on the d
 
     Username for topic creation : cs224
 
-And don't forget to click the `"Save Embedding Settings"` button on the very bottom.
+And **don't forget** to click the `"Save Embedding Settings"` button on the very bottom.
 
 Finally you have to add the embedding block to your front-end web-app like so:
 
@@ -290,14 +292,34 @@ Finally you have to add the embedding block to your front-end web-app like so:
 </footer>
 ```
 
-You have to adapt the `page.name.html` to your situation and templating mechanism. After that the embedding should work now.
+You have to adapt the `page.name.html` to your situation and templating mechanism. After that the embedding should work.
 
 ## Detours that did not workout
 
-* [how-to-use-lxd-container-hostnames-on-the-host-in-ubuntu-18-04](https://blog.simos.info/how-to-use-lxd-container-hostnames-on-the-host-in-ubuntu-18-04)
+I tried to set-up functionality to enable container hostname resolution on the vagrant box as described in [How to use LXD container hostnames on the
+host in Ubuntu 18.04](https://blog.simos.info/how-to-use-lxd-container-hostnames-on-the-host-in-ubuntu-18-04), but this caused a lot of headaches.  It
+caused DNS loops that were correctly cut, but prevented the name resolution of configurations in outer `/etc/hosts` files[^dnsmasq] in the inner hosts. In the
+end I stopped that attempt and simply configured the LXC container host names in the vagrant boxes `/etc/hosts` file. This functionality would only be
+useful if you were to use dynamic IP addresses in LXC containers via DHCP or similar. As I am configuring the IP addresses statically that is not a
+concern.
 
+Another issue that the current set-up still seems to have is that [ansible
+pipelining](https://docs.ansible.com/ansible/2.4/intro_configuration.html#pipelining)[^ansible-speed] does not seem to work, at least not according to
+the results of following the [Check if Ansible pipelining is enabled /
+working](https://stackoverflow.com/questions/43438519/check-if-ansible-pipelining-is-enabled-working) instructions. Perhaps this is related to using
+the ssh [ProxyCommand](https://dotfiles.tnetconsulting.net/articles/2015/0506/empowering-openssh.html)? If you happen to know how to fix this issue,
+please let me know.
 
-[^lxd]: LXC and LXD are two different command line interfaces to the same kernel functionalities: [linux
+## Footnotes
+
+[^lxd]: [Linux Containers](https://linuxcontainers.org/lxd/introduction/): an operating-system-level virtualization
+
+[^lxc-lxd]: LXC and LXD are two different command line interfaces to the same kernel functionalities: [linux
 namespaces](https://en.wikipedia.org/wiki/Linux_namespaces) and [cgroups](https://en.wikipedia.org/wiki/Cgroups); I like LXD better, because of its
 excellent [cloud-init](https://cloud-init.io/) support
 
+[^dnsmasq]: LXD uses [dnsmasq](https://en.wikipedia.org/wiki/Dnsmasq) to serve entries in the outer `/etc/hosts` to the inner LXC containers.
+
+[^ansible-speed]: A nice article in the context of pipelining is [How to Speed Up Your Ansible Playbooks Over
+600%](https://www.toptechskills.com/ansible-tutorials-courses/speed-up-ansible-playbooks-pipelining-mitogen/). It compares the raw ansible vs. ansible
+pipelining vs. [mitogen](https://networkgenomics.com/ansible/). I did not try to set-up mitogen, though.
