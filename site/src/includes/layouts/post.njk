@@ -21,6 +21,7 @@
 
                 <div>
 
+                    {% if metadata.mastodonSharing %}
                     <!-- Sharingbutton Mastodon -->
                     <div class="resp-sharing-button__link" aria-label="">
                         <div class="mastodon-share-button resp-sharing-button resp-sharing-button--email resp-sharing-button--small" data-target="{{ absoluteUrl | url_encode }}" data-name="{{ title }}" data-text="Share" data-buttonstyle="btn btn-secondary"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
@@ -28,6 +29,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
 
                     <!-- Sharingbutton Facebook -->
                     <a class="resp-sharing-button__link" href="https://facebook.com/sharer/sharer.php?u={{ absoluteUrl | url_encode }}" target="_blank" rel="noopener" aria-label="">
