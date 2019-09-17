@@ -2,9 +2,9 @@
 layout: "layouts/post.njk"
 title: "Local discourse: vagrant, ansible, lxd, docker, discourse-embedding"
 description: "Local discourse instance on vagrant for your local tests to embed discourse in your front-end development project."
-creationdate: 2019-09-11
+creationdate: 2019-09-17
 keywords: vagrant, ansible, lxc, lxd, discourse, discourse-embedding
-date: 2019-09-15
+date: 2019-09-17
 tags: ['post']
 ---
 

@@ -14,8 +14,10 @@
     "build_": "env-cmd @11ty/eleventy",
     "deploy_": "firebase deploy --only hosting --project cs224-weisser-zwerg-dev",
     "deploy": "npm run build && firebase deploy --only hosting --project cs224-weisser-zwerg-dev",
-    "postdeploy": "webmention dist/feed/feed.xml --limit 10 --debug",
-    "superfeedr": "curl -d \"hub.mode=publish&hub.url=https://weisser-zwerg.dev/feed/feed.xml\" -X POST https://weisser-zwerg.superfeedr.com/"
+    "postdeploy_": "webmention dist/feed/feed.xml --limit 0 --debug --send",
+    "superfeedr": "curl -d \"hub.mode=publish&hub.url=https://weisser-zwerg.dev/feed/feed.xml\" -X POST https://weisser-zwerg.superfeedr.com/",
+    "webmention-check": "curl -X POST https://webmention.app/check?url=https%3A%2F%2Fweisser-zwerg.dev%2Fposts%2Flocal-discourse-on-vagrant%2F",
+    "webmention-page": "webmention https://weisser-zwerg.dev/posts/local-discourse-on-vagrant/ --limit 0 --debug --send"
   },
   "repository": {
     "type": "git",
