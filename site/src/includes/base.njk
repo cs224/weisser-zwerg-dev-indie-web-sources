@@ -40,6 +40,9 @@
 {% if keywords %}
     <meta name="keywords" content="{{ keywords or "" }}">
 {% endif %}
+
+    <meta name="description" content="{{ description or metadata.description }}">
+
     <meta name="HandheldFriendly" content="True">
     <meta name="MobileOptimized" content="320">
     <meta name="ROBOTS" content="INDEX, FOLLOW">
@@ -118,7 +121,7 @@
         <a href="/" style="text-decoration: none">
             <div class="d-flex flex-row" style="align-items: center; justify-content: center;">
                 <div class="col center" >
-                    <img src="/android-chrome-256x256.png" style="height: 5rem; float: left;">
+                    <img src="/android-chrome-256x256.png" style="height: 5rem; float: left;" alt="Weisser Zwerg Logo">
                 </div>
                 <div class="col" style="flex-grow: 100">
                     <h1 class="headlinewhite" style="display: inline; text-align: center; line-height: 80px;" >{{ metadata.title }}</h1>
