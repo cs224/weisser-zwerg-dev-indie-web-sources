@@ -1,5 +1,10 @@
 
+* make the e-mail subscription form look nicer
+* Medium
+* mastodon social icon with link sharing
+    * sharing button
 * fed.brid.gy
+* Link at bottom to mastodon identity
 * create content:
     * iOS app without access to apple mac
     * indieweb experiences
@@ -8,7 +13,6 @@
         * data-processing pipeline: webmention, ...
         * comment-system
 * data privacy page
-* mastodon social icon with link sharing
 
 ## Publishing
 
