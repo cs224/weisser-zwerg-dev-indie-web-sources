@@ -55,7 +55,9 @@ they've made. You can run docker inside an unprivileged LXC/LXD container by now
 
 The final set-up will look as follows:
 
-![final set-up](/img/local-discourse-on-vagrant-setup.svg)
+<object data="/img/local-discourse-on-vagrant-setup.svg" type="image/svg+xml">
+<img src="/img/local-discourse-on-vagrant-setup.svg" alt="final set-up">
+</object>
 
 And all you have to do for that is:
 

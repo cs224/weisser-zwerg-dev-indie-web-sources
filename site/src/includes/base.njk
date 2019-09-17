@@ -53,7 +53,7 @@
     <meta name="msapplication-TileColor" content="#da532c">
     <meta name="theme-color" content="#ffffff">
 
-    
+
     <meta property="og:title" content="{{ title or metadata.title }}">
     <meta property="og:description" content="{{ description or metadata.description }}">
     {% block blockHeader %}
@@ -110,17 +110,23 @@
 {% endif  %}
 </head>
 <body style="display: flex; flex-direction: column; min-height: 100vh; overflow-y: overlay;">
-<header class="col w-100 text-center bg-black mb-2" style="max-height: 5rem">
+<header class="col w-100 text-center bg-black mb-2" style="flex-wrap: wrap;" ><!-- style="max-height: 5rem" -->
     <div style="display: inline-block">
         <a href="/" style="text-decoration: none">
-            <img src="/android-chrome-512x512.png" style="height: 5rem; float: left">
-            <h1 class="headlinewhite" style="display: inline; text-align: center; line-height: 80px;" >{{ metadata.title }}</h1>
+            <div class="d-flex flex-row" style="align-items: center; justify-content: center;">
+                <div class="col center" >
+                    <img src="/android-chrome-256x256.png" style="height: 5rem; float: left;">
+                </div>
+                <div class="col" style="flex-grow: 100">
+                    <h1 class="headlinewhite" style="display: inline; text-align: center; line-height: 80px;" >{{ metadata.title }}</h1>
+                </div>
+            </div>
         </a>
     </div>
 </header>
 
 {% block content %}
-    <main class="container" style="flex-grow: 1;">
+    <main class="container" style="flex-grow: 100;"><!-- style="flex-grow: 1;" -->
         {{ content | safe }}
     </main>
 {% endblock content %}
