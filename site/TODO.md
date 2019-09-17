@@ -2,7 +2,6 @@
 * SEO : Google Console
 * firebase analytics
 * create content:
-    * local discourse on vagrant
     * iOS app without access to apple mac
     * indieweb experiences
         * set-up: domain, indie-auth, static-site, firebase / netlify
@@ -10,8 +9,7 @@
         * data-processing pipeline: webmention, ...
         * comment-system
 * data privacy page
-* neue Logos von Sarah
-* web-ring as SVG
+* neues Logos von Sarah auch für iOS
 * mastodon social icon with link sharing
 * superfeedr ActivityPub
 * fed.brid.gy
