@@ -8,6 +8,8 @@ date: 2019-09-15
 tags: ['post']
 ---
 
+[Code on GitHub](https://github.com/cs224/local-discourse-on-vagrant)
+
 ## Why
 
 I am working on a project where we consider to integrate [discourse](https://www.discourse.org/) for handling embedded discussions.
@@ -53,9 +55,9 @@ they've made. You can run docker inside an unprivileged LXC/LXD container by now
 * [Docker in LXD Guest](https://www.devendortech.com/articles/Docker_in_LXD_Guest.html)
 * [How can I run docker inside a LXD container?](https://lxd.readthedocs.io/en/latest/#how-can-i-run-docker-inside-a-lxd-container)
 
-The final set-up will look as follows:
+The final set-up[^code-on-github] will look as follows:
 
-<object data="/img/local-discourse-on-vagrant-setup.svg" type="image/svg+xml">
+<object data="/img/local-discourse-on-vagrant-setup.svg" type="image/svg+xml" style="max-width: 100%">
 <img src="/img/local-discourse-on-vagrant-setup.svg" alt="final set-up">
 </object>
 
@@ -313,6 +315,8 @@ the ssh [ProxyCommand](https://dotfiles.tnetconsulting.net/articles/2015/0506/em
 please let me know.
 
 ## Footnotes
+
+[^code-on-github]: [Code on GitHub](https://github.com/cs224/local-discourse-on-vagrant)
 
 [^lxd]: [Linux Containers](https://linuxcontainers.org/lxd/introduction/): an operating-system-level virtualization
 
