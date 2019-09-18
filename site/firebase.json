@@ -1,6 +1,28 @@
 {
   "hosting": {
     "public": "dist",
+    "redirects": [
+      {
+        "source": "/.well-known/host-meta",
+        "destination": "https://fed.brid.gy/.well-known/host-meta",
+        "type": 301
+      },
+      {
+        "source": "/.well-known/host-meta.xrd",
+        "destination": "https://fed.brid.gy/.well-known/host-meta.xrd",
+        "type": 301
+      },
+      {
+        "source": "/.well-known/host-meta.jrd",
+        "destination": "https://fed.brid.gy/.well-known/host-meta.jrd",
+        "type": 301
+      },
+      {
+        "source": "/.well-known/webfinger",
+        "destination": "https://fed.brid.gy/.well-known/webfinger",
+        "type": 301
+      }
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",
