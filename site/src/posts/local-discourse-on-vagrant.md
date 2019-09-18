@@ -6,6 +6,9 @@ creationdate: 2019-09-17
 keywords: vagrant, ansible, lxc, lxd, discourse, discourse-embedding
 date: 2019-09-17
 tags: ['post']
+syndicatedAt: 
+    - url: "https://medium.com/@weisser.zverg/local-discourse-vagrant-ansible-lxd-docker-discourse-embedding-6da1065e175f"
+      name: "Medium"
 ---
 
 [Code on GitHub](https://github.com/cs224/local-discourse-on-vagrant)
