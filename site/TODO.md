@@ -1,10 +1,11 @@
 
-* make the e-mail subscription form look nicer
-* Medium
 * mastodon social icon with link sharing
     * sharing button
 * fed.brid.gy
 * Link at bottom to mastodon identity
+* POSSE:
+    * hackernews
+    * hackernoon
 * create content:
     * iOS app without access to apple mac
     * indieweb experiences
