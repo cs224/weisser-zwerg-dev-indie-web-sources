@@ -29,7 +29,7 @@ eleventyExcludeFromCollections: true
             <link rel="alternate" type="text/html" href="{{ absolutePostUrl }}"/>
             <title>{{ post.data.title }}</title>
             <summary>{{ post.data.description }}</summary>
-            <content type="html">{{ post.templateContent | htmlToAbsoluteUrls(absolutePostUrl) }}</content>
+            <content type="html"><a href="{{ absolutePostUrl }}">{{ post.data.title }}</a></content>
         </entry>
     {%- endfor %}
 </feed>
