@@ -1,5 +1,5 @@
 {
-  "lastFetched": "2019-09-17T02:27:21.262Z",
+  "lastFetched": "2019-09-19T04:09:49.646Z",
   "children": [
     {
       "type": "entry",
@@ -22,6 +22,68 @@
       },
       "in-reply-to": "https://weisser-zwerg.dev/posts/webmention-test/",
       "wm-property": "in-reply-to",
+      "wm-private": false
+    },
+    {
+      "type": "entry",
+      "author": {
+        "type": "card",
+        "name": "",
+        "photo": "https://webmention.io/avatar/files.mastodon.social/d8a8473acaccae6e575dae68bc94c81a520b7e93b534b4fa0bb293f9a014d8a0.png",
+        "url": "https://mastodon.social/@cs224"
+      },
+      "url": "https://fed.brid.gy/render?source=https%3A%2F%2Fmastodon.social%2Fusers%2Fcs224%2Fstatuses%2F102817168215960815%2Factivity&target=https%3A%2F%2Fweisser-zwerg.dev%2Fposts%2Factivity-pub-integration-via-fed-brid-gy2%2F",
+      "published": "2019-09-19T03:58:01",
+      "wm-received": "2019-09-19T03:58:03Z",
+      "wm-id": 694264,
+      "wm-source": "https://fed.brid.gy/render?source=https%3A%2F%2Fmastodon.social%2Fusers%2Fcs224%2Fstatuses%2F102817168215960815%2Factivity&target=https%3A%2F%2Fweisser-zwerg.dev%2Fposts%2Factivity-pub-integration-via-fed-brid-gy2%2F",
+      "wm-target": "https://weisser-zwerg.dev/posts/activity-pub-integration-via-fed-brid-gy2/",
+      "content": {
+        "html": "<a href=\"https://weisser-zwerg.dev/posts/activity-pub-integration-via-fed-brid-gy2/\">shared this.</a>",
+        "text": "shared this."
+      },
+      "repost-of": "https://weisser-zwerg.dev/posts/activity-pub-integration-via-fed-brid-gy2/",
+      "wm-property": "repost-of",
+      "wm-private": false
+    },
+    {
+      "type": "entry",
+      "author": {
+        "type": "card",
+        "name": "",
+        "photo": "https://webmention.io/avatar/files.mastodon.social/d8a8473acaccae6e575dae68bc94c81a520b7e93b534b4fa0bb293f9a014d8a0.png",
+        "url": "https://mastodon.social/@cs224"
+      },
+      "url": "https://fed.brid.gy/render?source=https%3A%2F%2Fmastodon.social%2Fc38d7110-5883-424f-861e-88f7c444d23a&target=https%3A%2F%2Fweisser-zwerg.dev%2F",
+      "published": null,
+      "wm-received": "2019-09-19T03:53:37Z",
+      "wm-id": 694261,
+      "wm-source": "https://fed.brid.gy/render?source=https%3A%2F%2Fmastodon.social%2Fc38d7110-5883-424f-861e-88f7c444d23a&target=https%3A%2F%2Fweisser-zwerg.dev%2F",
+      "wm-target": "https://weisser-zwerg.dev/",
+      "mention-of": "https://weisser-zwerg.dev/",
+      "wm-property": "mention-of",
+      "wm-private": false
+    },
+    {
+      "type": "entry",
+      "author": {
+        "type": "card",
+        "name": "https://mastodon.social/users/cs224",
+        "photo": "",
+        "url": "https://mastodon.social/users/cs224"
+      },
+      "url": "https://mastodon.social/@cs224/102817196518619359",
+      "published": "2019-09-19T04:05:13",
+      "wm-received": "2019-09-19T04:05:15Z",
+      "wm-id": 694271,
+      "wm-source": "https://fed.brid.gy/render?source=https%3A%2F%2Fmastodon.social%2F%40cs224%2F102817196518619359&target=https%3A%2F%2Fweisser-zwerg.dev%2F",
+      "wm-target": "https://weisser-zwerg.dev/",
+      "content": {
+        "html": "<p><span class=\"h-card\"><a href=\"https://fed.brid.gy/r/https://weisser-zwerg.dev\" class=\"u-url\">@<span>weisser-zwerg.dev</span></a></span> reply-back?</p>\n<a class=\"u-mention\" href=\"https://weisser-zwerg.dev/\">@weisser-zwerg.dev@weisser-zwerg.dev</a>",
+        "text": "@weisser-zwerg.dev reply-back?\n@weisser-zwerg.dev@weisser-zwerg.dev"
+      },
+      "mention-of": "https://weisser-zwerg.dev/",
+      "wm-property": "mention-of",
       "wm-private": false
     }
   ]
