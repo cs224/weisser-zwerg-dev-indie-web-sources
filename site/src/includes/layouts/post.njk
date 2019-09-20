@@ -21,15 +21,7 @@
 
                 <div>
 
-                    {% if metadata.mastodonSharing %}
-                    <!-- Sharingbutton Mastodon -->
-                    <div class="resp-sharing-button__link" aria-label="">
-                        <div class="mastodon-share-button resp-sharing-button resp-sharing-button--email resp-sharing-button--small" data-target="{{ absoluteUrl | url_encode }}" data-name="{{ title }}" data-text="Share" data-buttonstyle="btn btn-secondary"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
-                                <svg role="img" aria-hidden="true" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#mastodon"></use></svg>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
+                    <!-- AddToAny END -->
 
                     <!-- Sharingbutton Facebook -->
                     <a class="resp-sharing-button__link" href="https://facebook.com/sharer/sharer.php?u={{ absoluteUrl | url_encode }}" target="_blank" rel="noopener" aria-label="">
@@ -46,6 +38,17 @@
                             </div>
                         </div>
                     </a>
+
+                    {% if metadata.mastodonSharing %}
+                        <!-- Sharingbutton Mastodon -->
+                        <a class="resp-sharing-button__link" href="https://www.addtoany.com/add_to/mastodon?linkurl={{ absoluteUrl | url_encode }}&amp;linkname={{ title | url_encode }}" target="_blank" rel="noopener" aria-label="">
+                            <div class="mastodon-share-button resp-sharing-button resp-sharing-button--email resp-sharing-button--small">
+                                <div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">
+                                    <svg role="img" aria-hidden="true" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#mastodon"></use></svg>
+                                </div>
+                            </div>
+                        </a>
+                    {% endif %}
 
                     <!-- Sharingbutton E-Mail -->
                     <a class="resp-sharing-button__link" href="mailto:?subject={{ title | url_encode }}&amp;body={{ absoluteUrl | url_encode }}" target="_self" rel="noopener" aria-label="">

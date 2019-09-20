@@ -19,6 +19,6 @@
   "domain": "weisser-zwerg.dev",
 
   "analytics": true,
-  "mastodonSharing": false
+  "mastodonSharing": true
 
 }
