@@ -47,6 +47,18 @@ module.exports = function(eleventyConfig) {
         return lastElement;
     });
 
+    eleventyConfig.addNunjucksFilter("rssLastUpdatedRfc822Date", collection => {
+        if( !collection || !collection.length ) {
+            throw new Error( "Collection is empty in rssLastUpdatedDate filter." );
+        }
+
+        // Newest date in the collection
+        return dateToRfc822(collection[ collection.length - 1 ].date);
+    });
+
+    eleventyConfig.addNunjucksFilter("rssRfc822Date", dateObj => dateToRfc822(dateObj));
+
+
     // Filters
     Object.keys(filters).forEach(filterName => {
         console.log(filterName);
@@ -146,4 +158,9 @@ const anchoredHeaderRenderFn = (slug, opts, state, idx) => {
         linkTokens[position[!opts.permalinkBefore]](space())
     }
     state.tokens[idx + 1].children[position[opts.permalinkBefore]](...linkTokens)
+}
+
+function dateToRfc822(d) {
+    const rfc822Date = moment(d).format('ddd, DD MMM YYYY HH:mm:ss ZZ');
+    return rfc822Date;
 }

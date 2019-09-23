@@ -3,33 +3,30 @@ permalink: feed/feed.xml
 eleventyExcludeFromCollections: true
 ---
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
-    <title>{{ metadata.title }}</title>
-    <subtitle>{{ metadata.feed.subtitle }}</subtitle>
-    <link href="{{ metadata.feed.url }}" rel="self" type="application/atom+xml"/>
-    <link href="{{ metadata.url }}"/>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:georss="http://www.georss.org/georss" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>{{ metadata.title }}</title>
+        <description>{{ metadata.description }}</description>
+        <link>{{ metadata.url }}</link>
+        <lastBuildDate>{{ collections.post | rssLastUpdatedRfc822Date }}</lastBuildDate>
+        <pubDate>{{ collections.post | rssLastUpdatedRfc822Date }}</pubDate>
+        <language>en</language>
+        <atom:link href="{{ metadata.feed.url }}" rel="self" type="application/rss+xml"/>
+        <!-- PubSubHubbub Discovery -->
+        <atom:link rel="hub" href="https://weisser-zwerg.superfeedr.com/"/>
+        <!-- End Of PubSubHubbub Discovery -->
 
-    <!-- PubSubHubbub Discovery -->
-    <link rel="hub" href="https://weisser-zwerg.superfeedr.com/" />
-    <!-- End Of PubSubHubbub Discovery -->
-
-    <updated>{{ collections.post | rssLastUpdatedDate }}</updated>
-    <id>{{ metadata.feed.id }}</id>
-    <author>
-        <name>{{ metadata.author.name }}</name>
-        <email>{{ metadata.author.email }}</email>
-    </author>
-    {%- for post in collections.post %}
-        {% set absolutePostUrl %}{{ post.url | url | absoluteUrl(metadata.url) }}{% endset %}
-        <entry>
-            <id>{{ absolutePostUrl }}</id>
-            <pubDate>{{ post.data.creationdate | rssDate }}</pubDate>
-            <updated>{{ post.date | rssDate }}</updated>
-            <link href="{{ absolutePostUrl }}"/>
-            <link rel="alternate" type="text/html" href="{{ absolutePostUrl }}"/>
-            <title>{{ post.data.title }}</title>
-            <summary>{{ post.data.description }}</summary>
-            <content type="html"><a href="{{ absolutePostUrl }}">{{ post.data.title }}</a></content>
-        </entry>
-    {%- endfor %}
-</feed>
+        {%- for post in collections.post %}
+            {% set absolutePostUrl %}{{ post.url | url | absoluteUrl(metadata.url) }}{% endset %}
+            <item>
+                <guid isPermaLink="true">{{ absolutePostUrl }}</guid>
+                <pubDate>{{ post.data.creationdate | rssRfc822Date }}</pubDate>
+                <link>{{ absolutePostUrl }}</link>
+                <atom:link rel="alternate" type="text/html" href="{{ absolutePostUrl }}"/>
+                <title>{{ post.data.title }}</title>
+                <description>{{ post.data.description }}</description>
+                <content:encoded><![CDATA[<a href="{{ absolutePostUrl }}">{{ post.data.title }}</a>]]></content:encoded>
+            </item>
+        {%- endfor %}
+    </channel>
+</rss>
