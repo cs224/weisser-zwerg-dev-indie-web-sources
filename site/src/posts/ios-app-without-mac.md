@@ -9,6 +9,8 @@ tags: ['post']
 # eleventyExcludeFromCollections: true
 ---
 
+<a class="u-in-reply-to" href="https://mastodon.social/@cs224/103079652284235547">&nbsp;</a><a href="https://fed.brid.gy">&nbsp;</a>
+
 ## Rational
 
 I have refined my tool-set for developing code over the past 20+ years and chosen Linux as my go-to operating system and platform. As a phone I have
@@ -279,4 +281,3 @@ workflow? Nobody else does that!
 We as a family bought 3 MacBook Pro's for my two children and my wife. I thought that at least then they'd use a Unix underneath and have the chance
 to learn interacting to some degree with a Unix operating system. This actually worked out quite ok and my children at least know how to use a bash
 shell and similar. After my experience described above, I am not sure if I will ever buy an Apple device again, though.
-

@@ -59,6 +59,8 @@
         * [firebase : full-config#redirects](https://firebase.google.com/docs/hosting/full-config#redirects)
 * Trigger superfeedr update:
     * `npm run superfeedr`
+    * publisher: cs224
+    * subscriber: cschuhegger
 * Trigger webmention on fed.brid.gy:
     * https://telegraph.p3k.io/dashboard
 * Verify that fed.brid.gy did send out the message:
