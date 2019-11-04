@@ -1,51 +1,49 @@
 ---
 layout: "layouts/post.njk"
 title: "iOS App without a Mac"
-description: "How to develop and iOS app without ever touching an apple device for development."
-creationdate: 2019-09-29T02:00:00+02:00
-date: 2019-09-29T02:00:00+02:00
+description: "How to develop and iOS app without ever touching an Apple device for development."
+creationdate: 2019-11-04T12:53:00+02:00
+date: 2019-11-04T12:53:00+02:00
 keywords: flutter, iOS, app, linux, react-native, expo
 tags: ['post']
-eleventyExcludeFromCollections: true
+# eleventyExcludeFromCollections: true
 ---
-
-[Code on GitHub](https://github.com/cs224/flutter_hello_world)
 
 ## Rational
 
-I have refined my tool-set for developing code over the past 20+ years and chosen linux as my go-to operating system and platform. As a phone I have
+I have refined my tool-set for developing code over the past 20+ years and chosen Linux as my go-to operating system and platform. As a phone I have
 chosen to use an iOS device, mostly because my family and my colleagues at work use iOS, too. Recently, I wanted to create my first iOS app myself and
 recognized only then how many obstacles Apple is putting in your way if you want to do that without touching an Apple device for development. This is
-close to impossible! especially if you have no prior knowledge about the Apple / Xcode development eco-system. I managed to create my app on linux,
+close to impossible! especially if you have no prior knowledge about the Apple / Xcode development eco-system. I managed to create my app on Linux,
 nevertheless, without ever touching an Apple device for development. In this blog post I'd like to share my learning.
 
 ### Caveat
 
-Just to make this clear early on: I needed to sign-up for an apple developer account for 99$/year in order to generate the required code signing
+Just to make this clear up-front: I needed to sign-up for an Apple developer account for 99$/year in order to generate the required code signing
 certificates to get the app on my iPhone.
 
-It looks like there are some ways to get an iPhone app onto your device even without an apple developer account, but either I did not fully trust
+It looks like there are some ways to get an iPhone app onto your device even without an Apple developer account, but either I did not fully trust
 these approaches or they seemed overly complex:
 
 * [Cydia Impactor](http://www.cydiaimpactor.com/)
 * [Cross-compiling for iOS on Linux](https://docs.godotengine.org/en/3.0/development/compiling/cross-compiling_for_ios_on_linux.html)
 * [Apple cctools port for Linux, *BSD and Windows](https://github.com/tpoechtrager/cctools-port)
 
-If you happen to have mastered a way to get an iPhone app onto your device even without an apple developer account I'd like to hear about that. Just
+If you happen to have mastered a way to get an iPhone app onto your device even without an Apple developer account, I'd like to hear about that. Just
 leave a comment below.
 
 ## React-Native vs. Flutter
 
 You can create cross platform apps with several different frameworks. I only looked in more detail at
 [React-Native](https://facebook.github.io/react-native/docs/getting-started) and [Flutter](https://flutter.dev/docs/get-started/install). With
-Ract-Native / [Expo](https://docs.expo.io/versions/latest/) you can get really quickly an app to the point that you can interact with it on your
+React-Native / [Expo](https://docs.expo.io/versions/latest/) you can get really quickly an app to the point where you can interact with it on your
 iPhone via the [Expo App](https://expo.io/tools) as a sort of sandbox. But I was not able to create a standalone app for the iPhone without access to
-a Mac following that route. Therefore I'll describe below how I managed to do exactly that by using Flutter and the
-[Codemagic](https://codemagic.io/start/) build service.
+a Mac after that initial quick success. Therefore, I'll describe below, how I managed to create a standalone app for my iPhone without ever touching an
+Apple device by using Flutter and the [Codemagic](https://codemagic.io/start/) build service.
 
 ## Setting-up the Flutter Hello-World Project
 
-As my goal was to proof that I can develop an iOS app on linux without the need to touch an Apple device I simply used the [Flutter hello-world
+As my goal was to proof that I can develop an iOS app on Linux without the need to touch an Apple device I simply used the [Flutter hello-world
 example](https://flutter.dev/docs/get-started/test-drive?tab=terminal) without further modifications.
 
 ## Using Codemagic as a Build Service
@@ -61,45 +59,36 @@ The basic approach on how to get a Flutter app onto your iOS device is described
     email and password." I did not trust the tool enough to give it my Apple ID email and password, but decide for yourself.
 * [How to develop and distribute iOS apps without Mac with Flutter & Codemagic](https://blog.codemagic.io/how-to-develop-and-distribute-ios-apps-without-mac-with-flutter-codemagic/)
   * You will also need to read through [How to sign Flutter apps for iOS automatically without a Mac](https://blog.codemagic.io/automatic-code-signing-for-ios-that-doesnt-require-a-mac/)
-  * This is their [Comagic-Demo app](https://github.com/Shashikant86/Codemagic-Demo) and the most important piece of it is its
+  * This is their [Codemagic-Demo app](https://github.com/Shashikant86/Codemagic-Demo) and the most important piece of it is its
     [project.pbxproj](https://github.com/Shashikant86/Codemagic-Demo/blob/master/ios/Runner.xcodeproj/project.pbxproj) file.
 
 The most difficult part here is to get the project.pbxproj file right! Normally this file and the required certificates are generated by Xcode and
-once you have them in place you don't need Xcode again. If you can save yourself the trouble of creating these artifacts by hand by using an Apple device
-just once I'd strongly suggest you do that. I'll describe next how you can create the required artifacts even without access to Xcode.
+once you have them in place you don't need Xcode again. If you can save yourself the trouble to create these artifacts by hand by just using an Apple
+device once (and you know how to do that) I'd strongly suggest you do that. I'll describe next how you can create the required artifacts even without
+access to Xcode.
+
+In [Codemagic](https://codemagic.io/start/) in the build settings you will have the option to let `Codemagic` take care of the certificates for you,
+but this would require to give your Apple developer account credentials to `Codemagic`. If you don't have a problem with that then just go ahead. This
+is the quickest way to get the `Codemagic` build running and you won't need to read most of the below. But if you are like me and don't like to hand
+out your credentials of your Apple developer account to third party services like Codemagic then just follow the below steps to make it work.
 
 ## Create Xcode Artifacts by Hand
 
 You will need:
 
 * iOS App Development Certificate
-* APNs Development iOS / iOS Apple Push Notification service SSL (Sandbox)
 * Registered Device
-* App Profile
+* App Profile with App ID
 
 
 ### iOS App Development Certificate
-
-```
-iPhone Developer: Christian Schuhegger (7SG65UBH4A)
-Identity: iPhone Developer: Christian Schuhegger (7SG65UBH4A)
-Verified by: Apple Worldwide Developer Relations Certification Authority
-Expires: 01.10.2020
-
-Subject Name
-UID (User ID):	2XZ69PNZJD
-CN (Common Name):	iPhone Developer: Christian Schuhegger (7SG65UBH4A)
-OU (Organizational Unit):	8467KY9FLZ
-O (Organization):	Christian Schuhegger
-C (Country):	DE
-```
 
 For more background about how to use OpenSSL to create Certificate Signing Requests (CSRs) have a look at:
 
 * [How to use Linux openssl to generate CSR for iOS?](https://stackoverflow.com/questions/24344325/how-to-use-linux-openssl-to-generate-csr-for-ios)
 * [How to create a CSR with OpenSSL](https://www.switch.ch/pki/manage/request/csr-openssl/)
 
-But otherwise just creata an `ios-dev.cnf` file similar to:
+But otherwise just create an `ios-dev.cnf` file similar to:
 
 ```
 ORGNAME = First Last
@@ -115,13 +104,13 @@ distinguished_name = dn
 [ dn ]
 C = DE
 O = $ORGNAME
-OU = 8467KY9FLZ
-CN = iPhone Developer: $ORGNAME (7SG65UBH4A)
+OU = 8467KY9FLZ # look at right top at https://developer.apple.com/account/resources/certificates/list
+CN = iPhone Developer: $ORGNAME
 ```
 
-Remenber to replace `First` and `Last` to your first and last name respectively.
+Remember to replace `First` and `Last` to your first and last name respectively.
 
-The value to put for `OU` is what you see when you log-in to the [apple developer](https://developer.apple.com/account/resources/certificates/list)
+The value to put for `OU` is what you see when you log-in to the [Apple developer](https://developer.apple.com/account/resources/certificates/list)
 account and go to the `Certificates, Identifiers & Profiles` section. Look at the right top below your name.
 
 Then execute:
@@ -134,20 +123,20 @@ You can look at the `ios-dev.csr` file via the [`gcr-viewer`](https://github.com
     > gcr-viewer ios-dev.csr
 
 
-Next go to the `Certificates` section in the [apple developer](https://developer.apple.com/account/resources/certificates/list) account web-site and
+Next go to the `Certificates` section in the [Apple developer](https://developer.apple.com/account/resources/certificates/list) account web-site and
 click the `+` right besides `Certificates`. Select `iOS App Development`, click `Continue` and upload your `ios-dev.csr` file. Once that is done your
 `iOS App Development` certificate is created and you can download it.
 
 ### App ID
 
-As next step we'll create an `App ID` in the `Identifiers` section of the [apple
+As next step we'll create an `App ID` in the `Identifiers` section of the [Apple
 developer](https://developer.apple.com/account/resources/identifiers/list) account web-site. For the `description` you can put whatever you like. I
-used "flutterHelloWorldValidate". For the `Bundle ID` I used "dev.weisser-zwerg.flutterHelloWorldValidate". Then click `Continue` and click `Register`
+used "flutterHelloWorld". For the `Bundle ID` I used "dev.weisser-zwerg.flutterHelloWorld". Then click `Continue` and click `Register`
 again. Once you're done you will have created your `App ID`.
 
 ### Register Device
 
-In order to be able to use the app on your device you will have to register your iOS device in the `Devices` section of the [apple
+In order to be able to use the app on your device you will have to register your iOS device in the `Devices` section of the [Apple
 developer](https://developer.apple.com/account/resources/devices/list) account web-site. The most difficult part here will be to get hold of the
 `Device ID (UDID)`. I only was able to do that via a Windows host and iTunes:
 
@@ -160,100 +149,124 @@ It seems that an alternative to using iTunes is via a Mac OS X device via its `S
 
 ### "iOS App Development" Provisioning Profile
 
-As next step we'll create an `iOS App Development` provisioning profile in the `Profiles` section of the [apple
+As next step we'll create an `iOS App Development` provisioning profile in the `Profiles` section of the [Apple
 developer](https://developer.apple.com/account/resources/profiles/list) account web-site. Chose `iOS App Development` and click `Continue`. Select the
 `App ID` you created before and click `Continue`. On the next screen select your `iOS Development` certificate we created before and click
 `Continue`. On the next screen select your device that we registered before and click `Continue`. Finally provide a `Provisioning Profile Name` (I
-used `dev weisser zwerg flutterHelloWorldValidate development 1570002136`) and click `Generate`.
-
-```
-Enabled Capabilities: Game Center, In-App Purchase, Push Notifications
-
-App ID: dev weisser-zwerg flutterHelloWorldValidate (dev.weisser-zwerg.flutterHelloWorldValidate)
-Certificates: 1 total
-Devices: 1 total
-```
-
-### APNs Development iOS / iOS Apple Push Notification service SSL (Sandbox)
-
-```
-Development SSL Certificate
-Name: Apple Development iOS Push Services: dev.weisser-zwerg.flutterHelloWorldValidate
-Type: APNs Development iOS
-
-
-Apple Development IOS Push Services: dev.weisser-zwerg.flutterHelloWorldValidate
-Identity: Apple Development IOS Push Services: dev.weisser-zwerg.flutterHelloWorldValidate
-Verified by: Apple Worldwide Developer Relations Certification Authority
-Expires: 01.10.2020
-
-Subject Name
-UID (User ID):	dev.weisser-zwerg.flutterHelloWorldValidate
-CN (Common Name):	Apple Development IOS Push Services: dev.weisser-zwerg.flutterHelloWorldValidate
-OU (Organizational Unit):	8467KY9FLZ
-C (Country):	DE
-```
-
-I am not absolutely sure why you need that certificate, but without it your *Codemagic* build process will fail. Similar like above you create that
-certificate by first creating an `aps-dev.cnf`file:
-
-```
-# --- no modifications required below ---
-[ req ]
-default_bits = 2048
-default_md = sha256
-prompt = no
-encrypt_key = no
-distinguished_name = dn
-
-[ dn ]
-C = DE
-OU = 8467KY9FLZ
-CN = IOS Push Services: dev.weisser-zwerg.flutterHelloWorldValidate
-UID = dev.weisser-zwerg.flutterHelloWorldValidate
-```
-
-Then execute:
-
-    > openssl genrsa -out aps-dev.key 2048
-    > openssl req -new -config aps-dev.cnf -key aps-dev.key -out aps-dev.csr
-
-
-Next go to the `Certificates` section in the [apple developer](https://developer.apple.com/account/resources/certificates/list) account web-site and
-click the `+` to create a new certificate. In the list of available certificates select `iOS Apple Push Notification service SSL (Sandbox)` and click
-`Continue`. On the next screen select your `App ID` and click `Continue`. On the next screen click on `Choose File` and upload your `aps-dev.csr`
-file, then click `Continue`. This will trigger the creation of the certificate.
-
-As a verification step go to the [Identifiers](https://developer.apple.com/account/resources/identifiers/list) section of the apple developer account
-web-site and select your `App ID`. If you scroll down you should see a checkmark besides `Push Notifications` and `Certificates (1)`.
+used `dev weisser zwerg flutterHelloWorld devel`) and click `Generate`. You'll need to download the provisioning profile so that you can use it later
+in the `Codemagic` configuration. My downloaded file was called `dev_weisser_zwerg_flutterHelloWorld_devel.mobileprovision`.
 
 ### Adapting the `project.pbxproj` File
 
-Download the following two files and run a `diff` on them:
+We will use the [Xcodeproj](https://github.com/CocoaPods/Xcodeproj) ruby gem to adapt our `project.pbxproj`
+file. You find the `project.pbxproj` file of your project in `./ios/Runner.xcodeproj/project.pbxproj`. First, we will create a copy of the folder
 
-* [project.pbxproj](https://github.com/Shashikant86/Codemagic-Demo/blob/master/ios/Runner.xcodeproj/project.pbxproj) file from `Codemagic-Demo`
-* [project.pbxproj](https://github.com/cs224/flutter_hello_world/blob/master/ios/Runner.xcodeproj/project.pbxproj) file from `flutter_hello_world`
+    > cp -r ./ios/Runner.xcodeproj ./ios/Runner.xcodeproj.orig
 
-This exercise should help you to see which places need to be adapted and how.
-
-We will use the [Xcodeproj](https://github.com/CocoaPods/Xcodeproj) Ruby Gem to adapt our file. You find your file of your project in
-`./ios/Runner.xcodeproj/project.pbxproj`. First we have to install the Gem:
+Then we install the [ruby gem](https://en.wikipedia.org/wiki/RubyGems):
 
     > gem install xcodeproj
 
+
+Then create a script `adapt_xcode_project.rb` with the following content:
+
+```ruby
+#!/usr/bin/env ruby
+
+require 'xcodeproj'
+require 'yaml'
+
+project_path = './ios/Runner.xcodeproj.orig'
+project = Xcodeproj::Project.open(project_path)
+
+target = project.targets.first
+
+target.build_configurations.each do |config|
+  puts config.name
+  config.build_settings['CODE_SIGN_IDENTITY']             = 'iPhone Developer'
+  config.build_settings['CODE_SIGN_STYLE']                = 'Manual'
+  # for the DEVELOPMENT_TEAM value look at right top at https://developer.apple.com/account/resources/certificates/list
+  config.build_settings['DEVELOPMENT_TEAM']               = '8467KY9FLZ'
+  config.build_settings['PRODUCT_BUNDLE_IDENTIFIER']      = 'dev.weisser-zwerg.flutterHelloWorld'
+  config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'dev weisser zwerg flutterHelloWorld devel'
+end
+
+project.save('./ios/Runner.xcodeproj')
+```
+
+And make it executable and run it:
+
+    > chmod u+x adapt_xcode_project.rb
+    > ./adapt_xcode_project.rb
+
+Once that is done commit and push the files to GitHub. Codemagic will take the files from there.
+
 ### Setting Up the `Codemagic` Build
 
-
-
-
-## Xcode project file
-
-* Codemagic-Demo [project.pbxproj](https://github.com/Shashikant86/Codemagic-Demo/blob/master/ios/Runner.xcodeproj/project.pbxproj)
+As already said above, we won't use the `Codemagic` automatic certificate handling process, but set-up a manual signing process. In order to do that
+we'll have to create an ios dev certificate in [.p12](https://en.wikipedia.org/wiki/PKCS_12) format. Via openssl you can do that via:
 
     > openssl x509 -inform der -in ./ios-dev.cer -out ./ios-dev.pem
-    > openssl pkcs12 -export -in ios-dev.pem -inkey ios-dev.key -out ios-dev.p12 
+    > openssl pkcs12 -export -in ios-dev.pem -inkey ios-dev.key -out ios-dev.p12
 
-* [How to sign Flutter apps for iOS automatically without a Mac](https://blog.codemagic.io/automatic-code-signing-for-ios-that-doesnt-require-a-mac)
+In the above command we used `./ios-dev.cer`. This is the certificate you downloaded from the Apple developer web-site. The file is originally called
+`ios_development.cer` after the download. This means that you either adapt the above command or rename the certificate.
+
+Now go to the [Codemagic](https://codemagic.io/start/) web-site and create your account. Then create your build-configuration by clicking at the right
+top on `+ Add app from custom source`. You only need to adapt two parts of the build configuration.
+
+In the `Build` part I deselected all other build-targets except the `iOS` target and left the `Mode` at `Debug`. Don't forget to press `Save` to make
+your changes take effect!
+
+In the `Publish` part, click on `iOS code signing` and select `Manual`. Then upload your `.p12` file via the `Code signing certificate` and provide
+the password you used to encrypt your code signing certificate. Then upload the `Provisioning profile` file you downloaded above, which was called
+`dev_weisser_zwerg_flutterHelloWorld_devel.mobileprovision` in my case. Again: don't forget to press `Save` to make your changes take effect!
+
+Once that is done, we're ready to trigger our first build. Especially after changing configurations I noticed that the build does not always work
+reliably. When it does not work, I did not get any error message or similar, but the log output just stopped at a certain step and the clock continued
+to run. In principle forever, until you stop the build manually. The whole build should finish in around 3 minutes. If it takes longer than 5 minutes
+you can interrupt the build process and retry. Most of the time it worked for me on second attempt, if the first one stalled.
+
+The most critical (means: if things fail then most likely here) step is the `Building iOS` step. The first part of this step is:
+
+```
+== /usr/local/bin/flutter build ios --debug --no-codesign ==
+Warning: Building for device with codesigning disabled. You will have to manually codesign before deploying to device.
+```
+
+And this should finish below 60s. It will say something like:
+
+```
+Xcode build done.                                           30.9s
+```
+
+Then starts the code signing part and it will say something like:
+
+```
+Set up code signing settings:
+```
+
+and later
+
+```
+Exporting archive with the following settings:
+{
+    "method": "development",
+    "provisioningProfiles": {
+        "dev.weisser-zwerg.flutterHelloWorld": "dev weisser zwerg flutterHelloWorld devel"
+    },
+    "signingCertificate": "iPhone Developer",
+    "signingStyle": "manual",
+    "teamID": "8467KY9FLZ"
+}
+```
+
+Until 2019-10-09 there was a [bug](https://app.slack.com/client/TDM8H9KF1/CEKE2KZ37/thread/CEKE2KZ37-1570190175.311200) that prevented the manual code
+signing to work. But it should work now.
+
+`Codemagic` will send you an e-mail about the build success, which contains a link to the installable app. If you click on that link on your iPhone
+with the `Device ID (UDID)` you provided above you'll be able to install the app on your device.
+
 
 ## Afterthoughts
 
@@ -265,13 +278,5 @@ workflow? Nobody else does that!
 
 We as a family bought 3 MacBook Pro's for my two children and my wife. I thought that at least then they'd use a Unix underneath and have the chance
 to learn interacting to some degree with a Unix operating system. This actually worked out quite ok and my children at least know how to use a bash
-shell and similar. After my experience described above I am not sure if I will ever buy an Apple device again!
+shell and similar. After my experience described above, I am not sure if I will ever buy an Apple device again, though.
 
-### Making your life easier with one-time access to Xcode for development
-
-As we have 3 apple devices at home that can be used for development, I asked my wife to create an account for me on her MacBook Pro and installed the
-Xcode development tool-chain on. My goal was to see how you could get the most tedious tasks done once on a Mac with Xcode and later continue to work
-on another platform of your chosing. It turns out that you can facilitate most of the difficulties described above by using Xcode only once at the
-very beginning when you set-up a project.
-
-* [Apple Membership Programs & Crete Certificate, Profile](https://www.yudiz.com/apple-membership-programs-create-certificate-profile/)
