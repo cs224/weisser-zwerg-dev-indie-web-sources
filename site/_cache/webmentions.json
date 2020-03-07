@@ -1,5 +1,5 @@
 {
-  "lastFetched": "2019-11-04T12:14:46.921Z",
+  "lastFetched": "2020-03-07T06:26:07.941Z",
   "children": [
     {
       "type": "entry",
@@ -117,6 +117,42 @@
       "wm-received": "2019-10-19T06:39:18Z",
       "wm-id": 714677,
       "wm-source": "https://fed.brid.gy/render?source=https%3A%2F%2Fmastodon.social%2F6a267422-c388-4b0b-b545-3d959b62c4cd&target=https%3A%2F%2Fweisser-zwerg.dev%2F",
+      "wm-target": "https://weisser-zwerg.dev/",
+      "mention-of": "https://weisser-zwerg.dev/",
+      "wm-property": "mention-of",
+      "wm-private": false
+    },
+    {
+      "type": "entry",
+      "author": {
+        "type": "card",
+        "name": "",
+        "photo": "https://webmention.io/avatar/files.mastodon.social/f50496be7fe097aa626028d8710eee1e094590c9daf1005e0f9943404d9bb0b0.jpg",
+        "url": "https://mastodon.social/@Anna_Williams"
+      },
+      "url": "https://fed.brid.gy/render?source=https%3A%2F%2Fmastodon.social%2Fa1ae8bad-9af2-4fd9-bf50-a272dca5fb90&target=https%3A%2F%2Fweisser-zwerg.dev%2F",
+      "published": null,
+      "wm-received": "2019-12-08T11:41:11Z",
+      "wm-id": 731803,
+      "wm-source": "https://fed.brid.gy/render?source=https%3A%2F%2Fmastodon.social%2Fa1ae8bad-9af2-4fd9-bf50-a272dca5fb90&target=https%3A%2F%2Fweisser-zwerg.dev%2F",
+      "wm-target": "https://weisser-zwerg.dev/",
+      "mention-of": "https://weisser-zwerg.dev/",
+      "wm-property": "mention-of",
+      "wm-private": false
+    },
+    {
+      "type": "entry",
+      "author": {
+        "type": "card",
+        "name": "",
+        "photo": "",
+        "url": "https://mastodon.social/@kasticz"
+      },
+      "url": "https://fed.brid.gy/render?source=https%3A%2F%2Fmastodon.social%2Ff5642643-ff24-428c-9c17-79d72f25f49d&target=https%3A%2F%2Fweisser-zwerg.dev%2F",
+      "published": null,
+      "wm-received": "2019-11-26T13:53:22Z",
+      "wm-id": 727866,
+      "wm-source": "https://fed.brid.gy/render?source=https%3A%2F%2Fmastodon.social%2Ff5642643-ff24-428c-9c17-79d72f25f49d&target=https%3A%2F%2Fweisser-zwerg.dev%2F",
       "wm-target": "https://weisser-zwerg.dev/",
       "mention-of": "https://weisser-zwerg.dev/",
       "wm-property": "mention-of",
