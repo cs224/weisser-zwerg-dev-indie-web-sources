@@ -68,3 +68,6 @@
 * Check that message appears on mastodon:
     * [cs224](https://mastodon.social/@cs224/102805835248700188)
 
+## Security Vulnerabilities
+
+* [How to fix Security Vulnerabilities in NPM Dependencies in 3 Minutes](https://hackernoon.com/how-fix-security-vulnerabilities-in-npm-dependencies-in-3-minutes-rq9g3y7u)
