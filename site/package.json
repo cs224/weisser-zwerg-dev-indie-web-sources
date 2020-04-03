@@ -10,6 +10,7 @@
     "servefb": "env-cmd firebase serve --only hosting --project cs224-weisser-zwerg-dev",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prebuild_": "mkdir -p ./dist/js && cp ./node_modules/first-input-delay/dist/first-input-delay.min.js ./dist/js/",
+    "preinstall": "npx npm-force-resolutions",
     "build": "npm run sass && rm -rf dist && NODE_ENV=production npx env-cmd npx @11ty/eleventy",
     "build_": "env-cmd @11ty/eleventy",
     "deploy_": "firebase deploy --only hosting --project cs224-weisser-zwerg-dev",
@@ -41,14 +42,18 @@
     "http-server": "^0.12.1",
     "jest": "^24.9.0",
     "lodash": "^4.17.15",
-    "luxon": "^1.22.0",
-    "markdown-it-anchor": "^5.2.5",
+    "luxon": "^1.23.0",
+    "markdown-it-anchor": "^5.2.7",
     "markdown-it-emoji": "^1.4.0",
     "markdown-it-footnote": "^3.0.2",
     "markdown-it-katex": "^2.0.3",
+    "minimist": "^1.2.5",
     "moment": "^2.24.0",
     "node-fetch": "^2.6.0",
     "node-sass": "^4.13.1",
     "sanitize-html": "^1.22.1"
+  },
+  "resolutions": {
+    "minimist": "^1.2.5"
   }
 }
