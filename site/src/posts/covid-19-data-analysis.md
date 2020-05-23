@@ -148,5 +148,3 @@ crude CFR or IFR or ... The section [How to calculate the mortality rate during 
 [Methods for Estimating the Case Fatality Ratio for a Novel, Emerging Infectious Disease](https://academic.oup.com/aje/article/162/5/479/82647).
 
 The [MIDAS 2019 Novel Coronavirus Repository](https://github.com/midas-network/COVID-19) repository on github contains more references to data and estimates.
-
-## Feedback

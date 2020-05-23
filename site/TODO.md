@@ -71,3 +71,9 @@
 ## Security Vulnerabilities
 
 * [How to fix Security Vulnerabilities in NPM Dependencies in 3 Minutes](https://hackernoon.com/how-fix-security-vulnerabilities-in-npm-dependencies-in-3-minutes-rq9g3y7u)
+
+
+    npm update
+    npm outdated
+    npm install @11ty/eleventy@latest
+    npm audit fix
