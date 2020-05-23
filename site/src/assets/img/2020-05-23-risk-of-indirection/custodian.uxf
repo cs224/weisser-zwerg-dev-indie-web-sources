@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="14.3.0">
+  <zoom_level>10</zoom_level>
+  <element>
+    <id>UMLPackage</id>
+    <coordinates>
+      <x>1160</x>
+      <y>160</y>
+      <w>280</w>
+      <h>210</h>
+    </coordinates>
+    <panel_attributes>Bank / Custodian
+--
+bg=orange</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1180</x>
+      <y>200</y>
+      <w>100</w>
+      <h>110</h>
+    </coordinates>
+    <panel_attributes>Vault</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLActor</id>
+    <coordinates>
+      <x>900</x>
+      <y>200</y>
+      <w>60</w>
+      <h>110</h>
+    </coordinates>
+    <panel_attributes>Owner</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1190</x>
+      <y>210</y>
+      <w>30</w>
+      <h>100</h>
+    </coordinates>
+    <panel_attributes/>
+    <additional_attributes>10.0;10.0;10.0;80.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>970</x>
+      <y>210</y>
+      <w>250</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes/>
+    <additional_attributes>10.0;10.0;230.0;30.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLNote</id>
+    <coordinates>
+      <x>1510</x>
+      <y>170</y>
+      <w>440</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>If bank goes bankrupt the creditors to the bank have no
+legal right on the assets put by customers into the vault,
+e.g. the content you put there is safe and still is yours.
+bg=blue</panel_attributes>
+    <additional_attributes/>
+  </element>
+</diagram>

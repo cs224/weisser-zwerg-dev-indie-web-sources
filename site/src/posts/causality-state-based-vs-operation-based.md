@@ -89,5 +89,3 @@ you would introduce a column `projectile-did-hit-the-window-in-the-past-p` or si
 you can apply the do-calculus.
 
 I still would hope for another representation more like Markov-Decision-Processes. 
-
-## Feedback
