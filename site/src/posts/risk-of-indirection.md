@@ -402,7 +402,7 @@ banks. But currently no one of the interest rate brokers follows such a process.
 
 Even if the above mentioned end-to-end electronic signature legally binding communication channels would be in place you still would need to verify
 the banks themselves, e.g. do they really exist (ideally via the register at the national deposit insurance of the target country; this look-up in the
-register at the national deposit insurance would at the same time tell you that your deposits are actually insured) and ideally also check their
+register at the national deposit insurance would at the same time tell you that your deposits are really insured) and ideally also check their
 solvency to some degree (ideally via independent credit ratings form the big rating firms; many banks won’t have that as these ratings have to be paid
 by the company to be rated).
 
@@ -433,12 +433,12 @@ to retrieve an older version of their web-site. I would have liked to see if the
 And remember: how do you know that check24, Savedo, Weltsparen or Zinspilot are not similar schemes?
 
 
-#### Credit broker business inside a traditional bank
+#### Interest rate broker business inside a traditional bank
 
 As already mentined above, in the absence of end-to-end legally binding electronic signatures in the interest rate broker businesses the only other
 viable solution I’d see is that a solvent third party would insure and cover the full end-to-end process risk.
 
-The first larger German banks have started to replicate the credit broker business for their customers like [Deutsche
+The first larger German banks have started to replicate the interest rate broker business for their customers like [Deutsche
 Bank](https://www.deutsche-bank.de/) or [IKB](https://www.ikb.de/) or some Sparkassen. If the risks of the interest rate broker business model are covered by
 a solvent traditional bank, I’d say that the situation looks much better. You still would need to read the fine-print to find out which risks they
 actually cover, but if you go into the web-interface of your “house-bank” (the web-interface of your bank that you regularly use for any other bank
