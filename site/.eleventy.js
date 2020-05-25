@@ -14,6 +14,10 @@ module.exports = function(eleventyConfig) {
     eleventyConfig.addPlugin(pluginRss);
     eleventyConfig.addPlugin(pluginSyntaxHighlight);
 
+    // https://github.com/JordanShurmer/eleventy-plugin-toc
+    const pluginTOC = require('eleventy-plugin-nesting-toc');
+    eleventyConfig.addPlugin(pluginTOC);
+
     eleventyConfig.addPassthroughCopy({ "./src/assets": "/" });
 
     eleventyConfig.addFilter('dateIso', date => {

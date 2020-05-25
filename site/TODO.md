@@ -67,6 +67,8 @@
     * https://fed.brid.gy/responses
 * Check that message appears on mastodon:
     * [cs224](https://mastodon.social/@cs224/102805835248700188)
+* Publish on twitter:
+    * [twitter](https://twitter.com/home)
 
 ## Security Vulnerabilities
 
