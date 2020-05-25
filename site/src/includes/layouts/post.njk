@@ -60,7 +60,9 @@
                 </div>
 
                 <div class="e-content">
-                    {{ content | safe }}
+                    {% block econtent %}
+                        {{ content | safe }}
+                    {% endblock econtent %}
                 </div>
             </div>
             <div>

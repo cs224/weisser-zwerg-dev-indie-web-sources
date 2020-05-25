@@ -89,3 +89,12 @@ you would introduce a column `projectile-did-hit-the-window-in-the-past-p` or si
 you can apply the do-calculus.
 
 I still would hope for another representation more like Markov-Decision-Processes. 
+
+## Update 2020-05-25
+
+* [Causality for Machine Learning](https://arxiv.org/abs/1911.10500) by [Bernhard Schölkopf](https://de.wikipedia.org/wiki/Bernhard_Sch%C3%B6lkopf) is
+  a great summary of the current state of affairs. I am especially grateful for sharing his insights how the concept of causality as discussed by the
+  machine learning/statistics literature fits into the picture of physics.
+* [Elements of Causal Inference: Foundations and Learning
+  Algorithms](https://www.amazon.de/Elements-Causal-Inference-Foundations-Computation/dp/0262037319/) by [Jonas Peters](http://web.math.ku.dk/~peters/), [Dominik Janzing](https://www.is.mpg.de/~janzing), [Bernhard Schölkopf](https://de.wikipedia.org/wiki/Bernhard_Sch%C3%B6lkopf)
+  is also a great resource for gaining a better understanding of the topic.

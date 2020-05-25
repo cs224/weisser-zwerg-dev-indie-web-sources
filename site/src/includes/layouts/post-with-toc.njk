@@ -1,0 +1,10 @@
+{% extends "layouts/post.njk" %}
+
+{% block econtent %}
+    <aside>
+        {{ content | toc | safe }}
+    </aside>
+    <article>
+        {{ content | safe }}
+    </article>
+{% endblock econtent %}

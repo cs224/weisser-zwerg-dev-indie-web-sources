@@ -1,5 +1,5 @@
 ---
-layout: "layouts/post.njk"
+layout: "layouts/post-with-toc.njk"
 title: "Risk of Indirection"
 description: "Risk involved in acquiring legal titles via a service provider."
 creationdate: 2020-05-23T12:43:00+02:00
@@ -141,9 +141,9 @@ from your account statement. That share never existed in the first place.
 ### Bank as debtor
 
 I said above that depending on your contract agreement with your custody account bank this behaviour may or may not be considered fraud. As an
-example, consider the Dutch online broker [Degiro](https://en.wikipedia.org/wiki/Degiro) that was recently acquired by flatex AG. It has (had) the
+example, consider the Dutch online broker [DeGiro](https://en.wikipedia.org/wiki/Degiro) that was recently acquired by flatex AG. It has (had) the
 account types [standard and custody](https://www.test.de/Onlinebroker-Degiro-Guenstige-Konditionen-mit-einigen-Haken-5238208-0/). If you chose the
-standard type then you allowed the broker to lend your shares to others. If Degiro makes use of that right then the bank becomes a debtor to you and
+standard type then you allowed the broker to lend your shares to others. If DeGiro makes use of that right then the bank becomes a debtor to you and
 your account statement does not show the amount of shares you have, but only your claims against the bank for a given number of shares. Once you gave
 the bank the allowance to “lending to others”, this “lending to others” may also include lending to the bank itself. The bank can choose in how far it
 wants to hedge its positions in the market or not. The picture becomes essentially the following one:
@@ -177,7 +177,7 @@ account with that share.
 ### Bank deposits
 
 Imagine you take 100€ to your bank and deposit them in your bank account. It took me quite some time to understand that the corresponding picture is
-not the one with the safe-deposit box, but the one with the Degiro standard account type:
+not the one with the safe-deposit box, but the one with the DeGiro standard account type:
 
 <img src="/img/2020-05-23-risk-of-indirection/deposit-account.jpg" alt="deposit account" width="800">
 
@@ -260,9 +260,9 @@ it should protect investors from fund manager actions that you would not approve
 situation like COVID-19. If the rules of the fund say that the volume of shares invested in Italian companies has to be between 5% and 15% it prevents
 the fund manager from selling all its shares from Italian companies, even if it actually might be a benefit for the investors.
 
-I am not sure how exactly the assets were managed in the Madoff investment scandal, but imagine they were managed via a fund. How do you know that the
-trades a fund is telling you were made are actually done? A fund is a black box and the reports you get are cheap pieces of paper or even cheaper web
-pages or PDFs. I don’t know how funds are supervised/regulated/audited, but do you know?
+I am not sure how exactly the assets were managed in the [Madoff investment scandal](https://en.wikipedia.org/wiki/Madoff_investment_scandal), but
+imagine they were managed via a fund. How do you know that the trades a fund is telling you were made are actually done? A fund is a black box and the
+reports you get are cheap pieces of paper or even cheaper web pages or PDFs. I don’t know how funds are supervised/regulated/audited, but do you know?
 
 In principle it would be best if there would exist an independent public (government owned?) infrastructure that takes care of the “raw machinery” of
 buying and selling assets, managing accounts and issuing account statements. If then in addition funds would be required to operate on top of that
@@ -276,15 +276,16 @@ power to perform the required bookings in that account.
 Again, another option would be if a third-party insurance company would be required to insure the value of the assets under management to have skin in
 the game and then have the right (and obligation) to audit the activities of the fund manager in detail.
 
-In principle this is the same risk as above with Degiro or other brokers in that you cannot be sure that there is no counterparty risk involved. In
+In principle this is the same risk as above with DeGiro or other brokers in that you cannot be sure that there is no counterparty risk involved. In
 principle a fund is not meant to involve any counterparty risk of the fund manager and if it does it most likely would be considered fraud. But how
 can you verify and be sure?
 
 #### ETFs
 
-ETFs (Exchange Traded Funds) often are considered cheaper and equally well performing as managed funds. They track an index like Dow Jones or DAX,
-e.g. they not only calculate the index but buy and sell the underlying stocks in ways that will make the total value of the fund track as closely as
-possible the value of the calculated index.
+ETFs (Exchange Traded Funds) often are considered cheaper and equally well performing as managed funds. They track an index like [Dow
+Jones](https://en.wikipedia.org/wiki/Dow_Jones_Industrial_Average) or [DAX](https://en.wikipedia.org/wiki/DAX), e.g. they not only calculate the index
+but buy and sell the underlying stocks in ways that will make the total value of the fund track as closely as possible the value of the calculated
+index.
 
 Here are some indirection risks that are often overlooked like for example most new indices will not include the dividends. The DAX index is one of
 the few indices that include dividends. This may mean that the cheap management fees may actually not be that cheap (the fund operator earns all the
@@ -474,6 +475,109 @@ New elements:
   * Fraud by hacker
   * In-house employee fraud
 
+## Systematic approach
 
+I hope that some of the above examples were able to convince you that the described risks are real and require your attention. I’ve tried to describe
+above the concept of “risk of indirection” by example. The whole purpose of these examples was to identify commonalities and then ideally come up with a
+systematic approach on how to think about these risks and ideally also an idea on how to treat/mitigate them.
 
+Common elements:
+* Typically, the core of the issue is that you’re dealing with **something very abstract** like a legal title rather than something very concrete like a
+  bottle of water.
+* Typically, there is a (financial) **service provider** involved that offers you services around these legal titles.
+* Often these legal titles are in addition **fungible goods**, e.g. without individual identity.
+* Often the service providers operate as a **black box** and you cannot see what’s happening inside.
+  * Closely related to this black box set-up is the fact that there is often a **longer end-to-end process** involved that you may not be fully aware of
+    and/or that you may not fully understand.
+  * Sometimes there is not only one service provider involved, but several and it might not be fully clear to you who is **accountable/liable** for
+    what. Some of the accountability may simply fall between chairs and in case of some damage you’re left in the rain.
+* Sometimes **unexpected counterparty risk** may be involved, even in places where you did not think it is.
 
+In the end the goal of managing those risks is to put you in a position in which you can be fairly certain that you can effectively enforce your legal title.
+
+Check that the actors (named companies) actually exist via first principles, e.g. company registers or similar. Be in the (communication) driver seat!
+Initiate communication from your end and use different channels, ideally ones that will require real humans to think on their feet, e.g. asking
+questions on the phone and make sure that there are really knowledgeable people working. Perform your checks bottom up starting with the registers
+baked into the legal system like the commercial register. Get the last published balance sheet and the last audit report published in the company
+register. Try to get hold of credit ratings and find out if they’re part in some safety/protection schemes like a deposit insurance. If yes, then also
+perform the same checks with that insurance organization. If the companies involved have offices then potentially it might even make sense to visit
+them in their offices to get an idea of whom you’re dealing with. In one very recent case of a scam around windpark engergy it seems that the
+mentioned [Holt
+Holding](https://www.handelsblatt.com/unternehmen/energie/holt-holding-vom-adlon-in-die-jva-wie-ein-30-jaehriger-europaeische-energiekonzerne-betrogen-haben-soll/25825580.html?ticket=ST-2439589-KkfGA2ca0kynptPkbCd7-ap6)
+had their office at a gas station. Alone that could have raised a red flag to question their business model.
+
+**Transparency is king**! Ideally that transparency includes the possibility for you to verify all transactions yourself. In cases where there are
+registers involved that are baked into the legal system like in the example above with the land register (Grundbuch) or the commercial register
+(Handelsregister) an ideal approach to managing these risks is to establish full transparency down into that register and set-up an escrow like
+transaction. This is most likely only working for non-fungible entities that possess an identity of their own. If you cannot get transparency yourself
+then try to find out if somebody else with skin in the game has a high level of transparency, e.g. auditors of insurers or regulatory authorities.
+
+In most of our examples above the biggest risk comes from the fact that there is counterparty risk involved that you may not have expected. Suddenly
+there is counterparty risk with the service provider who was supposed to be just an intermediary. Ideally you avoid any additional counterparty risks
+from the intermediate service providers!
+
+If possible circumvent the exposure to counterparty risk with this intermediat service provider all-together by implementing an [end-to-end
+principle](https://en.wikipedia.org/wiki/End-to-end_principle): in cases where you have to deal with fungible goods the real truth is still often
+recorded at an underlying register, but rather than accepting an omnibus account structure it would be best if you could get an individual account at
+that underlying register. Not necessarily in your name, but well separated from all other accounts, with its own unique ID and its own account
+statements that can be signed with a legally binding eIDAS electronic signature from the underlying register. Then you don’t have to trust the
+intermediate service provider but only the operator of the register recording the “final truth”, like a Central Securities Depository. This end-to-end
+electronic signature technique would also work in the example with the interest rate brokers above.
+
+In cases where the end-to-end principle cannot be implemented the next step would be to identify (potential) counterparty risk in the end-to-end
+process. Sometimes you will find counterparty risk in places where you might not have expected it like with the DeGiro example above. If you identify
+counterparty risk you should manage it by first checking the solvency and credit rating of the counterparty and ideally have a second liable insurance
+party involved that will cover the damage in cases of default on the part of the primary counterparty. The insurer will have skin in the game and an
+innate interest to perform proper audits of the primary party.
+
+Check for risks in the end-to-end process that are not covered by anyone like in the example above with the man-in-the-middle attack by a hacker or
+similar. If from the contract situation it is already clear that nobody except you is carrying the risk and you cannot do anything to
+minimize/eliminate that risk then you should not use the services offered by that service provider.
+
+Even in cases where one of the involved parties agrees to be liable for some risk like the man-in-the-middle attack by a hacker you have to make sure
+that this party has deep enough pockets to actually be able to cover any damage if it were to happen (pay attention to Ltd/GmbH or similar company
+forms). Follow the same steps as for the counterparty risk above: perform research about the solvency and credit rating of the primary liable party
+and ideally try to have an insurer in the picture that then does the auditing to “encourage” the primary liable part to follow best practices
+throughout their work processes.
+
+Regulation and audits from national financial regulatory authorities can help and can be considered a plus, but these audits will be so infrequent
+that this should definitely not be your only line of defence!
+
+Sometimes the separation of concerns can help: sometimes you can reduce the overall risk if one party is responsible for deciding which actions to
+take and the other party is only responsible for the proper handling of those actions.
+* As an example, consider an escrow account. The bank is making sure that money can only flow to the accounts of the buyer and seller. The neutral
+  party (like a lawyer or a notary) can only trigger the payments. The neutral party cannot get the money to his own account.
+* As another example consider the case of robo-advisors for asset management. The operator of the robo just says which actions to take, but the
+  account is in the name of the customer with a bank that only performs the operations as given by the robo. The bank also ensures that only financial
+  instruments can be traded that are agreed with the customer.
+
+Sometimes the combination of accountability can help: sometimes you can reduce the overall risk if a financial potent party is embedding the
+end-to-end proces within its own organization and covering the end-to-end risk (like a bracket).
+
+* As an example, consider the case described above where a bank like Deutsche Bank or IKB is offering the interest rate broker business as a full
+  service out of one hand. If something goes wrong then the bank will be liable for any damage. The bank is already under a lot of scrutiny by the
+  regulators and many protections are in place to prevent misconduct.
+
+From time to time it might also be prudent to change your service provider and transfer your assets from one service provider to another. As explained
+above, these transfers are “moments of truth”, because the transfer will only work if the assets “really do exist”.
+
+### Outlook
+
+Personally I am a bit disappointed by the national financial regulatory authorities like [BaFin](https://www.bafin.de). I would have expected them to
+be more pro-active and stop financial service providers from operating if they do not implement the required safety measures like an end-to-end
+principle or an insurance. Why wait until the first black sheep rip off some customers before adapting the regulatory requirements? I'd wish that this
+topic attracts more interest and of a larger audience in order to push our financial regulatory authorities to become pro-active upfront before
+somebody gets hurt rather than applying their "laissez-faire" attitude and waiting until something goes wrong.
+
+### Real world examples:
+
+* [Madoff investment scandal](https://en.wikipedia.org/wiki/Madoff_investment_scandal)
+* [sparpiloten](https://verbraucherschutzforum.berlin/2020-04-30/das-aus-von-sparpiloten-ch-211695)
+* [Libor scandal](https://en.wikipedia.org/wiki/Libor_scandal)
+* [Holt
+Holding](https://www.handelsblatt.com/unternehmen/energie/holt-holding-vom-adlon-in-die-jva-wie-ein-30-jaehriger-europaeische-energiekonzerne-betrogen-haben-soll/25825580.html?ticket=ST-2439589-KkfGA2ca0kynptPkbCd7-ap6)
+
+Borderline:
+
+* [DeGiro](https://www.test.de/Onlinebroker-Degiro-Guenstige-Konditionen-mit-einigen-Haken-5238208-0/)
+  * [DeGiro: Clients as Counterparty for Hedgefund](http://www.amsterdamtrader.com/2015/09/degiro-clients-as-counterparty-for-hedgefund.html)
