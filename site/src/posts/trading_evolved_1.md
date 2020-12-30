@@ -60,10 +60,11 @@ results of replicating Andreas' futures trading strategies.
 ### Why?
 
 You might ask yourself why the following is relevant? Even after reading Andreas' books, which are very well written, it was still quite some effort
-to assemble and compile all the relevant information to get started with backtesting. It seems that the naming of future contracts is not as
-standardized as the naming of stocks (using [ISIN](https://en.wikipedia.org/wiki/International_Securities_Identification_Number)). It took me quite
-some time to find the contracts that Andreas mentioned in his books and cross check their characteristics (like the `Full Point Value` and the 
-corresponding `multiplier` and `minor_fx_adj` values in zipline).
+to assemble and compile all the relevant information to get started with [backtesting](https://www.investopedia.com/terms/b/backtesting.asp). It seems
+that the naming of future contracts is not as standardized as the naming of stocks (using
+[ISIN](https://en.wikipedia.org/wiki/International_Securities_Identification_Number)). It took me quite some time to find the contracts that Andreas
+mentioned in his books and cross check their characteristics (like the `Full Point Value` and the corresponding `multiplier` and `minor_fx_adj` values
+in zipline).
 
 Some information sources that helped me in the context of CSI Data were the following:
 * CSI Data [Factsheet](http://www.csidata.com/factsheets.php?type=commodity&format=htmltable&exchangeid=) gives you a comprehensive overview of all
@@ -72,9 +73,10 @@ Some information sources that helped me in the context of CSI Data were the foll
 
 ### Environments: Linux and Windows
 
-I implemented the backtesting via zipline on Linux. In principle all of the backtesting environment is independent of the operating system, but in
-practice I used symbolic links in several places of my implementation, which Windows does not support (MacOSX is fine). You would have to modify the
-code in those places to make the code run on Windows, too.
+I implemented the [backtesting](https://www.investopedia.com/terms/b/backtesting.asp) via [zipline](https://github.com/quantopian/zipline) on
+Linux. In principle all of the backtesting environment is independent of the operating system, but in practice I used symbolic links in several places
+of my implementation, which Windows does not support (MacOSX is fine). You would have to modify the code in those places to make the code run on
+Windows, too.
 
 To download the futures data from CSI you need a Windows machine or [VM](https://www.virtualbox.org/) available, because CSI only allows the download
 of data via its rich-client `Unfair Advantage` software (see below).
