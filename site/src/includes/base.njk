@@ -186,7 +186,11 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    firebase.analytics();
+    firebase.analytics.isSupported().then((isSupported) => {
+        if (isSupported) {
+            analytics = firebase.analytics();
+        }
+    });
 
     var perf = firebase.performance();
 </script>
