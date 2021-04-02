@@ -79,3 +79,5 @@
     npm outdated
     npm install @11ty/eleventy@latest
     npm audit fix
+
+    ncu # npm-check-updates  # upgrades your package.json dependencies to the latest versions, ignoring specified versions.
