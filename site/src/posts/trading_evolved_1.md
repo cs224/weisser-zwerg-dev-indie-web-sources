@@ -52,8 +52,8 @@ example) the [Alma (Platinum) Quantica Managed Futures](https://www.almacapital.
 fund) to participate in the extended universe that futures offer.
 
 I did not want to take Andreas' word for granted on how great futures are and so I implemented the trading strategies he desribed in "Trading Evolved"
-myself. Below you can find the step by step instructions to follow to create the required set-up. In a next blog post I'll then report about the
-results of replicating Andreas' futures trading strategies.
+myself. Below you can find the step by step instructions to follow to create the required set-up. In a [next blog post](../trading_evolved_2) I'll
+then report about the results of replicating Andreas' futures trading strategies.
 
 **_Disclaimer: I will mention some commercial offerings just to make it easier for you to get started. I am not profiting in any way from doing so._**
 
