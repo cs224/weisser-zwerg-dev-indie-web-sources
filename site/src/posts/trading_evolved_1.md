@@ -9,6 +9,8 @@ tags: ['post']
 # eleventyExcludeFromCollections: true
 ---
 
+This blog post is part of the [Investing via Financial Futures Contracts](../series-futures-investing) series.
+
 ## Rational
 
 In my last blog-post [Investing: Abstract View](../investing-abstract-view) I described a high level view on trading and the possibilities you have
