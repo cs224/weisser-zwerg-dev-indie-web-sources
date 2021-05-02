@@ -1,7 +1,7 @@
 ---
 layout: "layouts/post-with-toc.njk"
 title: "Software Engineering: Web Development"
-description: "Reflection on the state of web development or the story of Media Artists AG."
+description: "Reflection on the state of web development or the story of Media Artists AG (1997)."
 creationdate: 2021-05-02T10:18:00+01:00
 date: 2021-05-02T10:18:00+01:00
 keywords: software,engineering,web-development,HTML,JScript,CSS,AJAX,SPA,single-page-applications,JSON,CQS,CMS
