@@ -11,7 +11,7 @@ tags: ['post']
 
 This blog post is part of the [Odysseys in Software Engineering](../series-odysseys-in-software-engineering) series.
 
-## Rational
+## Setting the Stage
 
 In my first year at university I studied physics and computer science in parallel. After my first year I decided to stop the computer science lectures
 and start working in a start-up instead. This was 1997. This was the time of the [dot-com boom](https://en.wikipedia.org/wiki/Dot-com_bubble), where
