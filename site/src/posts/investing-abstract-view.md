@@ -3,7 +3,7 @@ layout: "layouts/post-with-toc.njk"
 title: "Investing: Abstract View"
 description: "There are only few abstract goals in investing: mean-reversion, trend-following."
 creationdate: 2020-12-06T13:15:00+01:00
-date: 2020-12-06T13:15:00+01:00
+date: 2021-05-16T15:49:00+01:00
 keywords: finance, investing, mean-reversion, trend-following
 tags: ['post']
 # eleventyExcludeFromCollections: true
@@ -87,18 +87,26 @@ case of the trend-following idea, only that the trend is less founded in basic r
 prophecy. Technical analysis only works, because there are enough people out there who believe in technical analysis. It is somehow like bitcoin or
 gold, where most of the value of bitcoin and gold stem from the fact that other people believe in the value.
 
+> <span style="font-size:smaller"> **2021-05-16 Update**: Somehow the lemmings scheme often feels like a [Ponzi
+> scheme](https://en.wikipedia.org/wiki/Ponzi_scheme). If you are early you will make money from the people who are late to the party.</span>
+
 ## And all the rest ...
 
 And all the rest is mostly about risk management. You would not want to put all your eggs into one basket
 ([diversification](https://en.wikipedia.org/wiki/Diversification_(finance))) or bet all your life's savings on a charlatan (see for example the
 [Madoff investment scandal](https://en.wikipedia.org/wiki/Madoff_investment_scandal)). You have to put some risk management around your investment
-activities as a sort of safety net in case that your theories do not work as foreseen. 
+activities as a sort of safety net in case that your theories do not work as foreseen.
 
 In principle, what you should do, is a sort of optimization under constraints, where the optimization goal is to maximize your profits but constrained
 by the amount of risk you want to take on that path. The following two books give a good overview:
 
 * [Optimal Investment](https://www.amazon.de/-/en/L-C-G-Rogers/dp/3642352014) by L. C. G. Rogers.
 * [Postmodern Portfolio Theory: Navigating Abnormal Markets and Investor Behavior](https://www.amazon.de/-/en/James-Ming-Chen/dp/1137544635) by James Ming Chen.
+
+The online material from [Neil Walton](https://sites.google.com/site/neilwaltonswebsite/home) about [Stochastic Control for
+Finance](https://www.youtube.com/playlist?list=PLGboZ4litMr_TOwUANH-s-uFnczzy2uuW) and his [Applied Probability
+Notes](https://appliedprobability.blog/index/) are also very good learning resources!
+
 
 ## And what about ...
 
