@@ -3,7 +3,7 @@ layout: "layouts/post-with-toc.njk"
 title: "Investing: Abstract View"
 description: "There are only few abstract goals in investing: mean-reversion, trend-following."
 creationdate: 2020-12-06T13:15:00+01:00
-date: 2021-05-16T15:49:00+01:00
+date: 2020-12-06T13:15:00+01:00
 keywords: finance, investing, mean-reversion, trend-following
 tags: ['post']
 # eleventyExcludeFromCollections: true
