@@ -21,10 +21,10 @@ things more difficult than they need to be.
 
 While this blog post is not about `git` you have to understand a bit about its internals to understand the difficulties it creates. The best
 explanation of the `git` internals I've seen so far is [InfoQ: The Git Parable](https://www.infoq.com/presentations/git-details/) by Johan Herland. I
-will not repeat what he explains much better than I could, but if you don't know (enough about) the `git` internals be sure to watch it.
+will not repeat what he explains much better than I could, but if you don't know (enough about) the `git` internals be sure to watch the video.
 
 As `git` is a distributed version control system (DVCS) it comes as not surprise that a lot of its internals resemble very much CRDTs ([Conflict Free
-Replicated Data-Types](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type)). The best introductory paper to CRDTs I know of is
+Replicated Data-Types](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type)). The best introductory paper to CRDTs I know is
 [Conflict-Free Replicated Data Types](https://hal.inria.fr/hal-00932836/file/CRDTs_SSS-2011.pdf) by Marc Shapiro at al.
 
 ## The situation before git
@@ -35,9 +35,10 @@ There was a time before `git` became popular and dominated the VCS space. When [
 systems and used a simple directory structure to manage their code. Luckily we've moved far beyond this and using a VCS in a software development
 project is standard by now.
 
-In the early days quality assurance (QA) in software development projects was severely under developed. This changed only slowly with the advent of
-Test-Driven Development ([TDD](https://en.wikipedia.org/wiki/Test-driven_development)) and the realization that QA was primarily the responsibility of
-the development team and not of an independent QA team relying on manual texting.
+In the early days, quality assurance (QA) in software development projects, was severely under-developed. This changed only slowly with the advent of
+Test-Driven Development ([TDD](https://en.wikipedia.org/wiki/Test-driven_development)) and the [realization that QA was primarily the responsibility
+of the development team](https://github.com/97-things/97-things-every-programmer-should-know/blob/master/en/thing_67/README.md) and not of an
+independent QA team relying on manual testing.
 
 The observation that integrating code developed by different contributors caused major headaches if these contributors did not regularly integrate
 their efforts lead to the habit of continuous integration ([CI](https://en.wikipedia.org/wiki/Continuous_integration)), a practice of merging all
@@ -132,4 +133,12 @@ mentioned interviewing attitude makes it at least easy for the hiring manager to
 prefers to follow fashion or focus on perceived career-value. If you insist on gaining experience in `git` then just join one of the many open-source
 projects out there that are using `git`.
 
+## Summary
 
+While I am talking above about `git` it is not the tool, but the version control model, that is at the heart of my issue with the current state of
+affairs. `git` just happened to conquer the whole distributed versions control market and tools that had some user base in the past like
+[Mercurial](https://en.wikipedia.org/wiki/Mercurial) have been marginalized. Especially, for in-house software engineering projects, I advocate to at
+least review the reasoning in [Why Google Stores Billions of Lines of Code in a Single
+Repository](https://cacm.acm.org/magazines/2016/7/204032-why-google-stores-billions-of-lines-of-code-in-a-single-repository/fulltext) and base your
+choice on hard headed engineering reasons. If you care about productivity then you will care about [accidental vs. essential
+complexity](http://curtclifton.net/papers/MoseleyMarks06a.pdf) and you will want to squeeze accidental complexity out of your project.
