@@ -14,7 +14,7 @@ This blog post is part of the [Odysseys in Software Engineering](../series-odyss
 ## Context
 
 Only recently it happened in the project I am currently involved in that the team had a 1.5h presentation and discussion on how to "properly" use
-[git](https://en.wikipedia.org/wiki/Git) in their project. This reminded me about a long-standing grudge I have with git. It is too complex and makes
+[git](https://en.wikipedia.org/wiki/Git) in their project. This reminded me about a long-standing grudge I have with `git`. It is too complex and makes
 things more difficult than they need to be.
 
 ## Git
@@ -62,7 +62,10 @@ branch were merged back into the mainline to make sure that all bug fixes are al
 integration even one step further to continuous delivery, meaning that the CI-system pushed all changes automatically into production if the tests
 were running fine.
 
-XXX picture XXX
+<object data="/img/branch-and-merge-strategy.svg" type="image/svg+xml" style="max-width: 100%">
+<img src="/img/branch-and-merge-strategy.svg" alt="branch and merge strategy">
+</object>
+
 
 If you worked in a bigger organization all of the related code was in a single repository and every commit triggered all of the CI activities for all
 parts, so that you always had a consistent code base across the organization. Only external libraries would be versioned and integrated into the code
@@ -73,10 +76,60 @@ Repository](https://cacm.acm.org/magazines/2016/7/204032-why-google-stores-billi
 developed its own VCS, but for smaller organizations the same principles can easily be implemented via a system like
 [SVN](https://en.wikipedia.org/wiki/Apache_Subversion).
 
+## The situation recently (now)
+
+I admire `git` as a technology. And I understand why very decentralized projects like the [Linux](https://en.wikipedia.org/wiki/Linux) kernel depend
+on the advanced features of a decentralized version control system like `git`. I also like very much the ease and simplicity with which you can put a
+local project under version control by a simple `git init` rather than needing to set-up somewhere a server component. I really do see all of these
+points. But, in my opinion, the majority of projects developed in-house in an organization by a dedicated in-house software engineering team, would be
+better off following the guiding principles in [Why Google Stores Billions of Lines of Code in a Single
+Repository](https://cacm.acm.org/magazines/2016/7/204032-why-google-stores-billions-of-lines-of-code-in-a-single-repository/fulltext) and rather using
+something like `SVN` rather than `git`.
+
+`git` is complex and forces developers to think about, in principle irrelevant, technical details like should you use [merge
+vs. rebase](https://www.atlassian.com/git/tutorials/merging-vs-rebasing) or similar. And once you go down the route of `rebase` in order to keep the
+version history "nicely linear and clean" you have to live with [rewriting history](https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History) in
+cases where you collaborate with other developers on public feature branches. See for example [Git Rebase: Don’t be Afraid of the Force
+(Push)](https://blog.verslu.is/git/git-rebase/). It reads:
+
+> Recap
+>
+> While a git rebase might sound scary at first, it’s not so bad when you have done it a couple of times.
+
+Speaking of which: `feature branches`: in the past, feature branches were frowned upon, because feature branches are intrinsically against the spirit
+of continuous integration. I still don't see how we ever ended up in a world where people believe that feature branches would be a step forward. They
+are a step backward. I understand, why in an open-source project, where you don't know the people who will send patches to you, you will want to have
+a QA step in between like a [pull
+request](https://docs.github.com/en/github/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests). But
+how on earth do you want in an in-house model let feature branches diverge from mainline only to amplify the integration issues down the road. In
+addition, a regular commit of what you do into mainline, will make other developers aware of it in case that you touch something they're also working
+on. It forces the team to discuss and make sure that different aspects of the code-base work together rather than against each-other. In two words:
+[continuous integration](https://en.wikipedia.org/wiki/Continuous_integration)!
+
+> <span style="font-size:smaller"> Just as a side remark: continuous integration is tightly coupled to having a good test suite. There are lurking a
+> lot of pitfalls on the path to a good test suite. I recommend the video [TDD: Where Did It All Go
+> Wrong?](https://www.infoq.com/presentations/tdd-original) by Ian Cooper. Despite the sound of its title it is pro TDD. While I don't care too much
+> about test-first or test-later, I care very much about having a good test suite that helps productivity rather than hampering productivity.</span>
+
+In the past couple of months I see more and more (in-house) projects switching to a [monorepo](https://en.wikipedia.org/wiki/Monorepo) model, because
+developers start to understand that working in many small repositories will lead to [dependency
+hell](https://en.wikipedia.org/wiki/Dependency_hell). But why did people start to work in many small repositories in the first place? Because `git` is
+not ideal for a single repository approach. One of my main complaints about `git` is that it lacks a "deep checkout" feature, e.g. that you can check
+out sub-directories of the top level directory. A feature that is useful if a developer for the moment wants to work on a more focused aspect of the
+code base, but the CI/CD pipeline still should check the overall consistency of everything and the version control system makes sure that you have one
+consistent view of everything. The word `monorepo` did not even exist in the past (not in my vocabulary anyway), because it was the natural thing to
+do, to work in a `monorepo`. Nobody needed a word for the concept.
+
+Regularly, I feel, that people try to find solutions to problems that they wouldn't have had if they wouldn't have used `git` in the first
+place. That's a typical sign of accidental vs. essential complexity (see [Out of the Tar Pit](http://curtclifton.net/papers/MoseleyMarks06a.pdf) by
+Ben Moseley and Peter Marks). In my observations, in in-house development projects, `git` causes more accidental complexity than it benefits the
+project. It is a net negative rather than a net positive.
+
+The fact that junior developers are starting to ask in interview situations about which version control sytem you're using and refusing to work for
+the project if you use anything other than `git` is taking the irrationality to the extreme. Which version control system you are using in your
+project should be the result of hard-headed engineering reasons rather than the need to follow fashion and trends. On the positive side, the just
+mentioned interviewing attitude makes it at least easy for the hiring manager to see whether a developer cares about rational reasoning or rather
+prefers to follow fashion or focus on perceived career-value. If you insist on gaining experience in `git` then just join one of the many open-source
+projects out there that are using `git`.
 
 
-## Related Content
-
-* [Out of the Tar Pit](http://curtclifton.net/papers/MoseleyMarks06a.pdf) by Ben Moseley and Peter Marks: accidental vs. essential complexity
-* [TDD: Where Did It All Go Wrong?](https://www.infoq.com/presentations/tdd-original) by Ian Cooper.
-* [monorepo](https://en.wikipedia.org/wiki/Monorepo)
