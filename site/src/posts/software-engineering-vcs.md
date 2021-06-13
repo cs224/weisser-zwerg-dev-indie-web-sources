@@ -2,9 +2,9 @@
 layout: "layouts/post-with-toc.njk"
 title: "Software Engineering: Version Control Systems (VCS)"
 description: "Using a VCS in software development is standard by now but may add more complexities than you asked for."
-creationdate: 2021-05-16T10:18:00+01:00
-date: 2021-06-04T14:39:00+02:00
-keywords: software,engineering,VCS,version-control-system,git,svn,cvs
+creationdate: 2021-06-13T14:39:00+02:00
+date: 2021-06-13T14:39:00+02:00
+keywords: software,engineering,VCS,version-control-system,git,svn,cvs,hg
 tags: ['post']
 # eleventyExcludeFromCollections: true
 ---
