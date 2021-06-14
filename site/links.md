@@ -87,3 +87,15 @@
     * [ActivityPub, ActivityStreams 2.0, WebSub, Micropub](https://www.w3.org/TR/social-web-protocols/)
         * [ActivityPub](https://en.wikipedia.org/wiki/ActivityPub)
         * [WebSub](https://en.wikipedia.org/wiki/WebSub) (formerly PubSubHubbub)
+
+
+## External links to my content:
+
+* https://weisser-zwerg.dev/posts/software-engineering-vcs/
+    * https://news.ycombinator.com/item?id=27495737
+* https://weisser-zwerg.dev/posts/trading_evolved_1/
+    * https://news.ycombinator.com/item?id=25581061
+* https://weisser-zwerg.dev/posts/covid-19-data-analysis/
+    * https://news.ycombinator.com/item?id=22544504
+* https://weisser-zwerg.dev/posts/ios-app-without-mac/ 
+    * https://news.ycombinator.com/item?id=21442514
