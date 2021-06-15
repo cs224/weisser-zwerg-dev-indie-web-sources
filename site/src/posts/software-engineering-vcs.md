@@ -142,3 +142,13 @@ least review the reasoning in [Why Google Stores Billions of Lines of Code in a 
 Repository](https://cacm.acm.org/magazines/2016/7/204032-why-google-stores-billions-of-lines-of-code-in-a-single-repository/fulltext) and base your
 choice on hard headed engineering reasons. If you care about productivity then you will care about [accidental vs. essential
 complexity](http://curtclifton.net/papers/MoseleyMarks06a.pdf) and you will want to squeeze accidental complexity out of your project.
+
+## Related
+
+* [BFG Repo-Cleaner by rtyley](https://rtyley.github.io/bfg-repo-cleaner/) (an alternative to git-filter-branch): In case you need to really get
+  rid-off some stuff in git/github like if you have by mistake committed credentials or a too big file then BFG is your friend.
+* [SmartGit – Git Client for Windows, macOS, Linux (syntevo.com)](https://www.syntevo.com/smartgit/): I started to use the syntevo tooling for CVS a
+  **LONG** time ago ([SmartCVS](https://www.syntevo.com/smartcvs/)) and stayed with their tooling since then.
+  * They also have an SVN client: [SmartSVN – SVN Client](https://www.smartsvn.com/)
+
+
