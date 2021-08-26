@@ -93,7 +93,7 @@ Einlagenvolumen Passiva 2 (P2): 5'290'045'654,78 €:<br>
 <img src="/img/2020-taunus-sparkasse-p2.png" alt="2019-taunus-sparkasse-a4.png">
 </object><br>
 
-Also ein Überschuss an Einlagen gegenüber vergebenen Krediten von 5'290'045'654,78 € - 5'182'709'929,84 € = -107'335'724,94 €. D.h. der
+Also ein Überschuss an Einlagen gegenüber vergebenen Krediten von 5'182'709'929,84 € - 5'290'045'654,78 € = -107'335'724,94 €. D.h. der
 **"Handlungsdruck" hat gegenüber 2019 abgenommen**, weil die Differenz aus Einlagen und Krediten von -293'432'293,40 € auf nur noch -107'335'724,94 €
 gesunken ist. Zudem hat sich der **Freibetrag** aus Mindestreserve + Staffelzins auf 7 x 1% x P2 = 370'303'195,83 € **erhöht**.
 
@@ -277,7 +277,7 @@ Deposit volume liabilities 2 (P2): € 5,290,045,654.78:<br>
 <img src="/img/2020-taunus-sparkasse-p2.png" alt="2019-taunus-sparkasse-a4.png">
 </object><br>
 
-This means a surplus of deposits compared to loans granted of € 5,290,045,654.78 - € 5,182,709,929.84 = € -107,335,724.94. In other words, the
+This means a surplus of deposits compared to loans granted of € 5,182,709,929.84 - € 5,290,045,654.78 = € -107,335,724.94. In other words, the
 **"pressure to act" has decreased compared to 2019** because the difference between deposits and loans has fallen from € -293,432,293.40 to just €
 -107,335,724.94. In addition, the **exemption** from minimum reserve + graduated interest has **increased** to 7 x 1% x P2 = € 370,303,195.83.
 
