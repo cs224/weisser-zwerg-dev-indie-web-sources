@@ -56,7 +56,7 @@ Unter Passiva 2 (P2) findet man das Einlagenvolumen ("Verbindlichkeiten gegenüb
 </object><br>
 Also 4'741'187'486,32€ Einlagenvolumen von Kunden. Davon sind lediglich 307'929'231,53€ Spareinlagen. Worum es sich beim größten Block der "andere
 Verbindlichkeiten" genau handelt kann ich aktuell nicht sagen. Damit habe ich mich (noch) nicht beschäftigt, aber falls ihr das wisst dann lasst es
-mich doch bitte über einen Kommentar (siehe ganz unten) wissen.
+mich doch bitte über einen Kommentar (siehe ganz unten) wissen.[^andereverbindlichkeitende]
 
 Daraus ergibt sich ein Überschuss an Einlagen gegenüber vergebenen Krediten von 4'447'755'192,92€ - 4'741'187'486,32€ = -293'432'293,40 €. Meine Idee
 war nun diese Differenz als Art von "**Handlungsdruck**" zu sehen, weil ggf. die Bank diesen Mehrbetrag an Geld das sie nicht unter die Leute bringt bei
@@ -242,7 +242,7 @@ customers. For 2019 it looked like this:<br>
 </object><br>
 So € 4,741,187,486.32 deposit volume from customers. Of this, only € 307,929,231.53 are savings deposits. At the moment I cannot say what exactly is
 the largest block of "other liabilities" ("andere Verbindlichkeiten"). I haven't dealt with that (yet), but if you know, please let me know via a
-comment (see below).
+comment (see below).[^andereverbindlichkeitenen]
 
 This results in a surplus of deposits compared to loans granted of € 4,447,755,192.92 - € 4,741,187,486.32 = € -293,432,293.40. My idea was to see
 this difference as a kind of "**pressure to act**", because if there is no other way for the bank to make good use of the deposits the bank has to
@@ -382,4 +382,9 @@ and savings banks charge penalty interest from the first euro](https://www.versi
     i.e. for Taunus-Sparkasse this means that for 370,303,195.83 € - 824,635,567, 74 € = -454,332,371.91 € negative interest must be paid. However,
     these negative interest rates cancel each other out with the remuneration of the ECB. The Taunus-Sparkasse receives a net remuneration of at least
     0.5% on 1,125,000,000.00 € - 454,332,371.91 € = 670,667,628.09 €  (+ perhaps an additional reward)!!
-
+[^andereverbindlichkeitende]: Ich habe folgende Infos dazu erhalten: Zu den "anderen Verbindlichkeiten" gegenüber Kunden gehören vor allem Guthaben
+    auf Giro-, Tagesgeld- und Festgeldkonten (=Termingeldeinlagen). Spareinlagen sind bspw die klassischen Sparbücher die gesetzliche Vorgaben wie
+    bspw Kündigungsfristen und Verfügungshöchstbeträge erfüllen müssen um als Spareinlage klassifiziert werden zu dürfen.
+[^andereverbindlichkeitenen]: I have received the following information about this: "Other liabilities" to customers primarily include credit on
+     current, overnight and fixed deposit accounts (= time deposits). Savings deposits are, for example, the classic savings books that have to meet
+     legal requirements such as notice periods and maximum withdrawal amounts in order to be classified as savings deposits.
