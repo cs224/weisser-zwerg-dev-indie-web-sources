@@ -2,9 +2,9 @@
 layout: "layouts/post-with-toc.njk"
 title: "European Central Bank (ECB) Negative Interest Rates and TLTRO III (Targeted Longer Term Refinancing Operations)"
 description: "The ECB is training banks to expect to get paid for taking money."
-creationdate: 2021-08-22T09:12:00+02:00
-date: 2021-08-22T09:12:00+02:00
-keywords: ECB,TLTRO,negative,penalty,interest rates
+creationdate: 2021-08-26T17:18:00+02:00
+date: 2021-08-26T17:18:00+02:00
+keywords: ECB,TLTRO,negative,penalty,interest rates,Verwahrentgelt,EZB,Strafzins,Negativzins
 tags: ['post']
 # eleventyExcludeFromCollections: true
 ---
