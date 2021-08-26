@@ -199,7 +199,7 @@ Euro](https://www.versicherungsbote.de/id/4901575/Girokonto-Tagesgeld-Strafzins-
 [//]: # (https://www.tz.de/politik/abgeordnete-volle-pension-mit-56-oder-schuften-bis-70-ruhestands-privilegien-6351517.html)
 
 
-## Englisch
+## English
 
 I am not an expert in balance sheet analysis and have acquired the necessary knowledge via self-study. Therefore, if you find errors in my analysis then
 please use the comment function at the bottom of the page and explain to me where I need to make improvements.
