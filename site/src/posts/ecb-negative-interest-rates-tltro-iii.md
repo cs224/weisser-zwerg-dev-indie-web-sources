@@ -229,7 +229,7 @@ approximation".
 
 I will briefly explain the process using the [Taunus-Sparkasse](https://www.taunussparkasse.de) as an example.
 
-Assets 4 (A4) shows the credit volume ("Forderungen an Kunden") that the bank has granted to customers. For 2019 it looked like this:
+Assets 4 (A4) shows the credit volume ("Forderungen an Kunden") that the bank has granted to customers. For 2019 it looked like this:<br>
 <object data="/img/2019-taunus-sparkasse-a4.png" type="image/png" style="max-width: 100%">
 <img src="/img/2019-taunus-sparkasse-a4.png" alt="2019-taunus-sparkasse-a4.png">
 </object><br>
@@ -340,8 +340,8 @@ least 0.5% remuneration from the ECB the (net) bottom line is zero.
 ### Conclusions
 
 To conclude, in my understanding, this means that banks get used to receiving 0.5% "reward" when they accept money. Superficially there is talk of
-"passing on the ECB's penalty interest" to clients of the bans, but the reality is quite different! The banks do not have to pay any negative interest
-at all and are even pampered by the ECB with at least 0.5% remuneration for every euro they accept from the ECB! Why would the bank still accept money
+"passing on the ECB's penalty interest" to clients of the banks, but the reality is quite different! The banks do not have to pay any negative interest
+at all and are even **pampered** by the ECB with at least 0.5% remuneration for every euro they accept from the ECB! Why would the bank still accept money
 from customers like you and me without charging 0.5%? The bank is used to that from the ECB. This is a business model and not a "legitimate passing on
 of own costs"!
 
