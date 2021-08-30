@@ -6,10 +6,13 @@ creationdate: 2021-08-26T17:18:00+02:00
 date: 2021-08-26T17:18:00+02:00
 keywords: ECB,TLTRO,negative,penalty,interest rates,Verwahrentgelt,EZB,Strafzins,Negativzins
 tags: ['post']
+nolang: true
 # eleventyExcludeFromCollections: true
 ---
 
-For the English version please see [below](#context).
+For the English version please see [below](#english).
+
+<div lang="de-DE">
 
 ## Deutsch
 
@@ -209,6 +212,9 @@ Euro](https://www.versicherungsbote.de/id/4901575/Girokonto-Tagesgeld-Strafzins-
 [//]: # (https://www.bundestag.de/abgeordnete/mdb_diaeten/1335-260796)
 [//]: # (https://www.tz.de/politik/abgeordnete-volle-pension-mit-56-oder-schuften-bis-70-ruhestands-privilegien-6351517.html)
 
+</div>
+
+<div lang="en-GB">
 
 ## English
 
@@ -389,6 +395,8 @@ and savings banks charge penalty interest from the first euro](https://www.versi
 > 30 banks charge from the first euro &ndash; and the trend is rising.
 >
 > </span>
+
+</div>
 
 
 ## Footnotes
