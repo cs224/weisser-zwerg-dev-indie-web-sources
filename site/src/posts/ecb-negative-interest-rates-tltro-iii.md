@@ -54,7 +54,7 @@ Unter Passiva 2 (P2) findet man das Einlagenvolumen ("Verbindlichkeiten gegenüb
 <object data="/img/2019-taunus-sparkasse-p2.png" type="image/png" style="max-width: 100%">
 <img src="/img/2019-taunus-sparkasse-p2.png" alt="2019-taunus-sparkasse-a4.png">
 </object><br>
-Also 4'741'187'486,32€ Einlagenvolumen von Kunden. Davon sind lediglich 307'929'231,53€ Spareinlagen. Worum es sich beim größten Block der "andere
+Also 4'741'187'486,32€ Einlagenvolumen von Kunden. Davon sind lediglich 307'929'231,53€ Spareinlagen. Worum es sich beim größten Block "andere
 Verbindlichkeiten" genau handelt kann ich aktuell nicht sagen. Damit habe ich mich (noch) nicht beschäftigt, aber falls ihr das wisst dann lasst es
 mich doch bitte über einen Kommentar (siehe ganz unten) wissen.[^andereverbindlichkeitende]
 
@@ -151,8 +151,19 @@ III](https://www.bundesbank.de/de/aufgaben/geldpolitik/offenmarktgeschaefte/gezi
 steht für "Targeted Longer Term Refinancing Operations". Wenn ich das richtig verstehe, dann zahlt die EZB den Banken mindestens 0,5% Vergütung für
 jedes Geld das die Banken über dieses Programm annehmen und zusätzlich eine weitere Belohnung von bis zu 0,5% wenn die Banken das Geld erfolgreich
 unter die Leute bringen. Im schlechtesten Fall, wenn die Bank das Geld nicht unter die Leute bringt, dann parkt sie es einfach auf dem Konto der
-Deutschen Bundesbank (so wie bei der Taunus-Sparkasse anscheinend geschehen), wo zwar dann **teilweise**[^tltroparkde] 0,5% Negativzinsen anfallen, aber man ja
+Deutschen Bundesbank (so wie bei der Taunus-Sparkasse anscheinend geschehen), wo zwar dann **teilweise**<sup>*</sup> 0,5% Negativzinsen anfallen, aber man ja
 mindestens 0,5% Vergütung bekommt, also unterm Strich (netto) keine Kosten entstehen.
+
+> <span style="font-size: smaller;">
+>
+> *) ich sage hier "teilweise" 0,5% Negativzinsen anfallen, weil ja lediglich auf Beträge jenseits des Freibetrags Negativzinsen gezahlt werden müssen,
+> d.h. für die Taunus-Sparkasse, dass auf 370'303'195,83 € - 824'635'567,74 € = -454'332'371,91 € Negativzinsen gezahlt werden müssen. Diese
+> Negativzinsen heben sich aber mit der Vergütung der EZB auf. Netto bekommt die Taunus-Sparkasse auf 1'125'000'000,00 € - 454'332'371,91 € =
+> 670'667'628,09 € eine Vergütung von mindestens 0,5% (+ vielleicht noch eine zusätzliche Belohnung)!!
+>
+> </span>
+
+
 
 ### Schlussfolgerungen
 
@@ -162,7 +173,7 @@ Negativzinsen bezahlen und werden von der EZB sogar mit mindestens 0,5% Vergütu
 sollte die Bank noch Geld von Kunden wie dir und mir annehmen ohne 0,5% zu verlangen? Die Bank ist das ja von der EZB schon gewöhnt. Es geht hier um
 ein Geschäftsmodell und nicht um eine "legitime Weitergabe von Kosten"!
 
-Es ist wahrscheinlich sogar so, dass die Banken das Geld lieber von der EZB nehmen würden also von Kunden (sogar wenn die Kunden das Verwahrentgelt
+Es ist wahrscheinlich sogar so, dass die Banken das Geld lieber von der EZB nehmen würden als von Kunden (sogar wenn die Kunden das Verwahrentgelt
 zahlen), weil sie mit dem Geld der EZB sogar noch die Chance auf eine weitere Belohnung von bis zu 0,5% erhalten. Umso niedriger die Grenze für das
 Verwahrentgelt umso mehr Kunden kann die Bank vielleicht dazu veranlassen ihr Geld in andere Kanäle umzuleiten und umso mehr Geld kann die Bank von
 der EZB (inklusive Belohnungen) annehmen.
@@ -334,8 +345,18 @@ III](https://www.bundesbank.de/de/aufgaben/geldpolitik/offenmarktgeschaefte/gezi
 stands for "Targeted Longer Term Refinancing Operations". If I understand correctly, the ECB pays the banks at least 0.5% compensation for every euro
 the banks take through this program and an additional reward of up to 0.5% if the banks successfully make use of the money by giving loans. In the
 worst case, if the bank does not manage to make good use of the money, the bank simply parks the money in the account of the Deutsche Bundesbank (as
-it apparently happened with the Taunus-Sparkasse), where **partially**[^tltroparken] 0.5% negative interest rate is incurred. But as the bank gets at
+it apparently happened with the Taunus-Sparkasse), where **partially**<sup>*</sup> 0.5% negative interest rate is incurred. But as the bank gets at
 least 0.5% remuneration from the ECB the (net) bottom line is zero.
+
+> <span style="font-size: smaller;">
+>
+> *) I say here "partially" 0.5% negative interest accrues, because negative interest only has to be paid on amounts beyond the exemption, i.e. for
+> Taunus-Sparkasse this means that for 370,303,195.83 € - 824,635,567, 74 € = -454,332,371.91 € negative interest must be paid. However, these
+> negative interest rates cancel each other out with the remuneration of the ECB. The Taunus-Sparkasse receives a net remuneration of at least 0.5% on
+> 1,125,000,000.00 € - 454,332,371.91 € = 670,667,628.09 € (+ perhaps an additional reward)!!
+>
+> </span>
+
 
 ### Conclusions
 
@@ -373,15 +394,7 @@ and savings banks charge penalty interest from the first euro](https://www.versi
 ## Footnotes
 
 [^ts2019nnirde]: unter der Annahme, dass es unterjährig keine großen Unterschiede zum Stichtag gab.
-[^tltroparkde]: ich sage hier "teilweise" 0,5% Negativzinsen anfallen, weil ja lediglich auf Beträge jenseits des Freibetrags Negativzinsen gezahlt
-    werden müssen, d.h. für die Taunus-Sparkasse, dass auf 370'303'195,83 € - 824'635'567,74 € = -454'332'371,91 € Negativzinsen gezahlt werden
-    müssen. Diese Negativzinsen heben sich aber mit der Vergütung der EZB auf. Netto bekommt die Taunus-Sparkasse auf 1'125'000'000,00 € -
-    454'332'371,91 € = 670'667'628,09 € eine Vergütung von mindestens 0,5% (+ vielleicht noch eine zusätzliche Belohnung)!!
 [^ts2019nniren]: assuming that there were no major differences to the end of period date during the year.
-[^tltroparken]: I say here "partially" 0.5% negative interest accrues, because negative interest only has to be paid on amounts beyond the exemption,
-    i.e. for Taunus-Sparkasse this means that for 370,303,195.83 € - 824,635,567, 74 € = -454,332,371.91 € negative interest must be paid. However,
-    these negative interest rates cancel each other out with the remuneration of the ECB. The Taunus-Sparkasse receives a net remuneration of at least
-    0.5% on 1,125,000,000.00 € - 454,332,371.91 € = 670,667,628.09 €  (+ perhaps an additional reward)!!
 [^andereverbindlichkeitende]: Ich habe folgende Infos dazu erhalten: Zu den "anderen Verbindlichkeiten" gegenüber Kunden gehören vor allem Guthaben
     auf Giro-, Tagesgeld- und Festgeldkonten (=Termingeldeinlagen). Spareinlagen sind bspw die klassischen Sparbücher die gesetzliche Vorgaben wie
     bspw Kündigungsfristen und Verfügungshöchstbeträge erfüllen müssen um als Spareinlage klassifiziert werden zu dürfen.
