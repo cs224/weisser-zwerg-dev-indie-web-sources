@@ -1,6 +1,6 @@
 {% set absoluteUrl %}{{ page.url | url | absoluteUrl(metadata.url) }}{% endset %}
 <!doctype html>
-<html lang="en">
+{% if nolang %}<html>{% else %}<html lang="en">{% endif %}
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
