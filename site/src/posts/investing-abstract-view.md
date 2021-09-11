@@ -31,7 +31,8 @@ I basically read the following books and information sources to get my arms arou
   [Robinhood](https://www.benzinga.com/fintech/20/11/18242600/quantopian-joins-robinhood-to-democratize-finance-for-all), which also resulted in them
   taking down their web-site with all the great lecture content. On github you can still clone the
   [research_public](https://github.com/quantopian/research_public) repository, which contains the notebooks for the lectures. On YouTube you can also
-  still find the videos for the [Quantopian Lecture Series](https://youtube.com/playlist?list=PLRFLF1OxMm_UL7WUWM31iynp0jMVf_vLW).
+  still find the videos for the [Quantopian Lecture Series](https://youtube.com/playlist?list=PLRFLF1OxMm_UL7WUWM31iynp0jMVf_vLW).  There is a gist
+  [Quantopian Lectures Saved (github.com)](https://gist.github.com/ih2502mk/50d8f7feb614c8676383431b056f4291) providing an overview.
 * [Time Series Analysis by State Space Methods](https://www.amazon.de/-/en/gp/product/019964117X) by James Durbin and Siem Jan Koopman.
   * Before reading the book I'd recommend the tutorial series [Kalman and Bayesian Filters in
     Python](https://nbviewer.jupyter.org/github/rlabbe/Kalman-and-Bayesian-Filters-in-Python/blob/master/table_of_contents.ipynb).This gives you a good understanding and intuition of what Kalman Filters do.
