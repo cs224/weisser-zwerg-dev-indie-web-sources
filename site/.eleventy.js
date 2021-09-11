@@ -87,6 +87,7 @@ module.exports = function(eleventyConfig) {
     let markdownItFootnote = require('markdown-it-footnote');
     let markdownItAnchor = require('markdown-it-anchor');
     let markdownItKatex = require("markdown-it-katex");
+    let markdownItInclude = require('markdown-it-include');
     let options = {
         html: true,
         breaks: false,
@@ -94,9 +95,11 @@ module.exports = function(eleventyConfig) {
         typographer: true
     };
 
+
+
     const link_icon = '<svg class="octicon octicon-link" style="vertical-align: middle;" role="img" aria-hidden="true" width="16" height="16"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#octicon-link"></use></svg>'
 
-    let markdownLib = markdownIt(options).use(markdownItEmoji).use(markdownItFootnote).use(markdownItAnchor, {permalink: true, permalinkSymbol: link_icon, permalinkBefore: true}).use(markdownItKatex, {"throwOnError" : false, "errorColor" : " #cc0000"});
+    let markdownLib = markdownIt(options).use(markdownItInclude, '../../blog-series-monte-carlo-methods').use(markdownItEmoji).use(markdownItFootnote).use(markdownItAnchor, {permalink: true, permalinkSymbol: link_icon, permalinkBefore: true}).use(markdownItKatex, {"throwOnError" : false, "errorColor" : " #cc0000"});
 
     eleventyConfig.setLibrary("md", markdownLib);
 
