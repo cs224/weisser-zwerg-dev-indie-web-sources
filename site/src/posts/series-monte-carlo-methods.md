@@ -27,8 +27,9 @@ In principle there are only 2 core building blocks for Monte Carlo simulation:
 
 ## Blog Posts
 
-... to be published soon ...
-<!-- * [Software Engineering: Web Development (or the story of Media Artists AG)](../software-engineering-web-development) -->
+* [Monte Carlo: Fundamental Concepts](../monte-carlo-fundamental-concepts)
+* ... more to be published soon ...
+
 
 ## Further Reading
 
