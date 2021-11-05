@@ -23,6 +23,8 @@ Token](https://en.wikipedia.org/wiki/Non-fungible_token)) on the Cardano blockch
 Here it is: [Mona Lisa 4.0](https://pool.pm/9a093f9c42ebe91b440af75e5554818e2805b5c6358ae5efe2478cf0.MonaLisa40)<br>
 <img src="https://infura-ipfs.io/ipfs/QmbwQ72qzhsCejs2xH1Vi64jsoBW17eMUziajhR45tYUCQ" alt="" style="object-fit: contain; flex: 1 1 0%; max-width: 1478px; max-height: 637px; min-height: 318px; image-rendering: pixelated;">
 
+    Policy ID: 9a093f9c42ebe91b440af75e5554818e2805b5c6358ae5efe2478cf0
+
 You can buy it on [CNFT.io](https://cnft.io/token/618143693ff43a2e406e459c) <!-- https://cnft.io/marketplace?verified=false&st=mona%20lisa%204.0 -->,
 the first Cardano NFT platform.<br>
 And here is the announcement on [twitter](https://twitter.com/cs2243/status/1455867471668330507).
