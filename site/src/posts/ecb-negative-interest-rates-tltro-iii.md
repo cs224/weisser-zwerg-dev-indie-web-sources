@@ -216,6 +216,11 @@ Euro](https://www.versicherungsbote.de/id/4901575/Girokonto-Tagesgeld-Strafzins-
 
 <div lang="en-GB">
 
+### Weitere Artikel zu diesem Thema
+
+* [Die Mär vom EZB-Strafzins](https://hartmutwalz.de/die-maer-vom-ezb-strafzins/) von Prof. Dr. Hartmut Walz (2021-10-29)
+
+
 ## English
 
 I am not an expert in balance sheet analysis and have acquired the necessary knowledge via self-study. Therefore, if you find errors in my analysis then
