@@ -1,0 +1,20 @@
+{
+  "name": "site10",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "serve": "env-cmd eleventy --serve",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@11ty/eleventy": "^1.0.0",
+    "dotenv": "^16.0.0",
+    "env-cmd": "^10.1.0"
+  },
+  "dependencies": {
+  }
+}
