@@ -1,0 +1,271 @@
+{% set absoluteUrl %}{{ page.url | url | absoluteUrl(metadata.url) }}{% endset %}
+<!doctype html>
+{% if nolang %}<html>{% else %}<html lang="en">{% endif %}
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,shrink-to-fit=no">
+
+{% if (env.node_env == "production") and metadata.analytics %}
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-146884302-1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'UA-146884302-1');
+    </script>
+
+    <script>
+        !function(n,e){var t,o,i,c=[],f={passive:!0,capture:!0},r=new Date,a="pointerup",u="pointercancel";function p(n,c){t||(t=c,o=n,i=new Date,w(e),s())}function s(){o>=0&&o<i-r&&(c.forEach(function(n){n(o,t)}),c=[])}function l(t){if(t.cancelable){var o=(t.timeStamp>1e12?new Date:performance.now())-t.timeStamp;"pointerdown"==t.type?function(t,o){function i(){p(t,o),r()}function c(){r()}function r(){e(a,i,f),e(u,c,f)}n(a,i,f),n(u,c,f)}(o,t):p(o,t)}}function w(n){["click","mousedown","keydown","touchstart","pointerdown"].forEach(function(e){n(e,l,f)})}w(n),self.perfMetrics=self.perfMetrics||{},self.perfMetrics.onFirstInputDelay=function(n){c.push(n),s()}}(addEventListener,removeEventListener);
+    </script>
+    <script>
+        // The perfMetrics object is created by the code that goes in <head>.
+        perfMetrics.onFirstInputDelay(function(delay, evt) {
+            ga('send', 'event', {
+                eventCategory: 'Perf Metrics',
+                eventAction: 'first-input-delay',
+                eventLabel: evt.type,
+                // Event values must be an integer.
+                eventValue: Math.round(delay),
+                // Exclude this event from bounce rate calculations.
+                nonInteraction: true,
+            });
+        });
+    </script>
+{% endif %}
+
+    <title>{{ title or metadata.title }}</title>
+{% if keywords %}
+    <meta name="keywords" content="{{ keywords or "" }}">
+{% endif %}
+
+    <meta name="description" content="{{ description or metadata.description }}">
+
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta name="ROBOTS" content="INDEX, FOLLOW">
+
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=OmKKx6wqQn">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=OmKKx6wqQn">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=OmKKx6wqQn">
+    <link rel="manifest" href="/site.webmanifest?v=OmKKx6wqQn">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg?v=OmKKx6wqQn" color="#5bbad5">
+    <link rel="shortcut icon" href="/favicon.ico?v=OmKKx6wqQn">
+    <meta name="apple-mobile-web-app-title" content="weisser-zwerg.dev">
+    <meta name="application-name" content="weisser-zwerg.dev">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+
+
+    <meta property="og:title" content="{{ title or metadata.title }}">
+    <meta property="og:description" content="{{ description or metadata.description }}">
+    {% block blockHeader %}
+    <meta property="og:type" content="website">
+    {% endblock blockHeader %}
+    <meta property="og:url" content="https://weisser-zwerg.dev{{ page.url }}">
+    <meta property="og:updated_time" content="{{ page.date | dateIso }}">
+
+    <meta itemprop="name" content="{{ title or metadata.title }}">
+    <meta itemprop="description" content="{{ description or metadata.description }}">
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ title or metadata.title }}">
+    <meta name="twitter:description" content="{{ description or metadata.description }}">
+
+    <link href="/css/main.css" rel="stylesheet"/>
+    <link href="/css/prism-tomorrow.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/github-markdown-css/2.2.1/github-markdown.css" rel="stylesheet"/>
+{% if jupyter %}
+    <link href="/css/jupyter-index.css" rel="stylesheet"/>
+    <link href="/css/jupyter-theme-light.css" rel="stylesheet"/>
+{% endif %}
+
+    <link rel="webmention" href="https://webmention.io/weisser-zwerg.dev/webmention" />
+    <link rel="http://webmention.org/" href="https://webmention.io/weisser-zwerg.dev/webmention"/>
+    <link rel="pingback" href="https://webmention.io/weisser-zwerg.dev/xmlrpc" />
+
+    <!-- Pubsubhubbub -->
+    <link href="https://weisser-zwerg.superfeedr.com/" rel="hub"/>
+
+    <link rel="alternate" href="{{ metadata.feed.path | url }}" type="application/rss+xml" title="{{ metadata.title }}">
+    <link rel="authorization_endpoint" href="https://indieauth.com/auth">
+    <link rel="token_endpoint" href="https://tokens.indieauth.com/token">
+
+    <link rel="microsub" href="https://aperture.p3k.io/microsub/398">
+
+    <link rel="canonical" href="{{ absoluteUrl }}">
+
+    <!--
+    <script>
+        const performance_standalone = 'https://www.gstatic.com/firebasejs/6.6.1/firebase-performance-standalone.js';
+        const firebaseConfig = {
+            apiKey: "AIzaSyDtNCaF_-8hr6iXgaxH4zKW04NHV-4bAbg",
+            authDomain: "cs224-weisser-zwerg-dev.firebaseapp.com",
+            databaseURL: "https://cs224-weisser-zwerg-dev.firebaseio.com",
+            projectId: "cs224-weisser-zwerg-dev",
+            storageBucket: "",
+            messagingSenderId: "475259857113",
+            appId: "1:475259857113:web:41ffac1b57270c25c876c8"
+        };
+
+        (function(sa,fbc){function load(f,c){var a=document.createElement('script');
+            a.async=1;a.src=f;var s=document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(a,s);}load(sa);window.onload = function() {firebase.initializeApp(fbc).performance();};
+        })(performance_standalone, firebaseConfig);
+    </script>
+-->
+{% if metadata.mastodonSharing %}
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+{% endif  %}
+{% if jupyter %}
+    <style type="text/css">
+        a.anchor-link {
+            display: none;
+        }
+        .highlight  {
+            margin: 0.4em;
+        }
+
+        /* Input area styling */
+        .jp-InputArea {
+            overflow: hidden;
+        }
+
+        .jp-InputArea-editor {
+            overflow: hidden;
+        }
+
+        @media print {
+            body {
+                margin: 0;
+            }
+        }
+    </style>
+
+    <!-- Load mathjax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML-full,Safe"> </script>
+    <!-- MathJax configuration -->
+    <script type="text/x-mathjax-config">
+    init_mathjax = function() {
+        if (window.MathJax) {
+        // MathJax loaded
+            MathJax.Hub.Config({
+                TeX: {
+                    equationNumbers: {
+                    autoNumber: "AMS",
+                    useLabelIds: true
+                    }
+                },
+                tex2jax: {
+                    inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                    displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                    processEscapes: true,
+                    processEnvironments: true
+                },
+                displayAlign: 'center',
+                CommonHTML: {
+                    linebreaks: {
+                    automatic: true
+                    }
+                },
+                "HTML-CSS": {
+                    linebreaks: {
+                    automatic: true
+                    }
+                }
+            });
+
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+        }
+    }
+    init_mathjax();
+    </script>
+    <!-- End of mathjax configuration -->
+{% endif %}
+
+</head>
+<body style="display: flex; flex-direction: column; min-height: 100vh; overflow-y: auto; scrollbar-gutter: always;">
+<header class="col w-100 text-center bg-black mb-2" style="flex-wrap: wrap;" ><!-- style="max-height: 5rem" -->
+    <div style="display: inline-block">
+        <a href="/" style="text-decoration: none">
+            <div class="d-flex flex-row" style="align-items: center; justify-content: center;">
+                <div class="col center" >
+                    <img src="/android-chrome-256x256.png" style="height: 5rem; float: left;" alt="Weisser Zwerg Logo">
+                </div>
+                <div class="col" style="flex-grow: 100">
+                    <h1 class="headlinewhite" style="display: inline; text-align: center; line-height: 80px;" >{{ metadata.title }}</h1>
+                </div>
+            </div>
+        </a>
+    </div>
+</header>
+
+{% block content %}
+    <main class="container" style="flex-grow: 100;"><!-- style="flex-grow: 1;" -->
+        {{ content | safe }}
+    </main>
+{% endblock content %}
+
+<footer class="container" >
+    <div class="row">
+        <div class="d-flex w-100">
+            <ul class="h-card  mb-0">
+                <li style="padding-left: 0;"><a class="p-name u-url u-uid" href="{{ metadata.url }}">{{ metadata.title }}</a><img src="/android-chrome-192x192.png" width="80" class="u-photo" alt="Weisser Zwerg" style="display: none"></li>
+                <li style="padding-left: 0;"><a class="u-email" href="mailto:{{ metadata.author.email }}">{{ metadata.author.email }}</a></li>
+                <li style="display:none"><a class="u-url" rel="me authn" href="https://github.com/cs224">Github</a></li>
+                <li style="display:none"><a class="u-url" rel="me" href="https://mastodon.social/@cs224">Mastodon</a></li>
+                <li style="display:none"><a class="u-url" rel="me" href="https://xn--sr8hvo.ws/%F0%9F%9A%B2%F0%9F%8D%A5%F0%9F%A4%97">Profile on the IndieWeb Webring</a></li>
+                <li style="display:none"><a href="https://xn--sr8hvo.ws/directory">IndieWeb Webring Directory</a></li>
+            </ul>
+            <p class="ml-auto text-right">
+                <!-- <a href="https://mastodon.social/@cs224" title="mastodon.social/@cs224"><img src="/img/mastodon-icon.png" class="icon icon--feed" alt="Mastodon Icon" title="Mastodon Icon" style="height: 36px"></a>
+                <a href="https://github.com/cs224/weisser-zwerg-dev-indie-web-sources" title="Edit this page on Github"><svg class="icon icon--github" role="img" aria-hidden="true" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#icon-github"></use></svg></a> -->
+                <a href="/feed/feed.xml" title="Atom Feed"><svg class="icon icon--feed" role="img" aria-hidden="true" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#icon-feed"></use></svg></a>
+                <br>
+                <a href="/data-privacy">Data Privacy</a>
+            </p>
+        </div>
+    </div>
+    <div class="row w-100 text-center justify-content-center">
+        <a href="https://xn--sr8hvo.ws/%F0%9F%9A%B2%F0%9F%8D%A5%F0%9F%A4%97/previous">←</a>An IndieWeb Webring <svg role="img" aria-hidden="true" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#spider-web-2"></use></svg><svg role="img" aria-hidden="true" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#ring"></use></svg><a href="https://xn--sr8hvo.ws/%F0%9F%9A%B2%F0%9F%8D%A5%F0%9F%A4%97/next">→</a>
+    </div>
+    <div class="row w-100 text-center justify-content-center" style="font-size: smaller">
+        Using&nbsp;<a href="http://www.onlinewebfonts.com">oNline Web Fonts</a>.
+    </div>
+</footer>
+
+{% if (env.node_env == "production") and metadata.analytics %}
+<script src="https://www.gstatic.com/firebasejs/6.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/6.6.1/firebase-performance.js"></script>
+
+<script>
+    var firebaseConfig = {
+        apiKey: "AIzaSyDtNCaF_-8hr6iXgaxH4zKW04NHV-4bAbg",
+        authDomain: "cs224-weisser-zwerg-dev.firebaseapp.com",
+        databaseURL: "https://cs224-weisser-zwerg-dev.firebaseio.com",
+        projectId: "cs224-weisser-zwerg-dev",
+        storageBucket: "",
+        messagingSenderId: "475259857113",
+        appId: "1:475259857113:web:41ffac1b57270c25c876c8"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    firebase.analytics.isSupported().then((isSupported) => {
+        if (isSupported) {
+            analytics = firebase.analytics();
+        }
+    });
+
+    var perf = firebase.performance();
+</script>
+{% endif %}
+<!-- <script src="/js/prism.js"></script> -->
+
+</body>
+</html>

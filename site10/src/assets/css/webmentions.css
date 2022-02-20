@@ -1,0 +1,87 @@
+.webmention {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 1rem 0 1rem 60px; }
+  .webmention--own {
+    background-color: #6c757d;
+    background-color: var(--bg-secondary);
+    border-radius: 0.5rem; }
+  .webmention__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    order: -1;
+    font-size: 0.875rem; }
+    .webmention__meta__divider {
+      display: inline-block;
+      padding: 0 0.125rem; }
+  .webmention__author {
+    font-size: 1rem;
+    color: inherit; }
+    .webmention__author__photo {
+      position: absolute;
+      top: 1rem;
+      left: 0;
+      height: 48px;
+      width: 48px;
+      border-radius: 50%;
+      object-fit: cover; }
+  .webmention__pubdate {
+    color: #6c757d; }
+  .webmention a.u-mention,
+  .webmention a:empty {
+    display: none; }
+
+.webmentions__toggle, .webmentions__info {
+  display: block; }
+
+.webmentions__toggle {
+  margin-right: 1rem; }
+
+.webmentions__info {
+  display: flex;
+  align-items: center;
+  color: #6c757d;
+  color: var(--text-color-secondary); }
+  .webmentions__info:hover, .webmentions__info:focus {
+    color: #0d6efd;
+    color: var(--text-color); }
+
+.webmentions__content {
+  display: none; }
+
+.webmentions__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap; }
+
+.webmentions__faces {
+  display: flex;
+  flex: 1 0 auto;
+  flex-wrap: wrap;
+  padding: 0.5rem 0;
+  margin-right: 1rem; }
+  .webmentions__faces__img, .webmentions__faces__more {
+    display: block;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    flex: none; }
+  .webmentions__faces__more {
+    font-size: 0.75rem;
+    line-height: 2rem;
+    text-align: center;
+    background-color: #6c757d;
+    background-color: var(--bg-secondary); }
+
+.webmentions__item:not(:last-child) {
+  margin-bottom: 1rem; }
+
+#webmentions:target .webmentions__header,
+.webmentions--expanded .webmentions__header {
+  display: none; }
+
+#webmentions:target .webmentions__content,
+.webmentions--expanded .webmentions__content {
+  display: block; }
