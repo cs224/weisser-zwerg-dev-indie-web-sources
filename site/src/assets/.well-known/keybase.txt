@@ -1,0 +1,56 @@
+==================================================================
+https://keybase.io/cs224
+--------------------------------------------------------------------
+
+I hereby claim:
+
+  * I am an admin of https://weisser-zwerg.dev
+  * I am cs224 (https://keybase.io/cs224) on keybase.
+  * I have a public key ASArt1TtCcEWRvSQOyAUeTpsUIWjKusAcmM6ll-Ze_IAfgo
+
+To do so, I am signing this object:
+
+{
+  "body": {
+    "key": {
+      "eldest_kid": "01202bb754ed09c11646f4903b2014793a6c5085a32aeb0072633a965f997bf2007e0a",
+      "host": "keybase.io",
+      "kid": "01202bb754ed09c11646f4903b2014793a6c5085a32aeb0072633a965f997bf2007e0a",
+      "uid": "16ac5e4e8bfc0d611ed45f8c6a88d019",
+      "username": "cs224"
+    },
+    "merkle_root": {
+      "ctime": 1646630942,
+      "hash": "9c601ddbda3578996ab7dcf9699adef65283b1fbbc91b3518444406a4c1cdf2bf44bf42a472647894f87d3b2b047c3056ce416e9458fba8bb15d043e016f93c6",
+      "hash_meta": "daf6e521d12cd2a3975720dcafa073f82e5ced8bf7626cde73f65e74675ebda5",
+      "seqno": 22019227
+    },
+    "service": {
+      "entropy": "pNORtfVv6GdKBgJyKZmnEBm6",
+      "hostname": "weisser-zwerg.dev",
+      "protocol": "https:"
+    },
+    "type": "web_service_binding",
+    "version": 2
+  },
+  "client": {
+    "name": "keybase.io go client",
+    "version": "5.9.3"
+  },
+  "ctime": 1646630977,
+  "expire_in": 504576000,
+  "prev": "5b2bd25d02498cb0cb666028c4bb6ad870a1e8e354093e9c6f0f83c3d4cd3aee",
+  "seqno": 6,
+  "tag": "signature"
+}
+
+which yields the signature:
+
+hKRib2R5hqhkZXRhY2hlZMOpaGFzaF90eXBlCqNrZXnEIwEgK7dU7QnBFkb0kDsgFHk6bFCFoyrrAHJjOpZfmXvyAH4Kp3BheWxvYWTESpcCBsQgWyvSXQJJjLDLZmAoxLtq2HCh6ONUCT6cbw+Dw9TNOu7EIC3aKoppWG5wd7ucLeLxAntDO/e53unce/TGNZSyHBFgAgHCo3NpZ8RAisPH4UR9Z7GTxAzWT6NGmT3+EfULopAGgatecpzSXFw0AgS6c2Xbjdenq7ggh0UiXAI0K7gyJe0gGlxnVeA5AahzaWdfdHlwZSCkaGFzaIKkdHlwZQildmFsdWXEIAyV6G5QE+Jc8wmZIVv5CnXnfPWYMnyOU2thuoJLiePOo3RhZ80CAqd2ZXJzaW9uAQ==
+
+And finally, I am proving ownership of this host by posting or
+appending to this document.
+
+View my publicly-auditable identity here: https://keybase.io/cs224
+
+==================================================================
