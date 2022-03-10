@@ -219,6 +219,8 @@ Euro](https://www.versicherungsbote.de/id/4901575/Girokonto-Tagesgeld-Strafzins-
 ### Weitere Artikel zu diesem Thema
 
 * [Die Mär vom EZB-Strafzins](https://hartmutwalz.de/die-maer-vom-ezb-strafzins/) von Prof. Dr. Hartmut Walz (2021-10-29)
+* [Deutsche Banken im TLTRO-Rausch: 100 Mio. € pro Institut](https://finanz-szene.de/banking/deutsche-banken-im-tltro-rausch-100-mio-e-pro-institut/) von finanz-szene.de (2021-08-26)  
+* [Die ultimative Analyse zu den TLTRO-III-Geschäften der deutschen Banken](https://finanz-szene.de/banking/die-ultimative-analyse-zu-den-tltro-iii-geschaeften-der-deutschen-banken/) von finanz-szene.de (2021-11-11)
 
 
 ## English
