@@ -1,0 +1,17 @@
+{
+  "hosting": {
+    "public": "dist",
+    "redirects": [
+      {
+        "source": "/.well-known/:capture*",
+        "destination": "https://fed.brid.gy/.well-known/:capture",
+        "type": 301
+      }
+    ],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
