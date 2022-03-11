@@ -36,5 +36,5 @@ repository](https://github.com/cs224/weisser-zwerg-dev-indie-web-sources).
 
 In case you want to contact me, you can do so via:
 * E-Mail: <a href="mailto:cs224@weisser-zwerg.dev">cs224@weisser-zwerg.dev</a>
-* Mastodon: https://mastodon.social/@cs224
+* Keybase: https://keybase.io/cs224
 
