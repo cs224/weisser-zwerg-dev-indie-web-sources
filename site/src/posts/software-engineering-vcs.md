@@ -143,6 +143,12 @@ Repository](https://cacm.acm.org/magazines/2016/7/204032-why-google-stores-billi
 choice on hard headed engineering reasons. If you care about productivity then you will care about [accidental vs. essential
 complexity](http://curtclifton.net/papers/MoseleyMarks06a.pdf) and you will want to squeeze accidental complexity out of your project.
 
+
+> In many ways you can just see git as a filesystem - it’s content-addressable, and it has a notion of versioning, but I really really designed it coming at the problem from the viewpoint of a _filesystem_ person (hey, kernels is what I do), and I actually have absolutely _zero_ interest in creating a traditional SCM system.
+> 
+> -- [Linus Torvalds](https://lkml.org/lkml/2005/4/10/70)
+
+
 ## Related
 
 * [BFG Repo-Cleaner by rtyley](https://rtyley.github.io/bfg-repo-cleaner/) (an alternative to git-filter-branch): In case you need to really get
