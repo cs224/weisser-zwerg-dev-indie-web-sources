@@ -156,5 +156,5 @@ complexity](http://curtclifton.net/papers/MoseleyMarks06a.pdf) and you will want
 * [SmartGit – Git Client for Windows, macOS, Linux (syntevo.com)](https://www.syntevo.com/smartgit/): I started to use the syntevo tooling for CVS a
   **LONG** time ago ([SmartCVS](https://www.syntevo.com/smartcvs/)) and stayed with their tooling since then.
   * They also have an SVN client: [SmartSVN – SVN Client](https://www.smartsvn.com/)
-
-
+* [On Git and Cognitive Load](https://dzone.com/articles/on-git-and-cognitive-load)
+* [Oh Shit, Git!?!](https://ohshitgit.com/)
