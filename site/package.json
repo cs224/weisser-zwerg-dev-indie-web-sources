@@ -4,7 +4,7 @@
   "description": "weisser-zwerg.dev content",
   "main": "index.js",
   "scripts": {
-    "sass": "node-sass scss -o src/assets/css",
+    "sass": "sass scss -o src/assets/css",
     "serve": "env-cmd eleventy --serve",
     "serveht": "env-cmd http-server ./dist",
     "servefb": "env-cmd firebase serve --only hosting --project cs224-weisser-zwerg-dev",
@@ -18,7 +18,10 @@
     "postdeploy_": "webmention dist/feed/feed.xml --limit 0 --debug --send",
     "superfeedr": "curl -d \"hub.mode=publish&hub.url=https://weisser-zwerg.dev/feed/feed.xml\" -X POST https://weisser-zwerg.superfeedr.com/",
     "webmention-check": "curl -X POST https://webmention.app/check?url=https%3A%2F%2Fweisser-zwerg.dev%2Fposts%2Flocal-discourse-on-vagrant%2F",
-    "webmention-page": "webmention https://weisser-zwerg.dev/posts/activity-pub-integration-via-fed-brid-gy --limit 0 --debug --send"
+    "webmention-page": "webmention https://weisser-zwerg.dev/posts/activity-pub-integration-via-fed-brid-gy --limit 0 --debug --send",
+    "ncu": "npm-check-updates --target minor",
+    "ncu-u": "npm-check-updates --target minor -u",
+    "ncua": "npm-check-updates"
   },
   "repository": {
     "type": "git",
@@ -31,34 +34,35 @@
   },
   "homepage": "https://github.com/cs224/weisser-zwerg-dev-indie-web-sources#readme",
   "devDependencies": {
-    "@11ty/eleventy": "^0.12.1",
-    "@11ty/eleventy-plugin-rss": "^1.1.2",
-    "@11ty/eleventy-plugin-syntaxhighlight": "^3.1.3",
+    "@11ty/eleventy": "^1.0.1",
+    "@11ty/eleventy-plugin-rss": "^1.2.0",
+    "@11ty/eleventy-plugin-syntaxhighlight": "^4.0.0",
     "@remy/webmention": "^1.4.5",
-    "bootstrap-scss": "^4.6.0",
-    "dotenv": "^9.0.2",
+    "bootstrap-scss": "^4.6.1",
+    "dotenv": "^16.0.1",
     "ecstatic": ">=4.1.4",
     "eleventy-plugin-nesting-toc": "^1.3.0",
     "env-cmd": "^10.1.0",
     "first-input-delay": "^0.1.3",
-    "http-server": "^0.12.3",
-    "jest": "^27.3.1",
+    "http-server": "^14.1.1",
+    "jest": "^28.1.1",
     "lodash": "^4.17.21",
-    "luxon": "^1.27.0",
-    "markdown-it-anchor": "^7.1.0",
-    "markdown-it-emoji": "^2.0.0",
+    "luxon": "^2.4.0",
+    "markdown-it-anchor": "^8.6.4",
+    "markdown-it-emoji": "^2.0.2",
     "markdown-it-footnote": "^3.0.3",
     "markdown-it-include": "^2.0.0",
     "markdown-it-katex": "^2.0.3",
-    "minimist": "^1.2.5",
-    "moment": "^2.29.1",
-    "node-fetch": "^2.6.1",
-    "node-sass": "^6.0.1",
-    "sanitize-html": "^2.5.3",
-    "xmlhttprequest-ssl": ">=1.6.2"
+    "minimist": "^1.2.6",
+    "moment": "^2.29.3",
+    "node-fetch": "^3.2.6",
+    "sass": "^1.52.3",
+    "npm-check-updates": "^14.0.1",
+    "sanitize-html": "^2.7.0",
+    "xmlhttprequest-ssl": ">=2.0.0"
   },
   "resolutions": {
-    "minimist": "^1.2.5",
+    "minimist": "^1.2.6",
     "http-proxy": "^1.18.1"
   }
 }
