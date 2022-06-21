@@ -145,7 +145,7 @@ development you can rely on the auto synchronization provided by [TypeORM](https
 
 ### Vercel ncc tool
 
-Just as a side remark, I also integrated the [Vercel](https://vercel.com) open-source [pkg](https://github.com/vercel/ncc) tool to generate a single
+Just as a side remark, I also integrated the [Vercel](https://vercel.com) open-source [ncc](https://github.com/vercel/ncc) tool to generate a single
 [JavaScript](https://www.ecma-international.org/publications-and-standards/standards/ecma-262/) file.
 
     > npm run ncc
@@ -220,7 +220,6 @@ const start = async () : Promise<void> => {
 
         const stations = res.data.stations;
 
-        // alle Tankstellen nacheinander auswerten
         for(const station of stations) {
             const s = station_from_request(station);
             if(!is_production)
@@ -254,7 +253,7 @@ Raspberry Pi[^rpilocator] idea.
 Then I slept over the whole story one night and I was thinking if there wasn't a cheap [Virtual Private
 Server](https://en.wikipedia.org/wiki/Virtual_private_server) (VPS) option available instead. After a bit of googling I found the following
 [netcup](https://www.netcup.de/vserver/vps.php) offering for 2.99 € per month for a minimum duration of 6 months. For that cost per month I can run
-the VPS for close to 4 years until I reach the price my ODROID-M1 device costs me now. In addition I'll get an internet reachable IP address with the
+the VPS for close to 4 years until I reach the price my ODROID-M1 device costs me. In addition I'll get an internet reachable IP address with the
 VPS set-up. So that will be my production environment.
 
 ### Staging
