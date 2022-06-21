@@ -2,9 +2,9 @@
 layout: "layouts/post-with-toc.njk"
 title: "Fuel Save Alerter: a TypeScript version of the heise+ article : 'Günstiger tanken: So lesen Sie Spritpreise automatisch aus'"
 description: "TypeScript, TypeORM, docker-compose, vagrant, ansible, netcup VPS"
-creationdate: 2022-06-19
+creationdate: 2022-06-21
 keywords: vagrant, ansible, docker-compose, netcup-vps, TypeScript, TypeORM
-date: 2022-06-19
+date: 2022-06-21
 tags: ['post']
 ---
 
@@ -244,11 +244,212 @@ start();
 
 ## Deployment Environment(s)
 
-### Raspi
+Originally I was thinking about deploying the application to a local [Raspberry Pi](https://en.wikipedia.org/wiki/Raspberry_Pi)[^rpi02w], but then I
+noticed how difficult it currently is to get one. The article [Raspi-Alternativen im Jahr der
+Chipknappheit](https://www.heise.de/select/make/2022/3/2208808255068404680) is looking into that. I finally decided to buy an [ODROID-M1 with 8GByte
+RAM](https://www.hardkernel.com/shop/odroid-m1-with-8gbyte-ram) instead. I was positively surprised to see that even when ordering the device from
+South Korea the delivery time is only 1 week. That's nice. The whole package will cost something like 140 USD, e.g. a lot more than my original
+Raspberry Pi[^rpilocator] idea.
 
-### Vagrant
+Then I slept over the whole story one night and I was thinking if there wasn't a cheap [Virtual Private
+Server](https://en.wikipedia.org/wiki/Virtual_private_server) (VPS) option available instead. After a bit of googling I found the following
+[netcup](https://www.netcup.de/vserver/vps.php) offering for 2.99 € per month for a minimum duration of 6 months. For that cost per month I can run
+the VPS for close to 4 years until I reach the price my ODROID-M1 device costs me now. In addition I'll get an internet reachable IP address with the
+VPS set-up. So that will be my production environment.
 
-### Netcup VPS
+### Staging
+
+As a staging environment I'll use a local `vagrant up` [vagrant](https://www.vagrantup.com/) environment either based on
+[VirtualBox](https://www.virtualbox.org) or [KVM](https://www.linux-kvm.org)[^vagrantlibvirtkvm]. As OS I'll use a Ubuntu 22.04 LTS Jammy.
+
+    > cd fuel-save-alerter-germany/900-ops
+    > vagrant up
+    > vagrant ssh
+    vagrant> ping 192.168.56.101
+
+The last line is necessary, because otherwise the interface is sometimes not accessible from the host outside the virtual machine. Exit the virtual
+machine `Ctrl-D` (EOF) and check that the ansible configuration is working:
+
+    > ansible all -m ping
+
+You should get a green response from your vagrant environment. Next set-up and configure the base system like `docker` and other packages:
+
+    > ansible-playbook 00-basebox/setup.yml
+
+And finally install the systemd versions of the docker-compose infrastructure plus a systemd timer[^systemdtimers] to regularly run the `fsag-gather`
+executable every 20 minutes and store the data in our postgres database.
+
+    > ansible-playbook 10-systemd-service/setup.yml
+
+As we don't want to use the `synchronize: true` mode of [TypeORM](https://typeorm.io/data-source-options) in production we also need to run the
+migrations. We only need to do this the first time we call the `10-systemd-service/setup.yml` playbook. In the future we only need to run the
+migrations in cases where the schema changes.  Therefore, go ahead and execute in one terminal the following ssh command:
+
+    > vagrant ssh -- -L 5432:localhost:5432
+
+This ssh command will "teleport" the PostgreSQL port 5432 from the staging environment to your local host via ssh port forwarding so that you can run
+the migrations from your local working machine.  From a second terminal on your local machine, run the migrations:
+
+    > pushd ../010-dev && npm run migration_run && popd
+
+Now go back to your first terminal and execute the following on the vagrant guest staging environment to test the set-up:
+
+    vagrant> sudo systemctl start fsag-gather.service
+    vagrant> sudo cat /tmp/fsag-gather-out.txt
+    vagrant> sudo journalctl -S today -u fsag-gather.service
+    vagrant> sudo systemctl status fsag-gather.timer
+
+If all goes well you should see the success message from gathering data in the `fsag-gather-out.txt` file and you should see the details about the
+timer.
+
+#### Remove the Vagrant Environment
+
+Once you're done with your staging environment simply remove it:
+
+    > vagrant destroy
+
+#### A remark about Network Security
+
+We were careful to confine the [PostgreSQL](https://www.postgresql.org)/[Timescale](https://www.timescale.com) and the [Grafana](https://grafana.com)
+ports to localhost on the staging environment via our docker-compose file and the `ports` directive:
+
+```yaml
+version: "3.8"
+networks:
+  main:
+
+services:
+  postgres:
+    container_name: fsag_postgresql
+    image: 'timescale/timescaledb:latest-pg14'
+    volumes:
+      - data-volume:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+    networks:
+      - main
+  grafana-oss:
+    container_name: fsag_grafana
+    image: 'grafana/grafana-oss:8.5.5'
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    ports:
+      - '127.0.0.1:3000:3000'
+    networks:
+      - main
+volumes:
+  data-volume:
+  grafana-storage:
+```
+
+These ports should not be accessible other than from localhost on the staging or production environment. If you want to access them from your local
+working machine you use the `ssh` port forwarding capability via the `-L` switch:
+
+    > vagrant ssh -- -L 5432:localhost:5432 -L 3000:localhost:3000
+
+But I've read descriptions of cases where users reported that the restriction to localhost did not work because of whatever internal magic of
+container set-ups. It is worthwhile to check that the ports are really not accessible from the outside of your staging and production environments!!
+Execute both the following commands:
+
+    > telnet 192.168.56.101 5432
+    > telnet 192.168.56.101 3000
+
+In both cases you should receive something like:
+
+    > telnet: Unable to connect to remote host: Connection refused
+
+### Production
+
+Now that our tests on our staging environment work fine we can go to production. In principle, you simply have to repeat what you already did on the
+staging environment.
+
+Once you have a VPS set-up like in my case the [netcup](https://www.netcup.de/vserver/vps.php) offering for 2.99 € per month you have to perform a
+base set-up via the web console of the VPS provider. You will have to install `Ubuntu 22.04 LTS Jammy`. After that you should be able to ssh to that
+environment via the user root and a password. With that access you then should set-up a `vagrant` user, give the vagrant user a password, create an
+admin group, add the vagrant user to the admin group (to enable the vagrant user for sudo access), set-up the
+[authorized_keys](https://help.ubuntu.com/community/SSH/OpenSSH/Keys#Transfer_Client_Key_to_Host) for the vagrant user and ideally [disable password
+authentication in sshd](https://askubuntu.com/questions/435615/disable-password-authentication-in-ssh). After that you should be able to ssh to your
+VPS via the vagrant user without the need to enter a password:
+
+    > ssh vagrant@v2202206177879193164.goodsrv.de
+
+With the password you did set for the vagrant user you should be able to `sudo su` to `root`:
+
+    vagrant> sudo su
+    root>
+
+Adapt the `ansible_host` value in `900-ops/environments/prod/hosts.yml` to your VPS instance.
+
+Once that is done just follow the same/similar procedure as for the staging area:
+
+    > ANSIBLE_CONFIG=environments/prod/ansible.cfg ansible -i environments/prod all -m ping
+    > ANSIBLE_CONFIG=environments/prod/ansible.cfg ansible-playbook -i environments/prod 00-basebox/setup.yml --ask-become-pass
+    > ANSIBLE_CONFIG=environments/prod/ansible.cfg ansible-playbook -i environments/prod 10-systemd-service/setup.yml --ask-become-pass
+    > ssh -L 5432:localhost:5432 vagrant@v2202206177879193164.goodsrv.de
+
+In the above, when ansible asks you for a password then type the password you did set-up for the vagrant user on your VPS. Like that you need 2 access
+credentials to perform changes on your production environment:
+
+* the SSH key that you authorized via the `authorized_keys` file[^yubissh]
+* the vagrant user password
+
+From a second terminal on your local machine, run the migrations:
+
+    > pushd ../010-dev && npm run migration_run && popd
+
+Now go back to your first terminal and execute the following on the vagrant guest production environment to test the set-up:
+
+    vagrant> sudo systemctl start fsag-gather.service
+    vagrant> sudo cat /tmp/fsag-gather-out.txt
+    vagrant> sudo journalctl -S today -u fsag-gather.service
+    vagrant> sudo systemctl status fsag-gather.timer
 
 
+If you want to access the postgres database on your VPS via the SSH tunnel execute the following from a second terminal:
 
+    > psql postgres://postgres:postgres@localhost:5432/postgres
+
+#### Network Security Check
+
+    > telnet v2202206177879193164.goodsrv.de 5432
+    > telnet v2202206177879193164.goodsrv.de 3000
+
+### Uninstall
+
+In case you ever wanted to get rid-off the complete installation follow the below:
+
+    vagrant> sudo su
+    root> systemctl stop fsag-gather.timer
+    root> systemctl disable fsag-gather.timer
+    root> systemctl stop fsag-infrastructure
+    root> systemctl disalbe fsag-infrastructure
+    root> systemctl daemon-reload
+    root> systemctl list-units --all | grep fsag # -> should be empty
+    root> systemctl list-timers --all | grep fsag # -> should be empty
+    root> rm /etc/systemd/system/fsag-infrastructure.service /etc/systemd/system/fsag-gather.service fsag-gather.timer
+    root> cd /opt/fsag-gather
+    root> docker compose down -v --remove-orphans # --rmi all
+    root> cd ..
+    root> rm -rf /opt/fsag-gather
+
+## Grafana
+
+The Grafana set-up procedure is the same as in the original [heise+](https://www.heise.de/plus) article. Please refer there for details.
+
+## Next Steps
+
+There is a second part of the [heise+](https://www.heise.de/plus) article called [Push-Benachrichtigung bei günstigen Spritpreisen: Alarm mit Node-Red
+einrichten](https://www.heise.de/ratgeber/Push-Benachrichtigungen-mit-Node-Red-Alarm-fuer-guenstige-Spritpreise-einrichten-7121238.html?seite=all),
+which extends the data collection functionality to provide push notifications via the [Pushover](https://pushover.net/) app. In a future blog post I
+might extend the current solution accordingly.
+
+## Footnotes
+
+[^rpilocator]: You might be lucky to get a Raspi via the [RPiLocator](https://rpilocator.com).
+[^rpi02w]: I would have liked a [Raspberry Pi Zero 2 W](https://en.wikipedia.org/wiki/Raspberry_Pi#Raspberry_Pi_Zero) for something like 15 USD.
+[^vagrantlibvirtkvm]: Have a look at [How To Use Vagrant With Libvirt KVM Provider](https://ostechnix.com/how-to-use-vagrant-with-libvirt-kvm-provider) for details.
+[^systemdtimers]: [Use systemd timers instead of cronjobs](https://opensource.com/article/20/7/systemd-timers)
+[^yubissh]: In order to improve your security even further you could use a [YubiKey](https://www.yubico.com/) for [logging in to remote SSH servers](https://developers.yubico.com/PGP/SSH_authentication/)
