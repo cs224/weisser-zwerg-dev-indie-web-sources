@@ -246,7 +246,7 @@ start();
 Originally I was thinking about deploying the application to a local [Raspberry Pi](https://en.wikipedia.org/wiki/Raspberry_Pi)[^rpi02w], but then I
 noticed how difficult it currently is to get one. The article [Raspi-Alternativen im Jahr der
 Chipknappheit](https://www.heise.de/select/make/2022/3/2208808255068404680) is looking into that. I finally decided to buy an [ODROID-M1 with 8GByte
-RAM](https://www.hardkernel.com/shop/odroid-m1-with-8gbyte-ram) instead. I was positively surprised to see that even when ordering the device from
+RAM](https://www.hardkernel.com/shop/odroid-m1-with-8gbyte-ram)[^odroidm1] instead. I was positively surprised to see that even when ordering the device from
 South Korea the delivery time is only 1 week. That's nice. The whole package will cost something like 140 USD, e.g. a lot more than my original
 Raspberry Pi[^rpilocator] idea.
 
@@ -452,3 +452,4 @@ might extend the current solution accordingly.
 [^vagrantlibvirtkvm]: Have a look at [How To Use Vagrant With Libvirt KVM Provider](https://ostechnix.com/how-to-use-vagrant-with-libvirt-kvm-provider) for details.
 [^systemdtimers]: [Use systemd timers instead of cronjobs](https://opensource.com/article/20/7/systemd-timers)
 [^yubissh]: In order to improve your security even further you could use a [YubiKey](https://www.yubico.com/) for [logging in to remote SSH servers](https://developers.yubico.com/PGP/SSH_authentication/)
+[^odroidm1]: Have a look at my experience report [ODROID-M1: an Experience Report](../odroid-m1)

@@ -56,8 +56,8 @@
     "minimist": "^1.2.6",
     "moment": "^2.29.3",
     "node-fetch": "^3.2.6",
-    "sass": "^1.52.3",
-    "npm-check-updates": "^14.0.1",
+    "sass": "^1.53.0",
+    "npm-check-updates": "^14.1.1",
     "sanitize-html": "^2.7.0",
     "xmlhttprequest-ssl": ">=2.0.0"
   },
