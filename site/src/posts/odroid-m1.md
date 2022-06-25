@@ -36,7 +36,7 @@ The device looks like this:
 
 |  |  |  |
 |--|--|--|
-| <object data="/img/2022-06-25-odroid-m1-1.jpeg" type="image/jpg" style="max-width: 100%"><img src="/img/2022-06-25-odroid-m1-1.jpeg" alt="view from top"></object> | <object data="/img/2022-06-25-odroid-m1-2.jpeg" type="image/jpg" style="max-width: 100%"><img src="/img/2022-06-25-odroid-m1-2.jpeg" alt="view from rear"></object> | <object data="/img/2022-06-25-odroid-m1-3.jpeg" type="image/jpg" style="max-width: 100%"><img src="/img/2022-06-25-odroid-m1-3.jpeg" alt="view from front"></object> |
+| <div style="max-width: 100%"><object data="/img/2022-06-25-odroid-m1-1.jpeg" type="image/jpg" style="max-width: 100%"><img src="/img/2022-06-25-odroid-m1-1.jpeg" alt="view from top"></object> | <object data="/img/2022-06-25-odroid-m1-2.jpeg" type="image/jpg" style="max-width: 100%"><img src="/img/2022-06-25-odroid-m1-2.jpeg" alt="view from rear"></object> | <object data="/img/2022-06-25-odroid-m1-3.jpeg" type="image/jpg" style="max-width: 100%"><img src="/img/2022-06-25-odroid-m1-3.jpeg" alt="view from front"></object></div> |
 
 In the middle picture you can also see the WiFi Module 5BK. I find it sad that WiFi is not directly on-board.
 
