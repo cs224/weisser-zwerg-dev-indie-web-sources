@@ -1,6 +1,6 @@
 ---
 layout: "layouts/post-with-toc.njk"
-title: "Espresso Coarseness Setting"
+title: "Espresso Coarseness Setting may save your day!"
 description: "Avoid the common bitterish taste of espresso and coffee."
 creationdate: 2022-07-10
 keywords: espresso,coffee,coarseness,bitter,bitterish
