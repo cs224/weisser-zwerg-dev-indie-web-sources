@@ -48,6 +48,23 @@ seems to have been the secret behind our beloved `Saeco Incanto de Luxe`!
 
 I thought I'd share this discovery with the world just in case it helps someone else to save their day.
 
+### Additional tip: D-Ribose (sugar)
+
+For a long time I drank my espresso pure without sugar. Some time ago I read about [Ribose](https://en.wikipedia.org/wiki/Ribose), a type of sugar,
+that (is said to) helps to push through strenuous mental activity. Some call it the healthiest sugar in the world ([Ribose - der gesündeste Zucker der
+Welt](https://www.youtube.com/watch?v=JrGZsHco9Mo))[^ribooseteeth].
+
+Anyway, I started to drink my espresso with a tiny bit of Ribose and at least I imagine it to positively reinforces the caffeine effect. In the past I
+bought it from Deluxe Nutrition, but since Brexit they don't deliver to Germany any longer:
+
+* [D-Ribose Powder Help To Restore Your Energy Levels - Fighting Fatigue](https://deluxenutrition.co.uk/products/d-ribose)
+
+Now I buy it from Vit4ever via Amazon:
+
+* [D-Ribose Pulver - 320 g](https://www.amazon.de/gp/product/B081ZRJ1K9/)
+
+
 ## Footnotes
 
 [^sidcheap]: It did cost less than 500€ at the time.
+[^ribooseteeth]: I even read that Ribose does not harm the teeth, because the bacteria that cause tooth decay cannot process it.
