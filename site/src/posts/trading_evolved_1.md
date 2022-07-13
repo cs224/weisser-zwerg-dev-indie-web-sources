@@ -1,10 +1,10 @@
 ---
 layout: "layouts/post-with-toc.njk"
-title: "Trading Evolved: CSI-Data"
-description: "Andreas F. Clenow uses Futures data from CSI-Data for his backtests; this blog post shows how to set-up the required environment."
+title: "Trading Evolved: ingest CSI-Data futures data into the Quantopian Zipline pythonic algorithmic trading and backtesting environment."
+description: "Andreas F. Clenow uses Futures data from CSI-Data for his trend following backtests; this blog post shows how to set-up the required environment."
 creationdate: 2020-12-29T10:34:00+01:00
 date: 2020-12-29T10:34:00+01:00
-keywords: finance, investing, trend-following, futures, csi-data, zipline, ingest, bundle, csi_futures_data
+keywords: finance, investing, trend-following, futures, csi-data, csidata, zipline, ingest, bundle, csi_futures_data, python
 tags: ['post']
 # eleventyExcludeFromCollections: true
 ---
