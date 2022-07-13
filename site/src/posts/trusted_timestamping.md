@@ -1,9 +1,9 @@
 ---
 layout: "layouts/post-with-toc.njk"
-title: "RFC3161 Trusted Timestamping"
-description: "RFC3161 Trusted Timestamping via OpenSSL by foot"
+title: "RFC3161 Trusted Timestamping via OpenSSL by foot: a guided tour."
+description: "A blog post to explain how to use the standard functionality of OpenSSL to create trusted timestamps for free."
 creationdate: 2022-03-12
-keywords: openssl, RFC3161
+keywords: openssl, RFC3161, RFC 3161, tutorial, tour, free
 date: 2022-03-12
 tags: ['post']
 ---
