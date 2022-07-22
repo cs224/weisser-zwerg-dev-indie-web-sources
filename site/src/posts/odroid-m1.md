@@ -73,6 +73,9 @@ package.
 The `running 1 parallel copy of tests` version resulated in a `System Benchmarks Index Score` of `467.5`. Just as a comparison, on the
 [netcup](https://www.netcup.de/vserver/vps.php) VPS for 2.99 € per month I get a value of `647.3`, so a factor of 1.38 better.
 
+> **2022-07-22 Addendum**: I've now run the benchmark also on one of my old Raspberry Pi 3 Model B, where the `running 1 parallel copy of tests` version
+> resulated in a `System Benchmarks Index Score` of `256.1`. Even the `running 4 parallel copies of tests` resulted only in `437.9`.
+
 ## Summary
 
 All in all I have mixed feelings about the device. It looks nice, consumes little power[^power] and has a nice boot process with the `Petitboot`
