@@ -17,17 +17,24 @@ As mentioned in my article [Fuel Save Alerter](../fuel-save-alerter-germany), I 
 RAM](https://www.hardkernel.com/shop/odroid-m1-with-8gbyte-ram) instead. Then I reconsidered this decision and ended up deploying the
 [fuel-save-alerter-germany](https://github.com/cs224/fuel-save-alerter-germany) application on a [netcup](https://www.netcup.de/vserver/vps.php)
 VPS. In my article [ODROID-M1: an Experience Report](../odroid-m1) I described the characteristics of the `ODROID-M1` and as I had the device already
-I was thinking about how to make the best use of it.
+I was thinking about how to make best use of it.
 
 I finally ended up with the idea to deploy a [dockerized](https://en.wikipedia.org/wiki/Docker_(software)) version of [Home
-Assistant](https://www.home-assistant.io) on the ODROID-M1, mostly following the excellent guidance given by [Docker And Home
+Assistant](https://www.home-assistant.io) on the `ODROID-M1`, mostly following the excellent guidance given by [Docker And Home
 Automation](https://www.youtube.com/playlist?list=PL4ed4sZb-R_8dJmakzfBywx1zL9HrFEOy) by [Home Automation
 Guy](https://www.homeautomationguy.io/home-assistant-tips/installing-docker-home-assistant-and-portainer-on-ubuntu-linux). The main addition from my
 side is to deploy everything via [Ansible](https://www.ansible.com). In addition, I created a sample automation in pure
 [Python](https://www.python.org) external to `Home Assistant` that communicates via [MQTT](https://mqtt.org) with `Home Assistant`. Furthermore, I
 create a [WireGuard](https://www.wireguard.com) [VPN](https://en.wikipedia.org/wiki/Virtual_private_network) to connect the `ODROID-M1` in my home to
-the [netcup](https://www.netcup.de/vserver/vps.php) VPS, so that I can use the `netcup` VPS as a ssh
+the [netcup](https://www.netcup.de/vserver/vps.php) VPS, so that I can use the `netcup` VPS as a `ssh`
 [ProxyJump](https://goteleport.com/blog/ssh-proxyjump-ssh-proxycommand/) jump host to connect to the `Home Assistant` instance from anywhere I want.
+
+To give you an idea of how the final result will look like, here is a screenshot of one of my dashboards:<br>
+<img src="/img/2022-08-06-homeassistant-dashboard-sample.jpg" alt="view from top" style="max-width: 100%">
+
+There exists also a [Mobile App](https://www.home-assistant.io/integrations/mobile_app) for `iOS` and `Android`. The
+[networking](https://companion.home-assistant.io/docs/troubleshooting/networking) article describes how the `app` talks to the `Home Assistant`
+instance. In the local network this worked for me out of the box.
 
 As always, you can find the code on [GitHub](https://github.com/cs224/odroid-m1-dockerized-homeassistant).
 
@@ -40,8 +47,9 @@ overall system fulfils.
 
 In the end I would say now that [Home Assistant](https://www.home-assistant.io) is a web application that connects to all relevant functionality via
 network protocols. You don't need the `Add-ons` store, because you can spin up all of these `Add-ons` via another docker container yourself. Like that
-you have even access to many more external services and you have much more control over what is going on! I would even go as far as to recommend to go
-with [Home Assistant Core](https://www.home-assistant.io/installation/).
+you have even access to many more external services and you have much more control over what is going on! I would even go as far as to **recommend**
+to go with [Home Assistant Core](https://www.home-assistant.io/installation/) rather than the offical recommendation of using their [Home Assistant
+Operating System](https://www.home-assistant.io/installation/).
 
 The services I chose to add in addition to the core `Home Assistant` web application are:
 * [portainer](https://www.portainer.io): a web interface to manage docker containers on the `ODROID-M1`.
@@ -51,7 +59,7 @@ The services I chose to add in addition to the core `Home Assistant` web applica
 * [Duplicati](https://www.duplicati.com): a backup software.
 
 Have a look at the
-[docker-compose.yml](https://github.com/cs224/odroid-m1-dockerized-homeassistant/blob/main/roles/homeassistant/templates/docker-compose.yml) file for
+[docker-compose.yml](https://github.com/cs224/odroid-m1-dockerized-homeassistant/blob/main/roles/homeassistant/templates/docker-compose.yml) file[^attention-host-network] for
 more details. Most of the components I simply set-up according to the description given by [Docker And Home
 Automation](https://www.youtube.com/playlist?list=PL4ed4sZb-R_8dJmakzfBywx1zL9HrFEOy) by `Home Automation Guy`.
 
@@ -66,7 +74,7 @@ The system set-up consists of the following stages:
 In stage 1) you install the core services via Ansible, which in turn will set-up a systemd service which will start a docker-compose stack. At this
 stage all services are running, but they are not connected or configured.
 
-In stage 2) you create a base configuration of `Home Assistant` via its configuration files. On the ODROID-M1 they will be located at
+In stage 2) you create a base configuration for `Home Assistant` via its configuration files. On the `ODROID-M1` they will be located at
 `/opt/homeassistant/data/homeassistant/config`. In the GitHub repository the relevant files are located at
 [homeassistant-backup](https://github.com/cs224/odroid-m1-dockerized-homeassistant/tree/main/homeassistant-backup).
 
@@ -79,29 +87,29 @@ Duplicati](https://www.youtube.com/watch?v=pJqPhYXeulk&list=PL4ed4sZb-R_8dJmakzf
 
 ### ODROID-M1 basic set-up
 
-The basic set-up of the ODROID-M1 is described in [ODROID-M1: an Experience Report](../odroid-m1). After that you'll have to set-up ssh so that
+The basic set-up of the `ODROID-M1` is described in [ODROID-M1: an Experience Report](../odroid-m1). After that you'll have to set-up ssh so that
 `Ansible` can connect to the device. Ideally you configure `sshd` in a way that it [only allows public key
 authentication](https://www.nixcraft.com/t/how-to-only-allow-ssh-key-login-and-disable-passwords/3722) and does not allow root logins. You will want
 to be able to edit `Home Assistant` configuration files via [Visual Studio Code](https://code.visualstudio.com) and its [Remote
 Development](https://code.visualstudio.com/docs/remote/remote-overview) extension. You can follow the description at
-[vscode-remote-ssh-as-root](https://ponteshare.ch/2022/01/vscode-remote-ssh-as-root) to achieve that. Basically you have to add the following at the bottom of your `sshd_config` on your ODROID-M1:
+[vscode-remote-ssh-as-root](https://ponteshare.ch/2022/01/vscode-remote-ssh-as-root) to achieve that. Basically you have to add the following at the bottom of your `sshd_config` on your `ODROID-M1`:
 
-```
+```ini
 Match Address 127.0.0.1
         PermitRootLogin yes
 ```
 
 And put something like that in your `~/.ssh/config` on your workstation:
 
-```
+```ini
 Host odroid-root
   HostName 127.0.0.1
   ProxyJump odroid@odroid
   User root
 ```
 
-And if you then add in addition your `~/.ssh/id_rsa.pub` to the `authorized_keys` on the `ODROID-M1` then you can connect directly via `ssh` and via the
-`VS Code Remote Development` extension to the root account of your `ODROID-M1`:
+And if you then add in addition your `~/.ssh/id_rsa.pub` to the `authorized_keys` of the root account (`/root/.ssh/authorized_keys`) on the
+`ODROID-M1` then you can connect directly via `ssh` and via the `VS Code Remote Development` extension to the root account of your `ODROID-M1`:
 
     > ssh odroid-root
 
@@ -120,6 +128,10 @@ Or
     > make ansible_ping
 
 ### Stage 1: ODROID-M1 Home Assistant set-up
+
+If you do not have the ansible requirements installed yet, then execute the following. This will only be required one time:
+
+    > ansible-galaxy install -r requirements.yml
 
 The stage 1) base set-up is done via:
 
@@ -165,7 +177,7 @@ the `/opt` directory.
 ## External Python Automation
 
 I don't know how that happens, but my first ideas for how to use any new technology I investigate always exceed the capabilities that are provided
-easily out of the box. This was also the case for `Home Assistant`.
+easily out of the box. This was also the case for `Home Assistant` &#128512;
 
 I have some [FRITZ!DECT 200](https://avm.de/produkte/fritzdect/fritzdect-200) power plugs that I used so far solely to measure power consumption. I
 noticed that even when I switch off all devices in the evening like my computer(s) and monitor there remains some power consumption of round about
@@ -181,7 +193,7 @@ below $10W$ in that time period.
 
 The code is in [odroid-m1-dockerized-homeassistant/python](https://github.com/cs224/odroid-m1-dockerized-homeassistant/tree/main/python). I connect
 directly to the `PostgreSQL` database with [pandas.read_sql_query](https://pandas.pydata.org/docs/reference/api/pandas.read_sql_query.html)() to read
-the relevant past states from there. Then I trigger a `MQTT` message on the `automation/{device_name}_trigger_off` topic that is picked up by a `Home
+the relevant past states from there. Then I trigger a `MQTT`[^MQTT-explained] message on the `automation/{device_name}_trigger_off` topic that is picked up by a `Home
 Assistant` automation. Look at
 [automations.yaml](https://github.com/cs224/odroid-m1-dockerized-homeassistant/blob/main/homeassistant-backup/config/automations.yaml) at `alias:
 'Ladestation: trigger power off for standby power consumption'`. So what happens is
@@ -236,6 +248,106 @@ That way you can develop your python scripts in a local [Jupyter Notebook](https
 `ODROID-M1`. An example for such a local notebook is at
 [2022-08-02-trigger-power-off-for-standby.ipynb](https://github.com/cs224/odroid-m1-dockerized-homeassistant/blob/main/python/2022-08-02-trigger-power-off-for-standby.ipynb).
 
+## WireGuard
+
+The [WireGuard](https://www.wireguard.com) VPN set-up is not automated yet as it only has to be done once. See the article: [Expose server behind NAT
+with WireGuard and a VPS](https://golb.hplar.ch/2019/01/expose-server-vpn.html)[^expose-behind-nat] for a more detailed explanation.
+
+This set-up will allow you to `ssh` `ProxyJump` over the computing instance that is reachable in the internet onto the device behind a router. This
+set-up will not enable the devices behind a router to talk directly among each other (I have one [Raspberry Pi 3 Model
+B](https://www.raspberrypi.com/products/raspberry-pi-3-model-b/) in one location behind a first router and the
+[ODROID-M1](https://www.hardkernel.com/shop/odroid-m1-with-8gbyte-ram) in another location behind a second router, e.g. the `Raspid` cannot talk to the
+`ODROID` via the `VPN`). For that to work the devices would need to be able to talk directly to each other on the `udp` level.
+
+> <span style="font-size:smaller">As a side remark: this set-up would also allow you to expose services running on the devices behind a router via the
+> `traefik` set-up we created in the [Traefik as Reverse Proxy](../traefik-reverse-proxy-ansible) article via the `file provider` method. In such a
+> set-up `traefik` would take care of the `SSL`/`TLS` offloading and the communication between `traefik` on the computing instance that is reachable
+> in the internet and the actual service on the device behind a router can happen via `http` or any other protocol supported by `traefik`. `traefik`
+> can also take care of authentication and authorization.
+> </span>
+
+On the devices where `WireGuard` is running you will need a private key and the associated public keys. To generate those keys you can use the following command:
+
+    > for i in {1..3}; do prvk=$(wg genkey); echo "$i - priv: $prvk pub: $(echo $prvk | wg pubkey)"; done
+
+The output will look like this (just a sample output; **don't use!**):
+
+```
+1 - priv: YJjibIYFSITIDhRRbqJX2wDNPk5eI4hBqO5fAqdKZ1E= pub: fo/fngmdgkfcPXxWX728xfUQDScH0nt4h38qYzh2Oz8=
+2 - priv: ALJESSMpAmkmUQx/txX/GXgO2EuGOtefeZEcdeCYklk= pub: akQsDXIclG5N1pPsDolsStLuDwQmzn+ZrXO76wWlAQo=
+3 - priv: YBOb1iiesvG+nZ4bBkphOpFZGdMBCK2oz5fPer8fbVU= pub: Mjwfor1rxEv56il29h8JEsNCujqtNbvg+k7DRYktyEk=
+```
+
+On the computing instance that is reachable in the internet (for me this is the netcup VPS) set-up a file `/etc/wireguard/wg0.conf`:
+
+```yml
+[Interface]
+Address = 10.0.1.1
+PrivateKey = ...
+ListenPort = 51820
+
+[Peer]
+PublicKey = ...
+AllowedIPs = 10.0.1.2/32
+
+[Peer]
+PublicKey = ...
+AllowedIPs = 10.0.1.3/32
+```
+
+Once that is done start the `WireGuard` process:
+
+    > sudo systemctl start wg-quick@wg0
+    > sudo systemctl enable wg-quick@wg0
+
+On your devices that operate behind a router, like the `ODROID-M1` for me, set-up a file `/etc/wireguard/wg0.conf`:
+
+```yml
+[Interface]
+Address = 10.0.1.3
+PrivateKey = ...
+
+[Peer]
+PublicKey = ...
+AllowedIPs = 10.0.1.1/32
+Endpoint = v2202206177879193164.goodsrv.de:51820
+PersistentKeepalive = 25
+
+[Peer]
+PublicKey = ...
+AllowedIPs = 10.0.1.2/32
+```
+
+And again start the `WireGuard` process:
+
+    > sudo systemctl start wg-quick@wg0
+    > sudo systemctl enable wg-quick@wg0
+
+If you need to analyse issues with `WireGuard` looking at the [wireguard logs](https://www.procustodibus.com/blog/2021/03/wireguard-logs) may help.
+
+Finally set-up the `ProxyJump` configuration in `.ssh/config` on your workstation.
+
+```ini
+Host ha-odroid
+  HostName 10.0.1.3
+  User odroid
+  IdentityFile ~/.ssh/id_rsa
+  Port 22
+
+  ## sample for ProxyJump
+  ProxyJump vagrant@v2202206177879193164.goodsrv.de
+
+  ## sample for ProxyCommand
+  ProxyCommand ssh -W %h:%p v2202206177879193164.goodsrv.de
+```
+
+After that you should be able to `ssh` to your device behind the router via:
+
+    > ssh ha-odroid
+
 ## Footnotes
 
+[^attention-host-network]: Pay special attention to `network_mode: host` for the homeassistant container; this will allow auto discovery of devices in the local network.
 [^rsync-files-in-folder]: See [Rsync copy directory contents but not directory itself](https://stackoverflow.com/questions/20300971/rsync-copy-directory-contents-but-not-directory-itself).
+[^expose-behind-nat]: [Multiple ways to expose a local server behind NAT or firewall](https://johackim.com/how-to-expose-local-server-behind-firewall)
+[^MQTT-explained]: I recommend the [MQTT Essentials](https://www.youtube.com/playlist?list=PLRkdoPznE1EMXLW6XoYLGd4uUaB6wB0wd) and [MQTT 5 Essentials](https://www.youtube.com/playlist?list=PLRkdoPznE1ENuiniLpfNs4vSBFu19eNWh) from the [HiveMQ](https://www.hivemq.com/) team.

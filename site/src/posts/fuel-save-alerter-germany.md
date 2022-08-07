@@ -271,7 +271,13 @@ machine `Ctrl-D` (EOF) and check that the ansible configuration is working:
 
     > ansible all -m ping
 
-You should get a green response from your vagrant environment. Next set-up and configure the base system like `docker` and other packages:
+You should get a green response from your vagrant environment.
+
+If you do not have the ansible requirements installed yet, then execute the following. This will only be required once:
+
+    > ansible-galaxy install -r requirements.yml
+
+Next set-up and configure the base system like `docker` and other packages:
 
     > ansible-playbook 00-basebox/setup.yml
 
