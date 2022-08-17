@@ -1,7 +1,7 @@
 ---
 layout: "layouts/post-with-toc.njk"
 title: "Home Automation: Abstract / Conceptual View"
-description: "What is Home Automation about?"
+description: "What is Home Automation good for?"
 creationdate: 2022-08-17T14:15:00+01:00
 date: 2022-08-17T14:15:00+01:00
 keywords: home-automation, IoT, smart-devices
@@ -89,7 +89,7 @@ to obtain the electric power in your house (grid, battery, roof).
 
 Your oil tank might measure the vessel level to know when to order the next batch of fuel. In addition, this will tell you your rate of consumption.
 
-Watering systems for your garden might be triggered by a ground humidity sensor to only wanter when it is necessary. In addition this is also
+Watering systems for your garden might be triggered by a ground humidity sensor to only water when it is necessary. In addition this is also
 convenient, because you do not have to take care of it yourself any longer.
 
 Your refrigerater might know when to order the next batch of provisions. For older persons medicine supply will become more and more important. This
