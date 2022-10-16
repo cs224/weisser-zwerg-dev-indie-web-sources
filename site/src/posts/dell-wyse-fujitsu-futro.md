@@ -15,6 +15,12 @@ at the moment and about my experience with the ODROID-M1. One of them mentioned 
 Fujitsu Futro and that this might even be cheaper than a new Raspberry Pi 4. I started to look around and watch some YouTube videos about it and
 finally decided to give it a try. Below you will find my experience report.
 
+### Picture
+
+A Dell Wyse 5060 and Fujitsu Futro S920 side by side:
+
+<img src="/img/dell-wyse-5060-fujitsu-futro-s920.jpg" alt="Dell Wyse 5060 and Fujitsu Futro S920 side by side" style="max-width: 100%">
+
 ### Disclaimer
 
 I am really not a hardware person. Please keep that in mind when you read the below. I made several mistakes in buying things that I did not need and
