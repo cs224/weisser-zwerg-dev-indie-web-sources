@@ -20,7 +20,7 @@
     "lodash": "^4.17.21",
     "luxon": "^2.3.0",
     "moment": "^2.29.1",
-    "node-fetch": "^3.2.0",
+    "node-fetch": "^3.2.10",
     "node-sass": "^7.0.1",
     "sanitize-html": "^2.7.0"
   }
