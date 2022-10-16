@@ -82,6 +82,8 @@ detected by the Ubuntu LTS 22.04 kernel. You have to follow the instructions [Pr
 forward, but I was expecting a more "out-of-the-box" experience with a USB adapter. You might want to look for another USB adapter that is supported
 by the Linux kernel out-of-the-box.
 
+> **2022-10-16 Addendum**: a friend pointed me towards [Bingfu M.2 WiFi Antenna](https://www.amazon.de/dp/B09V4F57PV/), which should have been able to
+> solve my internal wifi card problem. But that is for another time.
 
 ## Benchmark
 
