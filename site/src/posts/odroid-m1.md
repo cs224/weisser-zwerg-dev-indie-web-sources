@@ -76,6 +76,8 @@ The `running 1 parallel copy of tests` version resulated in a `System Benchmarks
 > **2022-07-22 Addendum**: I've now run the benchmark also on one of my old Raspberry Pi 3 Model B, where the `running 1 parallel copy of tests` version
 > resulated in a `System Benchmarks Index Score` of `256.1`. Even the `running 4 parallel copies of tests` resulted only in `437.9`.
 
+> **2022-10-15 Addendum**: You might also be interested in my newer blog post [Thin Clients as Home Servers: Dell Wyse 5060 and Fujitsu Futro S920: an Experience Report](../dell-wyse-fujitsu-futro).
+
 ## Summary
 
 All in all I have mixed feelings about the device. It looks nice, consumes little power[^power] and has a nice boot process with the `Petitboot`
