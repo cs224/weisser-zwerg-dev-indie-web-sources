@@ -1,5 +1,5 @@
 {
-  "lastFetched": "2020-12-06T14:33:16.193Z",
+  "lastFetched": "2023-03-07T05:39:26.572Z",
   "children": [
     {
       "type": "entry",
@@ -153,6 +153,24 @@
       "wm-received": "2019-11-26T13:53:22Z",
       "wm-id": 727866,
       "wm-source": "https://fed.brid.gy/render?source=https%3A%2F%2Fmastodon.social%2Ff5642643-ff24-428c-9c17-79d72f25f49d&target=https%3A%2F%2Fweisser-zwerg.dev%2F",
+      "wm-target": "https://weisser-zwerg.dev/",
+      "mention-of": "https://weisser-zwerg.dev/",
+      "wm-property": "mention-of",
+      "wm-private": false
+    },
+    {
+      "type": "entry",
+      "author": {
+        "type": "card",
+        "name": "Chen John",
+        "photo": "https://webmention.io/avatar/files.mastodon.social/8c6c95ad34ba886a8821ad909ad5018985858d2c693cb08d7dcbf4127bded696.jpg",
+        "url": "https://mastodon.social/@chenjohn619"
+      },
+      "url": "https://fed.brid.gy/render?source=https%3A%2F%2Fmastodon.social%2F76b3f994-7e38-48a8-8d2b-5629756f3920&target=https%3A%2F%2Fweisser-zwerg.dev%2F",
+      "published": null,
+      "wm-received": "2022-12-31T14:40:17Z",
+      "wm-id": 1590099,
+      "wm-source": "https://fed.brid.gy/render?source=https%3A%2F%2Fmastodon.social%2F76b3f994-7e38-48a8-8d2b-5629756f3920&target=https%3A%2F%2Fweisser-zwerg.dev%2F",
       "wm-target": "https://weisser-zwerg.dev/",
       "mention-of": "https://weisser-zwerg.dev/",
       "wm-property": "mention-of",
