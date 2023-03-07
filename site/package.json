@@ -34,7 +34,7 @@
   },
   "homepage": "https://github.com/cs224/weisser-zwerg-dev-indie-web-sources#readme",
   "devDependencies": {
-    "@11ty/eleventy": "^1.0.2",
+    "@11ty/eleventy": "^2.0.0",
     "@11ty/eleventy-plugin-rss": "^1.2.0",
     "@11ty/eleventy-plugin-syntaxhighlight": "^4.1.0",
     "@remy/webmention": "^1.4.5",
