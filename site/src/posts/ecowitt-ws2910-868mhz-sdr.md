@@ -32,6 +32,8 @@ In case that you are also thinking about buying such a weather station I'd recom
 I learned how to integrate my weather station from the YouTube video [Ecowitt Wetterstation Wittboy GW2001 in Home Assistant nutzen](https://www.youtube.com/watch?v=IFuv-qcYegU). 
 While the video talks about the Wittboy wether station the steps for my weather station were basically the same.
 
+In the video I mentioned above the software [weewx](https://www.weewx.com/) was mentioned: "Open source software for your weather station". I put it on my TODO list to try it out one day ...
+
 ### Software Defined Radio (SDR)
 
 Once I had the weather station another long standing question popped into my head. How do these radio frequency devices actually communicate with their receivers. At that point I really did not know anything
@@ -71,7 +73,7 @@ worked well on Linux and on Windows. It helps to watch a few videos that show ho
 
 The first step for you should be to try to listen to radio stations and see if you can get your hadware and SDR++ to work together correctly.
 
-### Digital Signals via SDR
+### Digital Signals via SDR and rtl_433
 
 The final goal will be to receive data via radio frequency signals. The following video from above mentioned Manuel Lausmann shows how digital signals will look like
 in SDR++: [Funkwetterstationen abhören und decodieren RTL 433](https://www.youtube.com/watch?v=ACYcoJXlvmQ). It also talks about the tool `rtl_433` that I have found 
@@ -84,7 +86,34 @@ But before we go there I suggest you watch the following videos to understand be
   * [inspectrum](https://github.com/miek/inspectrum)
 * [Reverse Engineering a 433MHz RF Protocol - Home Assistant Conference 2020](https://www.youtube.com/watch?v=thBN3yP6kbw)
 
-Once you've watched those videos and you've read [PySDR](https://pysdr.org/) you should have a good idea of what `rtl_433` does and how it works.
+Once you've watched those videos and ideally have read [PySDR](https://pysdr.org/) you should have a good idea of what `rtl_433` does and how it works.
+
+`rtl_433` worked out of the box with the Nooelec receiver and my weather station. I could not make it work with the cheap RTL2832U device from Aliexpress, though. I still do not know why. The signal strength
+and antenna should not be the issue, because I was both times close to the weather station. If anyone has an idea on how to resolve this problem or at least debug it to get closer to the root cause then please
+let me know (use the comments section below).
+
+### OpenMQTTGateway on an ESP32 / TTGO LoRa32 
+
+The hardware required to read digital signals transmitted via radio frequency is quite expensive. You have to have an SRD dongle, an antenna and a compute device like a Raspberry Pi. Then, by accident, I saw the video
+[OpenMQTTGateway Connects Many Things to Your Home Automation](https://www.youtube.com/watch?v=_gdXR1uklaY) from Andreas Spiess. It looked so nice and so simple that I immediately ordered such a 
+[TTGO LoRa32 V2.1 _ 1,6 Version 433/868/915 Mhz ESP32 LoRa](https://de.aliexpress.com/item/32872078587.html) device for 868 MHz.
+
+The software that enables the processing of radio frequency digital signals is  [rtl_433_ESP](https://github.com/NorthernMan54/rtl_433_ESP), a port of the `rtl_433` for the ESP32. The code of `rtl_433_ESP` is
+referenced in [OpenMQTTGateway](https://github.com/1technophile/OpenMQTTGateway) as a library.
+
+The first question I had was how to adapt the radio frequency from 433 MHz as used in the video from Andreas Spiess to 868 MHz as needed by my weather station. I did not find any documenation about that and had
+to start working with the code directly.
+
+`OpenMQTTGateway` is a [platformio](https://platformio.org/) project. `platformio` is a development environment for MCU (Micro Controller Unit) boards like the ESP8266 and the ESP32. I learned the first steps
+how to use it via the video [BitBastelei #310 - VSCode und PlatformIO statt Arduino IDE](https://www.youtube.com/watch?v=Yb-HOBynJdc). Even if you do not have an ESP8266 or an ESP32 device you can start playing
+around via the [wokwi](https://wokwi.com/) simulator. Also have a look at [Wokwi/featured](https://www.youtube.com/c/Wokwi/featured) to get an idea on what it can do for you. I will not go into further details
+about `platformio`, but in order to be able to use it you should spend more time with it. At its core it is a build system like [CMake](https://en.wikipedia.org/wiki/CMake) or the 
+[GNU Autotools](https://en.wikipedia.org/wiki/GNU_Autotools) and in order to get proficient you will need to spend more time learning its intricacies.
+
+
+* 
+* [OpenMQTTGateway](https://github.com/1technophile/OpenMQTTGateway)
+* [TTGO LoRa32 V2.1 _ 1,6 Version 433/868/915 Mhz ESP32 LoRa](https://de.aliexpress.com/item/32872078587.html)
 
 ## Further References
 
@@ -96,23 +125,8 @@ Once you've watched those videos and you've read [PySDR](https://pysdr.org/) you
   * [ecowitt.net](https://www.ecowitt.net/)
 * [Funkwetterstationen abhören und decodieren RTL 433](https://www.youtube.com/watch?v=ACYcoJXlvmQ)
 
-* [OpenMQTTGateway Connects Many Things to Your Home Automation](https://www.youtube.com/watch?v=_gdXR1uklaY)
-* [rtl_433](https://github.com/merbanan/rtl_433)
-* [rtl_433_ESP](https://github.com/NorthernMan54/rtl_433_ESP)
-* [OpenMQTTGateway](https://github.com/1technophile/OpenMQTTGateway)
-* [TTGO LoRa32 V2.1 _ 1,6 Version 433/868/915 Mhz ESP32 LoRa](https://de.aliexpress.com/item/32872078587.html)
 
-* [How to Hack your 433 MHz Devices with a Raspberry and a RTL-SDR Dongle (Weather Station)](https://www.youtube.com/watch?v=L0fSEbGEY-Q)
-  * [Universal Radio Hacker (URH)](https://github.com/jopohl/urh)
-* [Convert Radio Waves to Bits (RF Demodulation)](https://www.youtube.com/watch?v=DvLgnV9X94k)
-  * [inspectrum](https://github.com/miek/inspectrum)
-* [Reverse Engineering a 433MHz RF Protocol - Home Assistant Conference 2020](https://www.youtube.com/watch?v=thBN3yP6kbw)
-* [PySDR](https://pysdr.org/)
 
-* [BitBastelei #310 - VSCode und PlatformIO statt Arduino IDE](https://www.youtube.com/watch?v=Yb-HOBynJdc)
-  * [platformio](https://platformio.org/)
-* [wokwi](https://wokwi.com/)
-  * [Wokwi/featured](https://www.youtube.com/c/Wokwi/featured)
 
 
 * [Nooelec RTL-SDR v5 SDR - NESDR](https://www.amazon.de/dp/B01HA642SW)
