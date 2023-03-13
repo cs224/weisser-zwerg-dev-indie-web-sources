@@ -26,10 +26,11 @@ The whole journey started with the following video on YouTube: [WLAN Wetterstati
 characteristics like yearly rainfall or the number of warm summer days per year. After watching the video I bought[^ecowittamazon] and installed it. It came along with a receiver-display that also acted
 as WLAN bridge.
 
-In case that you are also thinking about buying such a weather station I'd recommend that you first have a look at the very good overview of Ecowitt weather stations at [Ecowitt Wetterstationen](https://www.wetterstationsforum.info/wiki/doku.php?id=wiki:wetterstationen:ecowitt-stationen).
+In case that you are also thinking about buying such a weather station I'd recommend that you first have a look at the very good overview of Ecowitt weather stations at 
+[Ecowitt Wetterstationen](https://www.wetterstationsforum.info/wiki/doku.php?id=wiki:wetterstationen:ecowitt-stationen).
 
-I learned how to integrate my weather station from the YouTube video [Ecowitt Wetterstation Wittboy GW2001 in Home Assistant nutzen](https://www.youtube.com/watch?v=IFuv-qcYegU). While the video talks about
-the Wittboy wether station the steps for my weather station were basically the same.
+I learned how to integrate my weather station from the YouTube video [Ecowitt Wetterstation Wittboy GW2001 in Home Assistant nutzen](https://www.youtube.com/watch?v=IFuv-qcYegU). 
+While the video talks about the Wittboy wether station the steps for my weather station were basically the same.
 
 ### Software Defined Radio (SDR)
 
@@ -48,6 +49,42 @@ from start to finish! The author, [Dr. Marc Lichtman](https://pysdr.org/content/
 > [Nyquist–Shannon sampling theorem](https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem) says that you have to sample at double the frequency of the signal that interests you 
 > (e.g. you should need to sample at 2 x 868MHz). Dr. Marc Lichtman answered my question in the [Receiver Architectures](https://pysdr.org/content/sampling.html#receiver-architectures) section and 
 > the "baseband" transformation.
+
+### SDR Equipment
+
+In order to work with radio frequencies on a computer you will need hardware that is able to receive and digitize those signals.
+
+I bought:
+* [Nooelec RTL-SDR v5 SDR - NESDR](https://www.amazon.de/dp/B01HA642SW)
+* [Nooelec RaTLSnake M6 v2 - Premium 3-Antennen-Bundle für NESDR](https://www.amazon.de/dp/B073JWDXMG)
+
+You can read about how to install the driver for your operating system at http://start.nesdr.com
+
+I also bought:
+* [USB 2,0 Digital DVB-T SDR + DAB + FM TV Tuner Receiver Stick RTL2832U + FC0012](https://de.aliexpress.com/item/1005002181497577.html)
+
+This is much cheaper, but wait before you go ahead and buy it and first read below.
+
+Once you have the hardware you will also need software. I am an absolute beginner in this, but for me [SDR++](https://github.com/AlexandreRouma/SDRPlusPlus)
+worked well on Linux and on Windows. It helps to watch a few videos that show how experts work with SDR++. I watched a couple videos from the channel of 
+[Manuel Lausmann](https://www.youtube.com/@ManuelLausmann-Funktechnik). Just search for `SDR++`.
+
+The first step for you should be to try to listen to radio stations and see if you can get your hadware and SDR++ to work together correctly.
+
+### Digital Signals via SDR
+
+The final goal will be to receive data via radio frequency signals. The following video from above mentioned Manuel Lausmann shows how digital signals will look like
+in SDR++: [Funkwetterstationen abhören und decodieren RTL 433](https://www.youtube.com/watch?v=ACYcoJXlvmQ). It also talks about the tool `rtl_433` that I have found 
+to work best for receiving digital signals via Software Defined Radio: [rtl_433](https://github.com/merbanan/rtl_433).
+
+But before we go there I suggest you watch the following videos to understand better what `rtl_433` does internally:
+* [How to Hack your 433 MHz Devices with a Raspberry and a RTL-SDR Dongle (Weather Station)](https://www.youtube.com/watch?v=L0fSEbGEY-Q)
+  * [Universal Radio Hacker (URH)](https://github.com/jopohl/urh)
+* [Convert Radio Waves to Bits (RF Demodulation)](https://www.youtube.com/watch?v=DvLgnV9X94k)
+  * [inspectrum](https://github.com/miek/inspectrum)
+* [Reverse Engineering a 433MHz RF Protocol - Home Assistant Conference 2020](https://www.youtube.com/watch?v=thBN3yP6kbw)
+
+Once you've watched those videos and you've read [PySDR](https://pysdr.org/) you should have a good idea of what `rtl_433` does and how it works.
 
 ## Further References
 
