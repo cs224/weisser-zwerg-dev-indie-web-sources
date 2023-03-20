@@ -1,12 +1,12 @@
 ---
 layout: "layouts/post-with-toc.njk"
-title: "Digital to Analog Converter from 0 to 10V"
-description: "Manually via potentiometer or remote controlled via RS485, pulse width modulation (PWM) or the i2c bus"
-creationdate: 2023-03-19
+title: "Digital to Analog Converter (DAC) from 0 to 10V"
+description: "Manually via Potentiometer or Remote Controlled via RS485, Pulse Width Modulation (PWM) or the I2C Bus"
+creationdate: 2023-03-20
 keywords: dac,digital-to-analog-converter,0-to-10V,RS485,PWM,I2C
-date: 2023-03-19
+date: 2023-03-20
 tags: ['post']
-draft: true
+draft: false
 ---
 
 ## Rational
@@ -15,7 +15,7 @@ Sometimes you need to be able to control devices that react to a voltage setting
 there would be ready made devices out there that can be used for these situations. But, as far as I can tell at the moment, I was wrong. This is far
 from being simple and the below is a list of options that I found and evaluated.
 
-Besides the core taks of being able to control a voltage output between 0 and 10V several additional challenges popped up that I also initially
+Besides the core tasks of being able to control a voltage output between 0 and 10V several additional challenges popped up that I also initially
 imagined to be trivial. I wanted to control the controllable devices via a Raspberry Pi 4B via a Jupyter notebook in Python. The first step in that
 direction is to enable the pulse width modulation and the I2C bus communication capabilities on the Raspberry Pi and then find a library that does the
 job. While there is a lot of documentation out there for the Raspberry Pi, most of it is outdated for older Raspberry Pis. Therefore, it is difficult
@@ -43,12 +43,12 @@ Devices I had a look at but did not buy:
 
 I've searched for these devices over a period of 9 months and only came up with such a short list. In addition, these devices are far from being a
 consumer device like a Shelly or a Sonoff. I was dreaming of a device like the [4CHR3 4-gang Wi-Fi Smart
-Switch](https://sonoff.tech/product/diy-smart-switches/4chr3-4chpror3/) from Sonoff, but just for analog 0 to 10V outputs. That seems to remain a
+Switch](https://sonoff.tech/product/diy-smart-switches/4chr3-4chpror3/) from Sonoff, but just for analogue 0 to 10V outputs. That seems to remain a
 dream ...
 
 ### Power Supply
 
-Most of the devices I look at are step-down converters, e.g. they can only reduce the voltage from a higher source input voltage. You will therefore
+Most of the devices I look at are step-down converters, e.g., they can only reduce the voltage from a higher source input voltage. You will therefore
 need a power supply that delivers this input voltage. Two options I looked at are:
 
 * Standard [12V Power Supply](https://www.amazon.de/Spannungswandler-Netzteil-f%C3%BCr-LED-Streifen-220/dp/B01G0Q3RWU/)
@@ -57,7 +57,7 @@ need a power supply that delivers this input voltage. Two options I looked at ar
   * I learned about USB-PD and how it works in the [BitBastelei #503 - USB-PD in DIY-Projekten nutzen](https://www.youtube.com/watch?v=-eGxzxOoSEQ) YouTube video.
   * A [USB 3,1 Typ-C Tester](https://de.aliexpress.com/item/32911463740.html) can help to get more insight into what is going on.
 
-In both cases these [12V Plug 2,1mm x 5,5mm DC Male an Female](https://www.amazon.de/dp/B08C4X3MXP) adapters help to connect the output power to
+In both cases these [12V Plug 2,1mm x 5,5mm DC Male and Female](https://www.amazon.de/dp/B08C4X3MXP) adapters help to connect the output power to
 [Dupont connectors / Jumper Wire Cables](https://www.az-delivery.de/products/3er-set-40-stk-jumper-wire-m2m-f2m-f2f).
 
 ### The Manual Way
@@ -76,9 +76,9 @@ like to know more about the details I can recommend the following video: [How Bo
 
 ### Python environment
 
-On my normal desktop PCs I like to work with the [micromamba](https://mamba.readthedocs.io/en/latest/installation.html) environment to set-up my
+On my normal desktop PCs, I like to work with the [micromamba](https://mamba.readthedocs.io/en/latest/installation.html) environment to set-up my
 Python environments. On the Raspberry Pi I ran into an `illegal instruction error` when running `pip` to install packages. After quite some digging and
-some luck I found out that the problem is due to the `anaconda` channels I had configured. It seems that only the `conda-forge` channel supports the
+some luck, I found out that the problem is due to the `anaconda` channels I had configured. It seems that only the `conda-forge` channel supports the
 arm64 platform. I added a comment on Stack Overflow in the [Raspberry pi pip install illegal instruction
 erorr](https://stackoverflow.com/questions/74833752/raspberry-pi-pip-install-illegal-instruction-erorr/75649892#75649892) issue.
 
@@ -89,12 +89,12 @@ seems to configure the `conda-forge` channel by default and avoids this problem.
 
 The [JUNTEK DPM8624 60V24A Programmable DC DC Step Down Power Supply Buck Converter with RS485
 communication](https://de.aliexpress.com/item/1005001585380236.html) is by far the most powerful device in my list from above. It is in principle a
-programmable laboratory power supply, just not from AC to DC, but from DC to DC. If you go to the aliexpress web-site and scroll down you will find
+programmable laboratory power supply, just not from AC to DC, but from DC to DC. If you go to the AliExpress web-site and scroll down you will find
 the link to the [DPM8600_EN_manual.pdf](http://68.168.132.244/DPM8600_EN_manual.pdf). You can find an overview of all documents at
 http://68.168.132.244/DPM8600/material.html among which is also a [DPM8600 series communication protocol in
 English](http://68.168.132.244/DPM8600/Communication_protocol_en.pdf).
 
-The variant of the DPM8624 that I have is controlable via a RS485 interface and it came along with a [USB to RS485 Converter
+The variant of the DPM8624 that I have is controllable via a RS485 interface and it came along with a [USB to RS485 Converter
 Adapter](https://www.amazon.de/gp/product/B016IG6X7I/).
 
 It took me quite some time to understand, but it seems that the three protocols UART, RS232 and RS485 are all the same except that the voltage levels
@@ -105,7 +105,7 @@ wires without a GND. If the GND wire is present then GND on both sides should be
 
 To understand the core of what the protocol does I can recommend the video [The RS-232 protocol](https://www.youtube.com/watch?v=AHYNxpqKqwo).
 
-Once you have hooked up the RS485 Converter Adapter to your linux computer you have to use a terminal emulation program like
+Once you have hooked up the RS485 Converter Adapter to your Linux computer you have to use a terminal emulation program like
 [picocom](https://github.com/npat-efault/picocom). You can use `picocom` in interactive mode or as a shell command. To read the current configured
 voltage of the device you via the "Simple Communication Protocol" execute:
 
@@ -144,24 +144,24 @@ In a similar way you can send all the other commands that the device supports.
 
 ### Control via Pulse Width Modulation (PWM)
 
-The device [PWM Signal to 0-10V D/A Digital Analog SPS Module](https://www.ebay.de/itm/393627309117) reacts to Pulse Width Modulation (PWM). Widthin
+The device [PWM Signal to 0-10V D/A Digital Analog SPS Module](https://www.ebay.de/itm/393627309117) reacts to Pulse Width Modulation (PWM). Within
 limits, it is not important at what frequency you transmit, but only the fraction of time the signal is on vs. the faction of time the signal is
 off. I used 1kHz for my experiments.
 
 Before you can work with hardware pulse width modulation on the Raspberry Pi you have to configure the kernel to enable it. It seems that the embedded
 Linux community came up with something called Device Tree Overlays (dtoverlay). This is configured on the Raspberry Pi i the `/boot/config.txt`
-file. I first was not sure if these `dtoverlay` statements are additive, but they are, e.g. you can write several of them in one file and all of them
+file. I first was not sure if these `dtoverlay` statements are additive, but they are, e.g., you can write several of them in one file and all of them
 will take effect. You can read what the settings mean in the `/boot/overlays/README` file. I did put `dtoverlay=pwm` in my `/boot/config.txt` file and
 rebooted. After that GPIO pin 18 is available for hardware pulse width modulation. One of the very few articles that I found by googling that actually
 was helpful was [Grundlagen der Pulsweitenmodulation](https://www.raspberry-pi-geek.de/ausgaben/rpg/2020/04/grundlagen-der-pulsweitenmodulation/), but
 it uses different "functions" to what the `/boot/overlays/README` file said on my Raspberry Pi. This is why I simply stick to the most basic
 configuration without specifying any further configuration details and simply hope that the defaults are good.
 
-The naming of Raspberry Pi pins is a mess. You can have a look at https://pinout.xyz/ to find out which pin is GPIO 18. The PWM singal will be
+The naming of Raspberry Pi pins is a mess. You can have a look at https://pinout.xyz/ to find out which pin is GPIO 18. The PWM signal will be
 available between GND and GPIO 18.
 
 You can control the hardware PWM via the files in `/sys/class/pwm/pwmchip0/pwm0`. The below is setting up a 50% duty cycle at 1kHz. The times given
-are in nano seconds, e.g. 1000000 nano seconds are 1 milli second and correspond to 1kHz.
+are in nano seconds, e.g., 1000000 nano seconds are 1 milli second and correspond to 1kHz.
 
 ```sh
 pi@raspberrypi:~ $ sudo su
@@ -191,14 +191,14 @@ To learn more about the inner workings of the I2C bus I can recommend:
 Another good source is the 4 part tutorial starting at [I2C Part 1 - Introducing
 I2C](https://www.abelectronics.co.uk/kb/article/1090/i2c-part-1---introducing-i2c).
 
-The second video above also explains how to enable the I2C bus on the Raspberry Pi via the raspi-config command. This command is uncommenting a line
+The second video above also explains how to enable the I2C bus on the Raspberry Pi via the `raspi-config` command. This command is uncommenting a line
 in the `/boot/config.txt` file we encountered above already. You should add a further parameter to this file like `dtparam=i2c_baudrate=400000` with a
-baudrate that is supported by your I2C device. The valid settings here should be part of the device documentation.
+baud rate that is supported by your I2C device. The valid settings here should be part of the device documentation.
 
 The second video above also mentions that **you can connect a 3.3V master device like the Raspberry Pi to a 5V slave device like the `I2HAA`**,
-e.g. connect the 3.3V from the Raspberry Pi to the 5V input of the `I2HAA` and it will work without a logic level shifter.
+e.g., connect the 3.3V from the Raspberry Pi to the 5V input of the `I2HAA` and it will work without a logic level shifter.
 
-Once you have set-up your Rasperry Pi and have connected the device to your I2C bus you should check if it is detected:
+Once you have set-up your Raspberry Pi and have connected the device to your I2C bus you should check if it is detected:
 
     > sudo apt install i2c-tools
     > sudo i2cdetect -y 1
@@ -209,7 +209,7 @@ Pi](https://www.abelectronics.co.uk/kb/article/1/i2c-part-2---enabling-i-c-on-th
 For me the Horter I2HAA reacted at `0x58` and the Aptinex reacted at `0x64`.
 
 The best way to see how the Horter I2HAA is programmed is to read the [I2C-Analog Output 4 Kanäle 0-10V 10
-Bit](https://www.horter.de/blog/i2c-analog-output-4-kanaele-10-bit/) blog post. For the aptinex device you will have to download their library from
+Bit](https://www.horter.de/blog/i2c-analog-output-4-kanaele-10-bit/) blog post. For the Aptinex device you will have to download their library from
 their web-site and look at the code.
 
 When you search for I2C and Raspberry Pi you automatically get directed to the `smbus` library. Only after a lot of failed attempts and a lot of
@@ -227,8 +227,8 @@ function, suddenly things started to work out.
 
 Sadly, the [pigpio](https://abyz.me.uk/rpi/pigpio/download.html) library is not really a library, but a daemon running in the background and the
 python library is only talking to that daemon via http and port 8888. And because things need to continue to be difficult the port 8888 conflicts with
-the Jupyter notebook running by default on port 8888. So you should pay attention to first start the `gigpiod` daemon and only then start-up the
-Jupyter notebook (or invest more time reading the `gigpiod` documentation to find out how to start it at another port).
+the Jupyter notebook running by default on port 8888. So, you should pay attention to first start the `pigpiod` daemon and only then start-up the
+Jupyter notebook (or invest more time reading the `pigpiod` documentation to find out how to start it at another port).
 
 The other issue is that `pigpio` is not pip-installable, but you have to download it and install it via `make`. Just follow the instructions as given
 on the [web-site](https://abyz.me.uk/rpi/pigpio/download.html). Once you've gone through all of the steps execute in addition:
@@ -239,7 +239,7 @@ pi@raspberrypi:~/pigpio-master $ pip install -e
 ```
 
 The first line activates the conda environment you use. The second line installs the "editable" version of the package in the conda environment. After
-these two steps, starting the `pigpiod` deamon and installing the python library into your conda environment, you should be able to work with the i2c
+these two steps, starting the `pigpiod` daemon and installing the python library into your conda environment, you should be able to work with the i2c
 devices as follows:
 
 ```python
@@ -263,3 +263,54 @@ def horter_byte_sequence(channel, voltage):
 v = horter_byte_sequence(0, 5.0)
 pi.i2c_write_device(handle, v)
 ```
+
+The equivalent function for the Aptinex device looks like:
+```python
+MCP4728_I2CADDR_DEFAULT  = 0x64
+
+MCP4728_MULTI_IR_CMD     = 0x40
+MCP4728_MULTI_EEPROM_CMD = 0x50
+MCP4728_FAST_WRITE_CMD   = 0xC0
+
+MCP4728_VREF_VDD      = 0
+MCP4728_VREF_INTERNAL = 1
+
+MCP4728_GAIN_1X = 0
+MCP4728_GAIN_2X = 1
+
+MCP4728_PD_MODE_NORMAL   = 0 # Normal; the channel outputs the given value as normal.
+MCP4728_PD_MODE_GND_1K   = 1 # VOUT is loaded with 1 kΩ resistor to ground. Most of the channel circuits are powered off.
+MCP4728_PD_MODE_GND_100K = 2 # VOUT is loaded with 100 kΩ resistor to ground. Most of the channel circuits are powered off.
+MCP4728_PD_MODE_GND_500K = 3 # VOUT is loaded with 500 kΩ resistor to ground. Most of the channel circuits are powered off.
+
+def setChannelValue(channel, new_value, new_vref = MCP4728_VREF_VDD, new_gain = MCP4728_GAIN_1X, new_pd_mode = MCP4728_PD_MODE_NORMAL, udac = False):
+    address = 0x64
+
+    channel = int(channel)
+    new_value = int(new_value)
+    new_vref = int(new_vref)
+    new_gain = int(new_gain)
+    new_pd_mode = int(new_pd_mode)
+    udac = 1 if udac else 0
+
+    output_buffer = bytearray(3)
+
+    sequential_write_cmd = MCP4728_MULTI_IR_CMD
+    sequential_write_cmd |= (channel << 1);
+    # sequential_write_cmd |= udac;
+    output_buffer[0] = sequential_write_cmd;
+
+    new_value |= (new_vref << 15);
+    new_value |= (new_pd_mode << 13);
+    new_value |= (new_gain << 12);
+    output_buffer[1] = new_value >> 8;
+    output_buffer[2] = new_value & 0xFF;
+    return output_buffer
+```
+
+This is a verbatim translation from the provided C++ class to python, but I did not extensively test it yet.
+
+## Summary
+
+I hope the above will help others to achieve their goals quicker than I did. If you have any additional remarks, please use the commenting function
+below. And if you know about a consumer device like a Shelly or a Sonoff that does the job then please drop me a note, too.
