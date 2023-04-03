@@ -2,11 +2,11 @@
 layout: "layouts/post-with-toc.njk"
 title: "Ecowitt WS2910 weather station via Ecowitt GW2000 (Wittboy) and dockerized WeeWX"
 description: "Setting up WeeWX as a second weather station software besides HomeAssistant."
-creationdate: 2023-04-02
+creationdate: 2023-04-03
 keywords: ecowitt,ws2910,gw2000,wittboy,weewx
 date: 2023-04-03
 tags: ['post']
-draft: true
+draft: false
 ---
 
 ## Rational
