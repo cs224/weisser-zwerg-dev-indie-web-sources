@@ -3,7 +3,7 @@ layout: "layouts/post-with-toc.njk"
 title: "Ecowitt WS2910 868MHz weather station and Software Defined Radio (SDR)"
 description: "How to receive and decode the data transmitted by weather stations and other radio frequency home devices base on my experience with a Ecowitt WS2910 868MHz (Frequency Shift Keying (FSK)) weather station and rtl_433 via OpenMQTTGateway (TTGO LoRa32 V2.1 _ 1,6)."
 creationdate: 2023-03-15
-keywords: ecowitt,we2910,868mhz,frequency-shift-keying,fsk,openmqttgateway,rtl_433,sdr,software-defined-radio,esp32
+keywords: ecowitt,ws2910,868mhz,frequency-shift-keying,fsk,openmqttgateway,rtl_433,sdr,software-defined-radio,esp32
 date: 2023-03-15
 tags: ['post']
 draft: false
