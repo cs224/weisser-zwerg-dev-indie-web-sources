@@ -23,7 +23,8 @@ This was a really simple process. The only slightly negative experience was that
 power supply. Most likely due to the fact that all around the world the power plugs are different. But be aware that you will have to buy one in addition.
 
 You can find the whole set-up process instructions in the gateway [manual](https://osswww.ecowitt.net/uploads/20211215/GW2000%20Manual.pdf) and
-further supporting material plus the download links to the smart phone apps [here](https://www.ecowitt.com/support/download/178).
+further supporting material plus the download links to the smart phone apps [here](https://www.ecowitt.com/support/download/178) and
+[here](https://www.ecowitt.com/api/quickstart/product?id=245).
 
 After powering-up the `GW2000` gateway, it opens up a Wireless Access Point. Once you connect to it you will have to browse to `http://192.168.4.1` to open
 the embedded web page. From there the next steps to connect to your standard WLAN network are self-explanatory.
@@ -80,7 +81,7 @@ The first step is to clone the [weewx-docker](https://github.com/felddy/weewx-do
 + RUN pip install --no-cache wheel setuptools
 + RUN pip install --no-cache configobj paho-mqtt pyserial pyusb
 + RUN pip install --no-cache Cheetah3
-+ RUN pip install --no-cache Pillow
++ RUN pip install --no-cache Pillow==9.4.0
 + RUN pip install --no-cache ephem
 + 
   WORKDIR /root
@@ -413,6 +414,75 @@ ERROR weewx.reportengine:         ****  Generator terminated
 
 As soon as I know how to fix that I will post an update.
 
+## Update 2023-04-05
+
+The short answer to the above mentioned remaining issue is that Pillow 9.5.0 was just posted on 1 April and introduced some incompatible change. The
+problem was introduced with this [Pillow pull request](https://github.com/python-pillow/Pillow/pull/6978). Therefore, the quickfix for this problem is
+to use `Pillow==9.4.0` in the `Dockerfile`. I've already updated the `Dockerfile` patch above accordingly. The future fix for `weewx` is
+[here](https://github.com/weewx/weewx/issues/862).
+
+### WeeWX: Installation using setup.py
+
+In order to help debug the problem I had to set-up `weewx` from sources. I followed the instructions outlined here: [WeeWX: Installation using
+setup.py](https://weewx.com/docs/setup.htm), but I used a [conda](https://github.com/conda-forge/miniforge) environment with [pip](https://pypi.org/)
+installs rather than using the operating system packages. The quick version of it all is the following:
+
+
+    > mamba create -n weewx python=3.9
+    > conda activate weewx
+    > pip3 install configobj paho-mqtt pyserial pyusb Cheetah3 Pillow ephem
+    > wget https://weewx.com/downloads/weewx-4.10.2.tar.gz
+    > tar -xzvf weewx-4.10.2.tar.gz
+    > cd weewx-4.10.2
+    > python3 ./setup.py build
+    > python3 ./setup.py install
+    > # create the weewx.conf.patch from here: https://weisser-zwerg.dev/posts/ecowitt-gw2000-weewx-docker/
+    > patch -p1 weewx.conf < weewx.conf.patch # or make the changes manually
+    > wget -O weewx-mqtt.zip https://github.com/matthewwall/weewx-mqtt/archive/master.zip
+    > ./bin/wee_extension --install ./weewx-mqtt.zip
+    > wget -O weewx-interceptor.zip https://github.com/matthewwall/weewx-interceptor/archive/master.zip
+    > ./bin/wee_extension --install ./weewx-interceptor.zip
+    > wget -O weewx-gw1000.tar.gz https://github.com/gjr80/weewx-gw1000/releases/download/v0.5.0b5/gw1000-0.5.0b5.tar.gz
+    > ./bin/wee_extension --install ./weewx-gw1000.tar.gz
+    > # optional: PYTHONPATH=/home/wyse/opt/weewx/bin python -m user.gw1000 --test-driver
+    > # -------------------
+    > ./bin/weewxd
+
+#### weewx-gw1000 driver
+
+Along the process I found the [weewx-gw1000](https://github.com/gjr80/weewx-gw1000) driver. I was not aware that the `Ecowitt` WLAN gateways (not only
+the `GW1000` or `GW2000`, but also the `WH2910` or `WS2910` console) offer their data via port 45000 (see [Data Exchange TCP Protocol for
+GW1000,1100,1900,2000,2680,2650](https://osswww.ecowitt.net/uploads/20220407/WN1900%20GW1000,1100%20WH2680,2650%20telenet%20v1.6.4.pdf)). Here is a
+web version: [Telnet Protocol](https://ambientweather.com/faqs/question/view/id/1537/)[^packetsender].
+
+This means that you could avoid opening up port 2324 to the outside world, which might be a gain from the security side.
+
+You can find out how to configure the `weewx-gw1000` driver on its web-site, but the quick version of it is to add something like the following above
+the `[Interceptor]` section of the `weewx.conf` file:
+
+```ini
+##############################################################################
+
+[GW1000]
+    # This section is for the Ecowitt Gateway driver.
+
+    # How often to poll the API, default is every 20 seconds:
+    poll_interval = 20
+
+    # The driver to use:
+    driver = user.gw1000
+    ip_address = 192.168.178.97
+    port = 45000
+```
+
+### WeeWX Weather Data Center skin (weewx-wdc)
+
+The [WeeWX Weather Data Center skin](https://github.com/Daveiano/weewx-wdc) might be the next thing you might want to look at. You can see a running
+example here: [https://www.weewx-hbt.de](https://www.weewx-hbt.de). You can also look at a walk-through (in German) here: [WLAN Wetterstation von
+ecowitt](https://youtu.be/jgyqSV-op9M?t=532). The steps to set this up are not difficult. Just look at the sample
+[Dockerfile](https://github.com/Daveiano/weewx-wdc-interceptor-docker/blob/main/Dockerfile) provided by the creator of `weewx-wdc`.
+
 ## Footnotes
 
 [^ecowittmhz]: Pay attention to buy the right gateway for your weather station by selecting the correct `MHz` value in the Ecowitt shop!
+[^packetsender]: You might want to use [packetsender](https://packetsender.com) to play with the protocol.
