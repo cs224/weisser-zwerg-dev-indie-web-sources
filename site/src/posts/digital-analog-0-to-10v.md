@@ -314,3 +314,67 @@ This is a verbatim translation from the provided C++ class to python, but I did 
 
 I hope the above will help others to achieve their goals quicker than I did. If you have any additional remarks, please use the commenting function
 below. And if you know about a consumer device like a Shelly or a Sonoff that does the job then please drop me a note, too.
+
+## Update 2023-04-10
+
+### Consumer Device: Homematic IP [Universal Schaltaktor - 0‑10 V](https://homematic-ip.com/de/produkt/universal-schaltaktor)
+
+At the beginning of my home automation journey I decided that I wanted to use [WLAN](https://en.wikipedia.org/wiki/Wireless_LAN) for mains powered
+devices and [Zigbee](https://en.wikipedia.org/wiki/Zigbee) (and in the future [Matter](https://en.wikipedia.org/wiki/Matter_(standard)), the more or
+less successor of Zigbee) for battery powered devices, as these are open and world wide standards with a broad industry support and that can be
+integrated into any home automation system like [Home Assistant](https://www.home-assistant.io/). Therefore, I never looked at solutions like
+[eQ-3](https://de.wikipedia.org/wiki/EQ-3) `Homematic IP` with its proprietary 868 MHz wireless protocol. But it seems that there is a `Homematic IP`
+consumer device to output a remote controllable 0 to 10 V signal called [Universal Schaltaktor - 0‑10
+V](https://homematic-ip.com/de/produkt/universal-schaltaktor).
+
+I started to look into the `eQ-3` `Homematic IP` solution and think that this system is not as closed as I first thought. There are open-source alternatives to its control unit called `CCU`:
+* [RaspberryMatic](https://raspberrymatic.de) ([github](https://github.com/jens-maus/RaspberryMatic))
+  * [Installation Docker OCI](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-Docker-OCI)
+  * [HomeAssistant Integration](https://github.com/jens-maus/RaspberryMatic/wiki/HomeAssistant-Integration#homematicip-local-integration-setup): via the [HACS](https://hacs.xyz/) community add-on [custom_homematic](https://github.com/danielperna84/custom_homematic).
+* [debmatic](https://github.com/alexreinert/debmatic)
+
+As far as I understand you can use the [HomeAssistant
+Integration](https://github.com/jens-maus/RaspberryMatic/wiki/HomeAssistant-Integration#homematicip-local-integration-setup) for any control unit like
+`CCU3` / `CCU2` / [RaspberryMatic](https://github.com/jens-maus/RaspberryMatic) / [debmatic](https://github.com/alexreinert/debmatic) /
+[piVCCU](https://github.com/alexreinert/piVCCU). You only have to set the IP address of the control unit in step 8 of the set-up process.
+
+[Here](https://homematic-forum.de/forum/viewtopic.php?f=81&t=62340&p=760933&hilit=debmatic+raspberrymatic#p760933) I found a description of the core difference between RaspberryMatic and debmatic:
+
+> The big difference is that RaspberryMatic is a BuildRoot system where the user cannot install any additional software (except for the CCU addons),
+> while debmatic is based on a Debian based system (such as Debian, Ubuntu, Raspberry Pi OS, Armbian) and then you have all the freedom that the OS
+> gives you. And with debmatic I aimed right from the start to bring the CCU to normal PC hardware, when Jens still categorically ruled that out for
+> RaspberryMatic because he thought that it didn't make sense and only an independent control centre on a Raspberry or a Tinkerboard was stable.
+
+But as far as I can tell `RaspberryMatic` is the system with the bigger user base. At least from the `GitHub` stars it looks that way. But both
+systems seem to be actively maintained and supported.
+
+Here is a YouTube video that explains the set-up process: [RaspberryMatic AddOn auf Home Assistant installieren und einrichten
+2022](https://www.youtube.com/watch?v=6HNJyGrAEmQ). It also talks about the hardware USB stick you will need to communicate via the proprietary 868
+MHz protocol. If you prefer a written document you can find it at [RaspberryMatic Add-on auf Home Assistant installieren
+2022](https://www.simon42.com/raspberrymatic-home-assistant-installieren-2022/).
+
+Besides this consumer device [Universal Schaltaktor - 0‑10 V](https://homematic-ip.com/de/produkt/universal-schaltaktor) I also found another device
+that I was looking for: a [Wandthermostat mit Schaltausgang](https://homematic-ip.com/de/produkt/wandthermostat-mit-schaltausgang-fuer-markenschalter)
+to control the floor heating. You can buy it for 230V or 24V actuators (Stellantrieb), here for example at
+[Amazon](https://www.amazon.de/Homematic-IP-Wandthermostat-Schaltausgang-Markenschalter/dp/B0719FHCQ2/).
+
+### DMX/Art-Net based devices
+
+A friend of mine made me aware that professional light technicians use 0-10V control signals and that they use
+[DMX](https://en.wikipedia.org/wiki/DMX512) or [Art-Net](https://en.wikipedia.org/wiki/Art-Net) (the IP based transmission of DMX) to communicate with
+those devices. Here you can find more about the protocol: [art-net.org.uk](https://art-net.org.uk/).
+
+Here are some devices:
+* [DMX-Analog 0-10V 1-Channel](https://shop.dmx4all.de/en/dmx-analog-1-channel.html)
+* [DMX-Analog 0-10V 8-Channel](https://shop.dmx4all.de/en/dmx-analog-8.html)
+* [ArtNet-Relais/Analog Interface 4](https://shop.dmx4all.de/en/artnet-relais-analog-interface.html)
+
+And here is a WLAN to DMX adapter:
+* [AIR2DMX PRO HR WLAN DMX Wireless Interface ArtNet Node](https://shop.usb2dmx.com/AIR2DMX-PRO-HR)
+
+### Shelly RGBW2 LED controller: 4 channel PWM based led controller
+
+Another available option might be the [Shelly RGBW2](https://www.shelly.cloud/de/products/product-overview/1xrgbw). As far as I understand it works at
+1kHz and needs a DC power supply, e.g., it can't be connected directly to the AC power.
+
+You can read more about it at: [Shelly RGBW2 LED Strip Controller](https://www.thesmarthomehookup.com/shelly-rgbw2-led-strip-controller/).
