@@ -353,9 +353,10 @@ Here is a YouTube video that explains the set-up process: [RaspberryMatic AddOn 
 MHz protocol. If you prefer a written document you can find it at [RaspberryMatic Add-on auf Home Assistant installieren
 2022](https://www.simon42.com/raspberrymatic-home-assistant-installieren-2022/).
 
-Besides this consumer device [Universal Schaltaktor - 0‑10 V](https://homematic-ip.com/de/produkt/universal-schaltaktor) I also found another device
-that I was looking for: a [Wandthermostat mit Schaltausgang](https://homematic-ip.com/de/produkt/wandthermostat-mit-schaltausgang-fuer-markenschalter)
-to control the floor heating. You can buy it for 230V or 24V actuators (Stellantrieb), here for example at
+Besides this consumer device [Universal Schaltaktor - 0‑10 V](https://www.amazon.de/Homematic-IP-Smart-Home-Universalaktor/dp/B0BHKYLLKR) I also found
+another device that I was looking for: a [Wandthermostat mit
+Schaltausgang](https://homematic-ip.com/de/produkt/wandthermostat-mit-schaltausgang-fuer-markenschalter) to control the floor heating. You can buy it
+for 230V or 24V actuators (Stellantrieb), here for example at
 [Amazon](https://www.amazon.de/Homematic-IP-Wandthermostat-Schaltausgang-Markenschalter/dp/B0719FHCQ2/).
 
 ### DMX/Art-Net based devices
