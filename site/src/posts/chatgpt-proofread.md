@@ -15,6 +15,8 @@ Recently, I had the opportunity to participate in the free [ChatGPT Prompt Engin
 This course reignited my interest in using AI to fine-tune my writing. While tools like MS Word can catch simple grammar and spelling mistakes, I wanted an AI that could take my writing to the next level.
 I wanted to create a more compelling and engaging reading experience for my audience. In this blog post, I'll share my first steps towards achieving that goal.
 
+For the impatient readers among you looking at the following [Jupyter notebook](https://nbviewer.org/gist/cs224/92b6f7dd9f0a1d131b47dc6a82a818a4) might provide all the information you need.
+
 ## Get Started
 
 To begin with, you'll need a paid account on [platform.openai.com](https://platform.openai.com/) to access the API version of ChatGPT. While some users have already received beta access to `GPT-4`, for our purposes, we'll be using `gpt-3.5-turbo` with the API,
