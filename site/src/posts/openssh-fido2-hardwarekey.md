@@ -11,24 +11,24 @@ draft: false
 
 ## Rational
 
-Recently, I discovered, that you can use any [FIDO2](https://en.wikipedia.org/wiki/FIDO_Alliance#FIDO2) hardware key (e.g. a
-[Yubikey](https://www.yubico.com/products/yubikey-5-overview/), a [Nitrokey](https://www.nitrokey.com/de), a [Solokey](https://solokeys.com/), a
-[Trezor](https://trezor.io/learn/a/what-is-fido2), ...) as a hardware OpenSSH key. This set-up will avoid having private keys stored on your devices
-and thus reducing the attack surface considerably. There are other ways on how to achieve that like [teleport](https://goteleport.com/) or similar,
-but the FIDO2 set-up does not need any additional infrastructure and is a drop-in replacement for your current keys.
+Recently, I stumbled upon an exciting discovery that I'm eager to share with you. Did you know that you can use any
+[FIDO2](https://en.wikipedia.org/wiki/FIDO_Alliance#FIDO2) hardware key, like a [Yubikey](https://www.yubico.com/products/yubikey-5-overview/),
+[Nitrokey](https://www.nitrokey.com/de), [Solokey](https://solokeys.com/), or [Trezor](https://trezor.io/learn/a/what-is-fido2), etc., as a hardware
+OpenSSH key? This setup eliminates the need to store private keys on your devices, significantly reducing the attack surface. While there are other
+ways to achieve this, such as [teleport](https://goteleport.com/) or similar, the FIDO2 setup is a drop-in replacement for your current keys and
+requires no additional infrastructure.
 
-Recently, I stumbled upon an exciting discovery that I'm eager to share with you. Did you know that you can use any [FIDO2](https://en.wikipedia.org/wiki/FIDO_Alliance#FIDO2) hardware key, like a
-[Yubikey](https://www.yubico.com/products/yubikey-5-overview/), [Nitrokey](https://www.nitrokey.com/de), [Solokey](https://solokeys.com/), [Trezor](https://trezor.io/learn/a/what-is-fido2), etc., as a hardware OpenSSH key? This setup eliminates the need to store private keys on your devices, significantly
-reducing the attack surface. While there are other ways to achieve this, such as [teleport](https://goteleport.com/) or similar, the FIDO2 setup is a drop-in replacement for
-your current keys and requires no additional infrastructure.
+In conclusion, using FIDO2 hardware keys as OpenSSH keys is an excellent way to enhance your security. Additionally, it doesn't require any additional
+infrastructure, making it an easy and cost-effective solution. So, if you're looking for a way to enhance your security, consider using FIDO2 hardware
+keys as OpenSSH keys.
 
-## Create the OpenSSH key on the FIDO2 hardware key
+## Create the OpenSSH key on the FIDO2 hardware key.
 
-Below, I will show how to create the OpenSSH key on the FIDO2 hardware key using a nitrokey and the `nitropy` command line interface. I tested the
-procedure also with a Yubikey and it worked exactly the same. The Yubico `ykman` CLI tool refused to work with other keys. The `nitropy` CLI tool is
-not so picky and works also with the Yubikey.
+Creating an OpenSSH key on a FIDO2 hardware key is a straightforward process. In this post, I'll show you how to do it using a Nitrokey and the
+`nitropy` command line interface.  I tested the procedure with a Yubikey, and it worked just as well. While the Yubico `ykman` CLI tool is picky and
+only works with Yubikeys, the `nitropy` CLI tool is more flexible and works with other keys too.
 
-To create the key execute the following:
+To create the key, simply execute the following commands:
 
 ```bash
 export IDENTITY="$HOME/.ssh/fido2-nitrokey.ed25519-sk"
@@ -37,54 +37,55 @@ pipx install --suffix=-git git+https://github.com/Nitrokey/pynitrokey.git
 nitropy-git fido2 list-credentials
 ```
 
-When the OpenSSH key is created it asks you for the PIN (it may say "password", but it means PIN). Then it asks you for a password to be used to
-encrypt the private key on disk. I don't think this password is necessary, as the pin already protects the hardware key. I left it empty. The private
-key is not really a key. It is only a "pointer" to the hardware key, e.g. it does not matter if you lose it and you can recreate the file from the
-hardware key (see below).
+When you create the OpenSSH key, it will ask you for a PIN (which may be referred to as a "password"). It will also ask you for a password to encrypt
+the private key on disk.  However, I don't think this password is necessary since the PIN already protects the hardware key.  I therefore left it
+empty. Note that the private key is not really a key, but rather a "pointer" to the hardware key. You can recreate the file from the hardware key if
+you lose it (see below).
 
-The important options to  `ssh-keygen` are:
+Here are the important options to keep in mind when using `ssh-keygen`:
+
+
 * `-t ed25519-sk` or `-t ecdsa-sk`: the `-sk` makes sure that the security key is used
-* `-f ${IDENTITY}` is where the private and public keys are written to. The file name given is the name of the private key. The public key is the same
-  path with a `.pub` appended. The private key is not really a key. It is only a "pointer" to the hardware key, e.g. it does not matter if you lose
-  it.
-* `-O resident`: the key is written into a discoverable slot of the hardware key. Have a look [here](https://www.ajfriesen.com/yubikey-ssh-key) for
-  the difference between discoverable and non-discoverable credentials.
-* `-O verify-required`: this requires that you unlock the key via a pin when you try to use it.
-* `-O no-touch-required`: I read that you can pass the `-O no-touch-required` option to ssh-keygen to tell it that you don’t want it to require
-  touching the device every time, but I was not able to make this work neither with the Nitrokey nor with the Yubikey.
-* `-O application=ssh:YourTextHere`: this option is compeltely optional and may make it easier to identify the key, especially if you have several
-  keys.
+* `-f ${IDENTITY}`: this is where the private and public keys are written to. The file name given is the name of the private key. The public key is
+  the same path with a `.pub` appended. As mentioned earlier, the private key is not really a key, but rather a "pointer" to the hardware key.
+* `-O resident`: use this flag to write the key into a discoverable slot of the hardware key. Check out [this
+  link](https://www.ajfriesen.com/yubikey-ssh-key) to learn more about the difference between discoverable and non-discoverable credentials.
+* `-O verify-required`: this flag requires you to unlock the key via a PIN when you try to use it.
+* `-O no-touch-required`: you can pass this flag to `ssh-keygen` to tell it not to require touching the device every time. However, I was not able to make this work with either the Nitrokey or the Yubikey.
+* `-O application=ssh:YourTextHere`: this flag is optional, but it may make it easier to identify the hardware key, especially if you have several hardware keys.
 
-If you take the hardware key to another machine you can use
+
+
+If you take the hardware key to another machine, you can use the following command to create the private key file in the current directory:
+
 ```bash
 ssh-keygen -K
 ```
-to create the private key file in the current directory. You would then
-have to put it in your `~/.ssh/` directory.
 
-Now you can copy the public key to your target machine where you want to `ssh` to. I use my [Odroid M1](../odroid-m1) for this test:
+You would then have to move it in your `~/.ssh/` directory.
+
+Now that you have created the key, you can copy the public key to your target machine where you want to ssh to. For example, I used my [Odroid M1](../odroid-m1) for this test:
 
 ```bash
 ssh-copy-id -i ${IDENTITY}.pub odroid@odroid
 ```
 
-You should now be able to test that your key set-up works by:
+You should now be able to test that your key setup works by:
 ```bash
 ssh -v -o "IdentitiesOnly=yes" -i ${IDENTITY} odroid@odroid
 ```
 
-If you created the key like I showed above you will first have to enter the PIN and then to touch the key to prove your presence.
+If you followed the steps outlined above, you will first have to enter the PIN and then touch the key to prove your presence.
 
 ## Configure ProxyJump
 
-In order to make the below work you have to have 2 machines and make sure that the public key is also present on the second machine. I use my `x99`
-machine for that:
+To make the following work, you need two machines and ensure that the public key is also present on the second machine. I use my `x99` machine for this purpose.
 
 ```bash
 ssh-copy-id -i ${IDENTITY}.pub cs@x99
 ```
 
-Below you can see the configuration that I put into `~/.ssh/config`:
+To set up the connection to the first hop, add the configuration below to `~/.ssh/config`:
 
 ```
 Host cttest1nitro
@@ -98,7 +99,11 @@ Host cttest1nitro
   ControlPath          ~/.ssh/odroid.nitro.sock
   ControlPersist       60s
   ServerAliveInterval  0
+```
 
+Next, use the first hop to make the connection to the second hop by adding the following configuration:
+
+```
 Host cttest2nitro
   HostName             x99
   User                 cs
@@ -113,7 +118,12 @@ Host cttest2nitro
   ProxyJump cttest1nitro
 ```
 
-The `cttest1nitro` entry sets up the connection to the first hop. The `cttest2nitro` then uses this first hop to make the second hop. The part
+You should now be able to `ProxyJump` directly to the second hop machine:
+```bash
+ssh cttest2nitro
+```
+
+While the following part is not strictly necessary:
 
 ```
   ControlMaster        auto
@@ -122,13 +132,15 @@ The `cttest1nitro` entry sets up the connection to the first hop. The `cttest2ni
   ServerAliveInterval  0
 ```
 
-is not strictly necessary, but without it you will have to type the pin and touch the hardware key for every SSH command you issue. With these
-additional configurations you turn on ssh connection multiplexing and the connection stays alive for at least 60 seconds. This may be especially
-useful when you run a script that issues several ssh commands in sequence.
+it saves you from entering the pin and touching the hardware key for every SSH command you issue.  The above section, turns on SSH connection
+multiplexing, and the connection stays alive for at least 60 seconds.  This feature is especially useful when you run a script that issues several SSH
+commands in sequence.
+
 
 ## Configure sshd on the Target Machine
 
-To make your target machine more secure you should turn off password authentication and require the entry of the pin of keys. To do that you would add the following to your `/etc/ssh/sshd_conf` on the target machine:
+To make your target machine more secure, you should turn off password authentication and require the entry of the pin of keys. To do that, you would add the following to your `/etc/ssh/sshd_config` on the target machine:
+
 ```
 PasswordAuthentication no
 ChallengeResponseAuthentication no
@@ -136,14 +148,16 @@ ChallengeResponseAuthentication no
 PubkeyAuthOptions verify-required
 ```
 
-Finally you would issue a restart of the sshd daemon:
+Finally, you would issue a restart of the sshd daemon.
+
 ```bash
 systemctl restart ssh
 ```
 
 ## SSH Agent
 
-You do not need to use the ssh agent, but if you do want to use it you can dot hat by:
+
+You do not need to use the ssh agent, but if you do want to use it, you can do that by:
 ```bash
 killall ssh-agent
 eval $(ssh-agent)
@@ -151,8 +165,7 @@ ssh-add -K
 ssh-add -L
 ```
 
-In principle it should not be necessary to kill the agent first, but for whatever reason, without killing the agent first I had sometimes trouble
-adding the key to the agent and it exited with an error.
+In principle, it should not be necessary to kill the agent first, but for whatever reason, without killing the agent first, I sometimes had trouble adding the key to the agent, and it exited with an error.
 
 ## References
 
@@ -168,21 +181,22 @@ adding the key to the agent and it exited with an error.
     * [asswordless SSH login with YubiKey and FIDO2](https://www.ajfriesen.com/yubikey-ssh-key)
 * [NK3, nitropy, FIDO2, SSH resident keys?](https://support.nitrokey.com/t/fixed-nk3-nitropy-fido2-ssh-resident-keys/5061) : `nitropy-git fido2 list-credentials`
 
-## Additonal Remarks
+## Additonal Remarks:
 
-From what I have seen so far a [Trezor](https://trezor.io) is my prefered FIDO2 device, because:
-* you can create backups
-* it has a touchscreen to enter the PIN on the Trezor device itself
+In my experience, the [Trezor](https://trezor.io) stands out as the best FIDO2 device. It offers two key features that make it my preferred choice:
 
-For the other hardware keys you have to type the PIN on the machine where you use the hardware key, which might jeopardize the overall security in
-case someone installed a keylogger or similar. And, while the FIDO2 hardware key manufacturers, sell it as an advantage that you cannot backup the
-FIDO2 resident keys, I personally find it a disadvantage. With a hardware key that you cannot backup you would need to have a second hardware key and
-register it with all your target machines to make sure that you can still reach your target machines in case that you lose your main hardware
-key. With the ability to create a backup that you put in a secure place this need for double key management goes away.
+* Firstly, you can create a backup of your keys. This is a crucial advantage because it eliminates the need for a second hardware key to access your
+  target machines in case you lose your main hardware key. With a backup stored in a secure location, you can rest assured that you will be able to
+  restore the keys.
+* Secondly, the Trezor has a touchscreen that allows you to enter your PIN directly on the device. This is a significant security advantage over other
+  hardware keys that require you to type your PIN on the machine where you use the key. This could potentially compromise your security if someone
+  installed a keylogger or similar software.
 
-In principle, mobile devices that support platform created FIDO2 passkeys that are copyable might be another good option for your ssh keys, but
-without additonal hardware like the [IDmelon
-Reader](https://hmaslowski.com/ios-%26-ipados/f/use-your-mobile-phone-as-fido2-security-key-for-passwordless) this does not seem to be possible right
-now, at least not out of the box. I've created the following question [Can I use an iPhone connected via USB to a computer as a FIDO2 security key
+While some FIDO2 hardware key manufacturers tout the fact that their keys cannot be backed up (are not copyable) as an advantage, I personally find it
+to be a disadvantage. The need for double key management is eliminated with the ability to create a backup.
+
+In theory, mobile devices that support platform-created FIDO2 passkeys that are copyable could be another good option for SSH keys. However, without
+additional hardware like the [IDmelon Reader](https://hmaslowski.com/ios-%26-ipados/f/use-your-mobile-phone-as-fido2-security-key-for-passwordless),
+this is not currently possible out of the box. I've posed the question, [Can I use an iPhone connected via USB to a computer as a FIDO2 security key
 (for example in OpenSSH)?](https://superuser.com/questions/1784703/can-i-use-an-iphone-connected-via-usb-to-a-computer-as-a-fido2-security-key-for) to
-see if other people have found a way on how to do that.
+see if anyone has found a workaround.
