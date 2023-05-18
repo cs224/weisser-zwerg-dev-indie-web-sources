@@ -17,6 +17,11 @@ Recently, I discovered, that you can use any [FIDO2](https://en.wikipedia.org/wi
 and thus reducing the attack surface considerably. There are other ways on how to achieve that like [teleport](https://goteleport.com/) or similar,
 but the FIDO2 set-up does not need any additional infrastructure and is a drop-in replacement for your current keys.
 
+Recently, I stumbled upon an exciting discovery that I'm eager to share with you. Did you know that you can use any [FIDO2](https://en.wikipedia.org/wiki/FIDO_Alliance#FIDO2) hardware key, like a
+[Yubikey](https://www.yubico.com/products/yubikey-5-overview/), [Nitrokey](https://www.nitrokey.com/de), [Solokey](https://solokeys.com/), [Trezor](https://trezor.io/learn/a/what-is-fido2), etc., as a hardware OpenSSH key? This setup eliminates the need to store private keys on your devices, significantly
+reducing the attack surface. While there are other ways to achieve this, such as [teleport](https://goteleport.com/) or similar, the FIDO2 setup is a drop-in replacement for
+your current keys and requires no additional infrastructure.
+
 ## Create the OpenSSH key on the FIDO2 hardware key
 
 Below, I will show how to create the OpenSSH key on the FIDO2 hardware key using a nitrokey and the `nitropy` command line interface. I tested the
@@ -131,10 +136,23 @@ ChallengeResponseAuthentication no
 PubkeyAuthOptions verify-required
 ```
 
-Finally you would issue a restart of the sshd daemon: 
+Finally you would issue a restart of the sshd daemon:
 ```bash
 systemctl restart ssh
 ```
+
+## SSH Agent
+
+You do not need to use the ssh agent, but if you do want to use it you can dot hat by:
+```bash
+killall ssh-agent
+eval $(ssh-agent)
+ssh-add -K
+ssh-add -L
+```
+
+In principle it should not be necessary to kill the agent first, but for whatever reason, without killing the agent first I had sometimes trouble
+adding the key to the agent and it exited with an error.
 
 ## References
 
@@ -150,3 +168,21 @@ systemctl restart ssh
     * [asswordless SSH login with YubiKey and FIDO2](https://www.ajfriesen.com/yubikey-ssh-key)
 * [NK3, nitropy, FIDO2, SSH resident keys?](https://support.nitrokey.com/t/fixed-nk3-nitropy-fido2-ssh-resident-keys/5061) : `nitropy-git fido2 list-credentials`
 
+## Additonal Remarks
+
+From what I have seen so far a [Trezor](https://trezor.io) is my prefered FIDO2 device, because:
+* you can create backups
+* it has a touchscreen to enter the PIN on the Trezor device itself
+
+For the other hardware keys you have to type the PIN on the machine where you use the hardware key, which might jeopardize the overall security in
+case someone installed a keylogger or similar. And, while the FIDO2 hardware key manufacturers, sell it as an advantage that you cannot backup the
+FIDO2 resident keys, I personally find it a disadvantage. With a hardware key that you cannot backup you would need to have a second hardware key and
+register it with all your target machines to make sure that you can still reach your target machines in case that you lose your main hardware
+key. With the ability to create a backup that you put in a secure place this need for double key management goes away.
+
+In principle, mobile devices that support platform created FIDO2 passkeys that are copyable might be another good option for your ssh keys, but
+without additonal hardware like the [IDmelon
+Reader](https://hmaslowski.com/ios-%26-ipados/f/use-your-mobile-phone-as-fido2-security-key-for-passwordless) this does not seem to be possible right
+now, at least not out of the box. I've created the following question [Can I use an iPhone connected via USB to a computer as a FIDO2 security key
+(for example in OpenSSH)?](https://superuser.com/questions/1784703/can-i-use-an-iphone-connected-via-usb-to-a-computer-as-a-fido2-security-key-for) to
+see if other people have found a way on how to do that.
