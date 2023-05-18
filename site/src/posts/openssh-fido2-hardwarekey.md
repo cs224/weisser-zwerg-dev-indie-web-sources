@@ -1,6 +1,6 @@
 ---
 layout: "layouts/post-with-toc.njk"
-title: "OpenSSH ProxyJump with FIDO2 hardware keys"
+title: "Step Up Your SSH Game: A Deep Dive into FIDO2 Hardware Keys and ProxyJump Configuration"
 description: "How to configure OpenSSH to use a FIDO2 hardware key with ProxyJump."
 creationdate: 2023-05-18
 keywords: OpenSSH, FIDO2, ProxyJump
@@ -8,6 +8,8 @@ date: 2023-05-18
 tags: ['post']
 draft: false
 ---
+
+
 
 ## Rational
 
@@ -17,10 +19,6 @@ Recently, I stumbled upon an exciting discovery that I'm eager to share with you
 OpenSSH key? This setup eliminates the need to store private keys on your devices, significantly reducing the attack surface. While there are other
 ways to achieve this, such as [teleport](https://goteleport.com/) or similar, the FIDO2 setup is a drop-in replacement for your current keys and
 requires no additional infrastructure.
-
-In conclusion, using FIDO2 hardware keys as OpenSSH keys is an excellent way to enhance your security. Additionally, it doesn't require any additional
-infrastructure, making it an easy and cost-effective solution. So, if you're looking for a way to enhance your security, consider using FIDO2 hardware
-keys as OpenSSH keys.
 
 ## Create the OpenSSH key on the FIDO2 hardware key.
 
@@ -123,6 +121,8 @@ You should now be able to `ProxyJump` directly to the second hop machine:
 ssh cttest2nitro
 ```
 
+This will require you to enter the pin followed by touching the key twice, because you effectivly SSH into two machines in sequence.
+
 While the following part is not strictly necessary:
 
 ```
@@ -135,6 +135,9 @@ While the following part is not strictly necessary:
 it saves you from entering the pin and touching the hardware key for every SSH command you issue.  The above section, turns on SSH connection
 multiplexing, and the connection stays alive for at least 60 seconds.  This feature is especially useful when you run a script that issues several SSH
 commands in sequence.
+
+If you do not want to wait for the timeout, then you can execute `ssh -O exit cttest1nitro` to close the multiplexed open SSH connection and its
+associated socket.
 
 
 ## Configure sshd on the Target Machine
@@ -200,3 +203,10 @@ additional hardware like the [IDmelon Reader](https://hmaslowski.com/ios-%26-ipa
 this is not currently possible out of the box. I've posed the question, [Can I use an iPhone connected via USB to a computer as a FIDO2 security key
 (for example in OpenSSH)?](https://superuser.com/questions/1784703/can-i-use-an-iphone-connected-via-usb-to-a-computer-as-a-fido2-security-key-for) to
 see if anyone has found a workaround.
+
+## Conclusion
+
+In conclusion, using FIDO2 hardware keys as OpenSSH keys is an excellent way to enhance your security. Additionally, it doesn't require any additional
+infrastructure, making it an easy and cost-effective solution. So, if you're looking for a way to enhance your security, consider using FIDO2 hardware
+keys as OpenSSH keys.
+
