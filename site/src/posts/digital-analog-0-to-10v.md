@@ -379,3 +379,14 @@ Another available option might be the [Shelly RGBW2](https://www.shelly.cloud/de
 1kHz and needs a DC power supply, e.g., it can't be connected directly to the AC power.
 
 You can read more about it at: [Shelly RGBW2 LED Strip Controller](https://www.thesmarthomehookup.com/shelly-rgbw2-led-strip-controller/).
+
+## Update 2023-06-07
+
+There is a thread [​Any device allowing control 0…10V DC?](https://community.home-assistant.io/t/any-device-allowing-control-0-10v-dc/146659) in the
+[Home Assistant](https://www.home-assistant.io/) community [forum](https://community.home-assistant.io/). It mentions:
+
+* [Brainboxes ED-560 Ethernet to 4 Analogue Outputs](https://www.brainboxes.com/product/remote-io/analog/ed-560)
+* [Qubino ZMNHVD1 Flush Dimmer 0-10V Z-Wave Module](https://www.amazon.de/Qubino-Dimmer-Unterputz-Mikromodul-Z-Wave-ZMNHVD1/dp/B01DTE7CUY)
+* [Insteon Ballast Dimmer](https://www.insteon.com/0-10v-ballast-dimmer)
+* [Zigbee Smart Dimmer Module 0-10V](https://lonsonho.com/en-de/products/lonsonho-zigbee-smart-dimmer-module-0-10v-dimmable-color-temperature-adjustable-tuya-smartlife-wireless-alexa-google-home)
+* [YSRSAI Zigbee 3.0 0-10V LED Dimming Controller](https://www.amazon.de/dp/B0BD5RRQYV)
