@@ -31,7 +31,7 @@ While there are several resources available on how to do this reverse mapping, n
 
 For those who are impatient, you can find all the information you need in the following Jupyter notebook:
 
-* [https://nbviewer.org/gist/cs224/b67f985f9c807c4b4c6ab6dea4bbf41d](https://nbviewer.org/gist/cs224/b67f985f9c807c4b4c6ab6dea4bbf41d)
+* [https://nbviewer.org/gist/cs224/b67f985f9c807c4b4c6ab6dea4bbf41d](https://nbviewer.org/gist/cs224/b67f985f9c807c4b4c6ab6dea4bbf41d)[^gist]
 
 ## Getting started
 
@@ -135,4 +135,5 @@ I welcome any comments or suggestions you may have, so please feel free to share
 
 [^imgupd]: If you update Docker images regularly, you'll be glad to know that there are tools like [Watchtower](https://containrrr.dev/watchtower/) or
     [Diun](https://crazymax.dev/diun) that can make your Docker image update process a breeze.
+[^gist]: https://gist.github.com/cs224/b67f985f9c807c4b4c6ab6dea4bbf41d
 

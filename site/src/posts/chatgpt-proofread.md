@@ -15,7 +15,7 @@ Recently, I had the opportunity to participate in the free [ChatGPT Prompt Engin
 This course reignited my interest in using AI to fine-tune my writing. While tools like MS Word can catch simple grammar and spelling mistakes, I wanted an AI that could take my writing to the next level.
 I wanted to create a more compelling and engaging reading experience for my audience. In this blog post, I'll share my first steps towards achieving that goal.
 
-For the impatient readers among you looking at the following [Jupyter notebook](https://nbviewer.org/gist/cs224/92b6f7dd9f0a1d131b47dc6a82a818a4) might provide all the information you need.
+For the impatient readers among you looking at the following [Jupyter notebook](https://nbviewer.org/gist/cs224/92b6f7dd9f0a1d131b47dc6a82a818a4)[^gist] might provide all the information you need.
 
 ## Get Started
 
@@ -288,4 +288,4 @@ scope only. But I would be happy to hear about your experiments and what worked 
 
 [^numtokens]: Open AI offers the [tiktoken](https://github.com/openai/tiktoken) library for you to keep track of the number of tokens processed, so
     that you can react to it programmatically.
-
+[^gist]: https://gist.github.com/cs224/92b6f7dd9f0a1d131b47dc6a82a818a4
