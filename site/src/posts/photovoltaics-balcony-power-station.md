@@ -1,5 +1,5 @@
 ---
-layout: "layouts/post.njk"
+layout: "layouts/post-with-toc.njk"
 title: "Photovoltaics: Balcony Power Station (Balkonkraftwerk)"
 description: "My experiences along the way of building and operating a balcony power station."
 creationdate: 2023-08-08T12:48:00+02:00
@@ -65,6 +65,37 @@ explicitly mention "2.3.1 Mounting with Bolts". So: I don't know, but I wanted t
 
 Another question was, which torque to apply when mounting the clamps. Here, the Jinko Solar Installation Manuals, for example, say: "The reference
 value of tightening torque for M8 bolt is 16-20 Nm, and for M6 bolt is 9-12 Nm".
+
+### Bulkiness (Handhabbarkeit)
+
+The solar panel has a size of 1692 x 1029 x 30mm and weighs 19kg. Originally, I decided for this module, because we have a station wagon, and I
+thought that only the length might be an issue. I can fit objects into the trunk of our car close to 1.8m in length and with this module I had 10cm of
+wiggle room. But it turned out that the breadth is even more an issue than the length. At the narrowest point our trunk has only 0.95m. So, in the
+end, I could have taken any panel, because it anyway does not fit into our trunk. At first, you might think, that this is not an issue, but if you
+ever have to move or want to sell the panels then this becomes an issue.
+
+The other area where this bulkiness is in your way when installing a balcony power station is when you want to mount the modules to the outside of
+your balcony and safety becomes a concern, especially the wind load (Windlast). The above mentioned video from [Holger
+Laudeley](https://www.laudeley.de/index.php/unternehmen/dipl-ing-holger-laudeley/) is talking very much about these safety concerns and how they solve
+it with a sepcial mounting kit: [Darum nicht anwinkeln am Balkon: Windlast-Gefahr](https://www.youtube.com/watch?v=KP_NO0jcmGQ).
+
+The main reason for going with a standard panel is cost. It is simply the most cost effective solution. On the other hand you have to consider that
+the panel alone is not enough and you need a mounting kit in addition to the panel. No matter how you do it, if you buy a mounting kit, it will always
+be around 100€ for one panel. The cost for my solar table above is roughly 100€. Another solution I looked at was the Profiness mounting kit for the
+balcony railing [PV-Montagesystem >>> Aufständerung >>> Geländer/Zaun/Wand-Sets](http://www.profiness-shop.de/solarshop1/index2.htm) (you have to
+manually click through the bullet point menu on the left, because direct linking was not possible) that is also around 100€.
+
+In contrast to the standard panels the specialized panels for balcony mounting are smaller, lighter and much easier to handle and to manage. The two I looked at are:
+* [PiE AIR superLIGHT 390+](https://pluginenergy.de/products/pie-air-solarmodul-400-watt-full-black)
+* [ledscom.de 4 x 105W Solar Panele, klein (101x55x2cm), leicht (2,1kg)](https://www.leds-com.de/set-7111-ledscom-de-4-x-105w-solar-panele-klein-101x55x2cm-leicht-2-1kg.html)
+
+Also from a safety perspective I would have a much better feeling with mounting a 3kg panel with velcro to the balcony railing than mounting a 20kg
+panel with a mounting kit. But that is, of course, only my personal opinion.
+
+The biggest downside of these specialized panels is cost. They are round about 1€/Wp in contrast to 0.25€/Wp (or even below) for a standard panel. But
+hopefully, with increasing demand, these systems become cheaper over time.
+
+
 
 ## Footnotes
 
