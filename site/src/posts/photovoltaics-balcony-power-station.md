@@ -25,7 +25,7 @@ Should you come across any images in the following content, feel free to click o
 
 ## The Solar Table Project (Solartisch)
 
-I reside in a first-floor apartment with a south-west facing balcony. When I decided to set up a solar power station on my balcony, I quickly learned
+I reside in a first-floor apartment with a mostly south facing balcony. When I decided to set up a solar power station on my balcony, I quickly learned
 that mounting solar panels/modules[^solarmodulepanel] on the exterior requires permission from the community of owners
 (Eigentümergemeinschaft). Unfortunately, this opportunity only comes once a year during the annual assembly (Eigentümerversammlung), and I had missed
 my chance for 2022. A helpful resource was the document [Balkonkraftwerke in der
@@ -117,14 +117,14 @@ are designed to be connected on the AC side.
 
 In essence, that's all there is to it. Connect the panels to the inverter, plug the inverter into the power socket, and you're good to go.
 
-When I chose the [Hoymiles HM-600](https://www.hoymiles.com/de/products/microinverter/single-phase) micro inverter, I didn't give it much thought:<br>
+When I chose the [Hoymiles HM-600](https://www.hoymiles.com/products/microinverter/single-phase/) micro inverter, I didn't give it much thought:<br>
 <img src="https://www.hoymiles.com/wp-content/uploads/2022/04/10003-7.png" alt="Hoymiles HM-600" style="max-height: 100px"><br>
 However, looking back, I believe it was a wise choice for several reasons:
 
 - It integrates seamlessly with [Home Assistant](https://www.home-assistant.io) via [OpenDTU](https://github.com/tbnobody/OpenDTU) or
   [AhoyDTU](https://github.com/lumapu/ahoy) right out of the box. DTU stands for Data Transfer Unit and acts as a "proxy" between the wireless
   protocol that the Hoymiles HM-600 inverters use natively and WLAN/MQTT. Although Hoymiles sells
-  [DTU](https://www.hoymiles.com/de/products/microinverter/dtu) units, they can be quite pricey.
+  [DTU](https://www.hoymiles.com/products/microinverter/dtu) units, they can be quite pricey.
   - For HMS, HMT: DTU-Pro-S or DTU-Lite-S
   - For MI, HM: DTU-WLite, DTU-Pro or DTU-W100/G100
 - It wasn't affected by [RelaisGate](https://www.heise.de/news/Balkonkraftwerke-Fehlendes-Relais-bei-Deye-hat-weitere-Folgen-9218441.html), an issue
@@ -153,10 +153,10 @@ other panel as a solar table with a different orientation:<br>
 <a href="/img/photovoltaics-bps-new-panel-orientation.png" target="about:blank"><img src="/img/photovoltaics-bps-new-panel-orientation.png" alt="Original Panel Orientation" style="max-height: 200px"></a>
 
 The image below shows the solar power production of this solar table on a particularly sunny day:<br>
-<a href="/img/photovoltaics-bps-shadow-power-effect.png" target="about:blank"><img src="/img/photovoltaics-bps-shadow-power-effect.png" alt="Shadow Power Effect" style="max-height: 100px"></a>
+<a href="/img/photovoltaics-bps-shadow-power-effect.png" target="about:blank"><img src="/img/photovoltaics-bps-shadow-power-effect.png" alt="Shadow Power Effect" style="max-height: 100px; max-width: 100%"></a>
 
 For comparison, I've also calculated the [pvlib clear sky](https://pvlib-python.readthedocs.io/en/stable/reference/clearsky.html) simulation[^pvlib]:<br>
-<a href="/img/photovoltaics-bps-clearsky.png" target="about:blank"><img src="/img/photovoltaics-bps-clearsky.png" alt="PVLib Clear Sky" style="max-height: 100px"></a>
+<a href="/img/photovoltaics-bps-clearsky.png" target="about:blank"><img src="/img/photovoltaics-bps-clearsky.png" alt="PVLib Clear Sky" style="max-height: 100px; max-width: 100%"></a>
 
 The brown rectangles in the following image represent the shadow at various times (from left to right): 12:50, 13:00, 13:45, 14:20, and 15:40:<br>
 <a href="/img/photovoltaics-bps-shadow-sequence.png" target="about:blank"><img src="/img/photovoltaics-bps-shadow-sequence.png" alt="Shadow Sequence" style="max-height: 200px"></a>
@@ -173,7 +173,7 @@ Wh. Without the shadow from the balcony above, we could have boosted our yield b
 ### Bypass Diodes
 
 The typical picture for bypass diodes looks as follows:<br>
-<a href="https://www.mdpi.com/1996-1073/13/10/2472" target="about:blank"><img src="https://www.mdpi.com/energies/energies-13-02472/article_deploy/html/images/energies-13-02472-g003-550.jpg" alt="Bypass Diodes" style="max-height: 200px"></a>
+<a href="https://www.mdpi.com/1996-1073/13/10/2472" target="about:blank"><img src="https://www.mdpi.com/energies/energies-13-02472/article_deploy/html/images/energies-13-02472-g003-550.jpg" alt="Bypass Diodes" style="max-height: 200px; max-width: 100%"></a>
 
 They are supposed to run across the short side of the panel, so that if there is a shadow on one side of the long side, you should only lose 33% of
 the performance.  However, in my case, this doesn't seem to hold true.  Even the slightest shadow on the longer side drastically reduces the
@@ -189,11 +189,9 @@ For those interested in delving deeper into the world of bypass diodes, check ou
 ### Half Cell Panel Design
 
 Looking back, I realize that a half-cell solar panel could have been a beneficial choice. The standard illustration for bypass diodes in half-cell panels is as follows:<br>
-<a href="https://ornatesolar.com/blog/why-should-you-choose-half-cut-cell-modules-for-your-solar-projects" target="about:blank"><img src="https://ornatesolar.com/wp-content/uploads/2022/03/2-1.jpg" alt="Bypass Diodes in Half-Cell Modules" style="max-height: 200px"></a>
+<a href="https://ornatesolar.com/blog/why-should-you-choose-half-cut-cell-modules-for-your-solar-projects" target="about:blank"><img src="https://ornatesolar.com/wp-content/uploads/2022/03/2-1.jpg" alt="Bypass Diodes in Half-Cell Modules" style="max-height: 200px; max-width: 100%"></a>
 
 Check out this YouTube video for a detailed comparison between [Half Cell VS. Full Cell Solar Panel Design](https://www.youtube.com/watch?v=JziP-RKDm4Y).
-
-
 
 > <span style="font-size:smaller">
 > And an additonal note: a glass-glass <a href="https://en.wikipedia.org/wiki/Bifacial_solar_cells">bifacial</a> panel could have been an optimal
