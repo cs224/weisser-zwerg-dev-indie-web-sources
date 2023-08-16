@@ -203,6 +203,16 @@ And here is a YouTube video explaining the [Half Cell VS. Full Cell Solar Panel 
 > power.
 > </span>
 
+## Jupyter Notebook Simulations
+
+If you'd like to perform similar situations then you can find the python code and jupyter notebook here:
+
+* [nbviewer](https://nbviewer.org/gist/cs224/fd467ca51dba98d3c25636bc312017f9/pv-modules-on-balkony.ipynb) / [gist](https://gist.github.com/cs224/fd467ca51dba98d3c25636bc312017f9#file-pv-modules-on-balkony-ipynb)
+
+## Conclusion
+
+I hope that I was able to help you develop some intuition about the magnitude of the shadow effect on solar power generators in general, but on
+balcony power stations in particular. In short you could summarize the learnings from this blog post as "Schatten ist Scheiße" (shadow is crap)!
 
 ## Footnotes
 
