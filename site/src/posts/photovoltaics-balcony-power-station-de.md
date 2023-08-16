@@ -22,9 +22,9 @@ Balkonkraftwerke und Photovoltaik hat.
 
 ## Bilder anklicken
 
-Wenn du weitern unten Bilder siehst, dann klicke diese gerne an, um eine detailliertere, vergrößerte Ansicht zu erhalten.
+Wenn du weiter unten Bilder siehst, dann klicke diese gerne an, um eine detailliertere, vergrößerte Ansicht zu erhalten.
 
-## Das Solar-Tisch-Projekt (Solartisch)
+## Das Solar-Tisch-Projekt
 
 Ich wohne in einer Wohnung im ersten Stock mit einem ungefähr nach Süden ausgerichteten Balkon.  Als ich beschloss, ein Solarkraftwerk auf meinem Balkon
 zu bauen, erfuhr ich durch mein erstes Googeln, dass die Montage von Solarmodulen/Paneelen[^solarmodulepanel] an der Außenseite des Balkons die
@@ -132,7 +132,7 @@ Im Nachhinein glaube ich jedoch, dass es eine kluge Wahl aus mehreren Gründen w
   - Für MI, HM: DTU-WLite, DTU-Pro oder DTU-W100/G100
 - Er war nicht von [RelaisGate](https://www.heise.de/news/Balkonkraftwerke-Fehlendes-Relais-bei-Deye-hat-weitere-Folgen-9218441.html) betroffen, einem Problem, das einige Marken von Mikro-Wechselrichtern aufgrund eines fehlenden erforderlichen Relais plagte.
 
-Wo oben erwähnt, verwende ich den HM-600. Seitdem habe ich bemerkt, dass es auch neuere HMS-600 Wechselrichter gibt (beachte das **S** in
+Wie oben erwähnt, verwende ich den HM-600. Seitdem habe ich bemerkt, dass es auch neuere HMS-600 Wechselrichter gibt (beachte das **S** in
 HM**S**). Während Hoymiles mehrere elektrische Eigenschaften dieser Wechselrichter verbessert hat, wie den Spannungsbereich und das Stromlimit, haben
 sie auch andere weniger offensichtliche Änderungen vorgenommen, wie:
 - Das drahtlose Protokoll und die Frequenz: früher, bei der HM-Serie, war es das 2,4-GHz-Spektrum, jetzt, bei der HMS- und HMT-Serie, ist es das
@@ -151,7 +151,7 @@ dargestellt, das erste Panel in Gelb und das zweite Panel in Grün:<br>
 Im Nachhinein erscheint es etwas naiv, aber ich habe zunächst nicht den Schatten berücksichtigt, den der Balkon unserer Nachbarn über uns
 wirft. Außerdem habe ich die erhebliche, nichtlineare Beeinträchtigung, die der Schatten auf meine Solarstromproduktion haben würde, nicht vollständig
 gerafft. Ich bin froh, dass ich dieses Projekt im Kleinen auf unserem Balkon gestartet habe, wo ich genau beobachten und ein besseres
-Gespür für diese Effekte entwickeln kann. Stell dir vor, du hättest eine große Anlage auf Ihrem Dach mit langen
+Gespür für diese Effekte entwickeln kann. Stell dir vor, du hättest eine große Anlage auf deinem Dach mit langen
 Strings von Solarmodulen. Wenn ein partieller Schatten, sagen wir von einem Kamin, auf die Paneele fällt, wäre es schwierig, intuitiv die
 Auswirkungen zu verstehen und einen Leistungsabfall auf diesen "kleinen Schatten"[^pvsol] zurückzuführen.
 
