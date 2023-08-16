@@ -1,10 +1,10 @@
 ---
 layout: "layouts/post-with-toc.njk"
-title: "Schattenwirkung auf Balkonkraftwerke."
+title: "Optimierung von Balkonkraftwerken: Die Rolle von Schatten."
 description: "Achtung vor den erheblichen Auswirkungen von Schatten bei Balkonkraftwerken!"
 creationdate: 2023-08-16T11:48:00+02:00
 date: 2023-08-16T11:48:00+02:00
-keywords: Photovoltaik, Balkonkraftwerk, nachhaltige Energie für Wohnungen, ästhetische Solarlösungen
+keywords: Photovoltaik, Balkonkraftwerk, ästhetische Solarlösungen, Photovoltaik-Effizienz, Balkonkraftwerk-Optimierung, nachhaltige Energielösungen für Wohnungen
 tags: ['post']
 ---
 
