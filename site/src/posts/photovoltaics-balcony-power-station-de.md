@@ -10,14 +10,14 @@ tags: ['post']
 
 ## Kontext
 
-Ich beschäftige mich gerne mit Themen Schritt für Schritt angefangen mit kleinen und einfachen Lösungen die sich dann langsam an große und komplexe
-Lösungen herantasten. Mein Einstieg in die faszinierenden Welt der Photovoltaik begann 2022, als ich durch Zufall hörte, dass Basteler und Maker wie
+Ich beschäftige mich gerne mit Themen Schritt für Schritt angefangen mit kleinen und einfachen Lösungen, die sich dann langsam an große und komplexe
+Lösungen herantasten. Mein Einstieg in die faszinierende Welt der Photovoltaik begann 2022, als ich durch Zufall hörte, dass Bastler und Maker wie
 ich ein kleines Photovoltaiksystem ohne professionelle Elektriker einrichten können, solange die Stromerzeugung auf der AC-Seite 600 W nicht
 übersteigt. In Deutschland werden diese kompakten Kraftwerke unter verschiedenen Namen geführt, aber am gebräuchlichsten ist Balkonkraftwerk, selbst
 wenn sie nicht unbedingt auf einem Balkon angebracht werden.  Diese Erkenntnis führte zu einer Lernreise (lesen, YouTube-Tutorials, Austausch mit
 lokalen Hobbygruppen) bei der ich mein Verständnis für Photovoltaik vertiefen konnte.
 
-Der folgende Blog-Beitrag dokumentiert diese Reise und ich hoffe, dass der Eine oder Andere damit einen leichteren Start in die Materie der
+Der folgende Blog-Beitrag dokumentiert diese Reise und ich hoffe, dass der Eine oder andere damit einen leichteren Start in die Materie der
 Balkonkraftwerke und Photovoltaik hat.
 
 ## Bilder anklicken
@@ -35,8 +35,8 @@ Solartisches, der keine Genehmigungen benötigt, da er in die Kategorie Balkonde
 
 Während meiner Recherche stieß ich auf eine Anleitung zum Bau eines Solartisches auf [Heise](https://www.heise.de): [Strom selbst erzeugen: Wie Sie
 einen Solartisch bauen](https://www.heise.de/ratgeber/Strom-selbst-erzeugen-Wie-Sie-einen-Solartisch-bauen-7188750.html?seite=all)[^solartablevideo].
-Als "motorischer Legasteniker" war mir das aber zu kompliziert und ich adaptierte die Lösung: zwei [STIER Falt
-Arbeitsböcke](https://www.amazon.de/gp/product/B07WLC47S9) für jeweils 36,81€, mit einer einfachen Holzkonstruktion oben drauf.
+Als "motorischer Legastheniker" war mir das aber zu kompliziert und ich adaptierte die Lösung: zwei [STIER Falt
+Arbeitsböcke](https://www.amazon.de/gp/product/B07WLC47S9) für jeweils 36,81€, mit einer einfachen Holzkonstruktion obendrauf.
 
 <a href="/img/photovoltaics-bps-stier-panel-under-construction-01.png" target="about:blank"><img src="/img/photovoltaics-bps-stier-panel-under-construction-01.png" alt="Stier Panel im Bau" style="max-height: 100px"></a><a href="/img/photovoltaics-bps-stier-panel-under-construction-02.png" target="about:blank"><img src="/img/photovoltaics-bps-stier-panel-under-construction-02.png" alt="Stier Panel im Bau mit Panel" style="max-height: 100px"></a>
 
@@ -72,7 +72,7 @@ Die Breite erwies sich jedoch als größere Herausforderung als die Länge. An s
 Nachhinein wäre jedes Panel für unseren Kofferraum zu groß gewesen. Das mag trivial erscheinen, bis man die Paneele transportieren oder verkaufen
 muss, z.B. wenn man umzieht, dann wird es zu einem erheblichen Problem.
 
-Ein weiteres Thema, das auf dich zukommt, wenn du vor hast, die Module an der Außenseite deines Balkons zu montieren, ist die Sicherheit, insbesondere
+Ein weiteres Thema, das auf dich zukommt, wenn du vorhast, die Module an der Außenseite deines Balkons zu montieren, ist die Sicherheit, insbesondere
 die Windlast.  [Holger Laudeley](https://www.laudeley.de/index.php/unternehmen/dipl-ing-holger-laudeley/)s Video bietet eine ausführliche Diskussion
 zu diese Sicherheitsaspekten und er löst das Thema mit einem speziellen Montageset: [Darum nicht anwinkeln am Balkon:
 Windlast-Gefahr](https://www.youtube.com/watch?v=KP_NO0jcmGQ). Das war mir aber dann zu aufwändig und zu teuer.
@@ -80,14 +80,14 @@ Windlast-Gefahr](https://www.youtube.com/watch?v=KP_NO0jcmGQ). Das war mir aber 
 Die Hauptmotivation ein Standardpanel zu nehmen ist der Preis.  Du solltest aber bedenken, dass das Panel allein nicht ausreicht; du brauchst
 auch ein Montageset. Unabhängig von der konkreten Ausführung kostet so ein Montageset immer rund 100€ pro Panel. Die Kosten für meinen
 Solartischunterbau waren grob 100€. Eine weitere Option, die ich mir angeschaut hatte, war das Profiness Montageset für Balkongeländer
-[PV-Montagesystem >>> Aufständerung >>> Geländer/Zaun/Wand-Sets](http://www.profiness-shop.de/solarshop1/index2.htm) (du mußt manuell durch das Menü
+[PV-Montagesystem >>> Aufständerung >>> Geländer/Zaun/Wand-Sets](http://www.profiness-shop.de/solarshop1/index2.htm) (du musst manuell durch das Menü
 auf der linken Seite klicken, da eine direkte Verlinkung nicht möglich war), das ebenfalls rund 100€ kostet.
 
 Im Gegensatz dazu sind spezialisierte Paneele für die Balkonmontage kleiner, leichter und viel einfacher zu handhaben. Die beiden, die ich mir angesehen habe, sind:
 * [PiE AIR superLIGHT 390+](https://pluginenergy.de/products/pie-air-solarmodul-400-watt-full-black)
 * [ledscom.de 4 x 105W Solar Panele, klein (101x55x2cm), leicht (2,1kg)](https://www.leds-com.de/set-7111-ledscom-de-4-x-105w-solar-panele-klein-101x55x2cm-leicht-2-1kg.html)
 
-Aus Sicherheitsgründen fühle ich mich wohler damit ein 3kg Panel mit Klettverschluss am Balkongeländer zu montieren, als ein schweres 20kg Panel mit
+Aus Sicherheitsgründen fühle ich mich wohler damit ein 3kg Panel mit Klettverschluss am Balkongeländer zu montieren als ein schweres 20kg Panel mit
 einem Montageset. Aber das ist nur meine persönliche Meinung.
 
 Der Hauptnachteil dieser spezialisierten Paneele sind die Kosten. Sie kosten etwa 1€/Wp, verglichen mit 0,25€/Wp (oder sogar weniger) für ein
@@ -99,7 +99,7 @@ Solarmodule erzeugen Gleichstrom, aber das Hausnetz arbeitet mit Wechselstrom. H
 das Gleichstrom in Wechselstrom umwandelt. Wechselrichter gibt es in verschiedenen "Größen". Zum Beispiel würde ein großes Solarkraftwerk eine andere
 Geräteauswahl benötigen als ein kleines Balkonkraftwerk. Die Wechselrichter für kleinere Setups, wie Balkonkraftwerke, werden oft als
 "Mikro-Wechselrichter" bezeichnet. Diese haben in der Regel Anschlüsse für ein oder zwei Solarmodule, wobei
-[MC4-Anschlüsse](https://en.wikipedia.org/wiki/MC4_connector) der Standard sind. Zumindest hier scheint es, dass sich die Anbieter auf MC4-Anschlüsse
+[MC4-Anschlüsse](https://en.wikipedia.org/wiki/MC4_connector) der Standard ist. Zumindest hier scheint es, dass sich die Anbieter auf MC4-Anschlüsse
 geeinigt haben. Jeder Anschluss hat in der Regel einen eigenen MPPT-Tracker ([Maximum Power Point
 Tracking](https://en.wikipedia.org/wiki/Maximum_power_point_tracking)), dessen Aufgabe es ist, die Leistung des Panels zu optimieren.
 
@@ -115,7 +115,7 @@ Tracking](https://en.wikipedia.org/wiki/Maximum_power_point_tracking)), dessen A
 > Glücklicherweise wirst du dieses Problem mit Mikro-Wechselrichtern nicht haben, da jedes Panel eine dedizierte Verbindung zum Wechselrichter hat.
 ></span>
 
-Darüber hinaus kann man (Mikro-)Wechselrichter auf der AC-Seite verbinden. Im Prinzip ist das äquivalent damit mehrere Wechselrichter an einer
+Darüber hinaus kann man (Mikro-)Wechselrichter auf der AC-Seite verbinden. Im Prinzip ist das Äquivalent damit mehrere Wechselrichter an einer
 Mehrfachsteckdose anzuschließen, aber die Wechselrichter sind bereits dafür ausgelegt, auf der AC-Seite verbunden zu werden.
 
 Im Wesentlichen ist das alles. Verbinde die Module mit dem Wechselrichter, steck den Wechselrichter in die Steckdose, und schon kann es losgehen.
@@ -180,10 +180,10 @@ vorhergesagt. Ohne den Schatten vom oberen Balkon hätten wir unser Ergebnis um 
 
 ### Bypass-Dioden
 
-Das Bild das man typischerweise für Bypass-Dioden im Internet findet sieht folgendermaßen aus:<br>
+Das Bild, das man typischerweise für Bypass-Dioden im Internet findet, sieht folgendermaßen aus:<br>
 <a href="https://www.mdpi.com/1996-1073/13/10/2472" target="about:blank"><img src="https://www.mdpi.com/energies/energies-13-02472/article_deploy/html/images/energies-13-02472-g003-550.jpg" alt="Bypass-Dioden" style="max-height: 200px; max-width: 100%"></a>
 
-Sie sollten über die kurze Seite des Panels verteilt sein, sodass bei einem Schatten der das Panel auf der langen Seite betritt nur 33% der Leistung
+Sie sollten über die kurze Seite des Panels verteilt sein, sodass bei einem Schatten, der das Panel auf der langen Seite betritt, nur 33% der Leistung
 verloren gehen sollten. In meinem Fall scheint dies jedoch komplett anders zu laufen. Selbst der kleinste Schatten auf der längeren Seite reduziert
 die Leistung drastisch und lässt sie auf unter 10% sinken. Dies lässt mich vermuten, dass die Bypass-Dioden in meinem Panel anders angeordnet sein
 könnten. Ich habe versucht, weitere Details im Datenblatt zu finden, aber ohne Erfolg.
@@ -228,7 +228,7 @@ eigenen Photovoltaik-Projekte besser zu verstehen und zu planen.
 [^solarmodulepanel]: Die Ausdrücke "Solarpanel" und "Solarmodul" bedeuten das Gleiche.
 [^solartablevideo]: Hier das Video dazu: [Der Solartisch und die grüne Steckdose](https://www.youtube.com/watch?v=appyI36bbSs).
 [^eigentuemerversammlung]: Während der Eigentümerversammlung 2023, konnte ich die Gelegenheit nutzen und die Erlaubnis die Module an die Balkonaußenseite anzubringen einholen.
-[^pvlib]: Um pvlib zu lernen empfehle ich die Videos [pvlib python](https://www.youtube.com/playlist?list=PLK7k_QaEmaHsPk_mwzneTE2VTNCpYBiky) von Sascha Birk.
+[^pvlib]: Um pvlib zu lernen, empfehle ich die Videos [pvlib python](https://www.youtube.com/playlist?list=PLK7k_QaEmaHsPk_mwzneTE2VTNCpYBiky) von Sascha Birk.
 [^othershadow]: Bei näherer Betrachtung fällt auf, dass wir noch nicht ganz das Niveau der "Vollsonnen"-Leistung erreicht haben, wie es das Clear-Sky-Modell vorhersagt. Es gibt einen zusätzlichen weiteren Schatten, auf den ich aber in diesem Blog-Beitrag nicht näher eingegangen bin.
-[^pvsol]: Du kannst Software wie [PV*SOL premium (Deutsch): Webinare und Tutorials](https://www.youtube.com/playlist?list=PL6BROuPUfyxJqCJbDvUygqCZFwIyj2DzG) nutzen um Schatteneffekte zu simulieren.
+[^pvsol]: Du kannst Software wie [PV*SOL premium (Deutsch): Webinare und Tutorials](https://www.youtube.com/playlist?list=PL6BROuPUfyxJqCJbDvUygqCZFwIyj2DzG) nutzen, um Schatteneffekte zu simulieren.
 [^opendtuheise]: [Balkonkraftwerke: Hoymiles-Wechselrichter überwachen per Web & MQTT](https://www.heise.de/ratgeber/Balkonkraftwerke-Hoymiles-Wechselrichter-ueberwachen-per-Web-MQTT-7327187.html?seite=all)
