@@ -2,8 +2,8 @@
 layout: "layouts/post-with-toc.njk"
 title: "Implementing Teleport Identity Proxy behind a Router using the Traefik Reverse Proxy in an Intranet Environment: A Comprehensive Guide"
 description: "How to use Teleport with a valid TLS/SSL certificate and automatic SSL certificate renewal in a pure intranet set-up behind a router."
-creationdate: 2023-08-24T13:44:00+02:00
-date: 2023-08-24T13:44:00+02:00
+creationdate: 2023-08-24T15:32:00+02:00
+date: 2023-08-24T15:32:00+02:00
 keywords: cybersecurity, digital identity, security, identity, identity proxy, infrastructure access platform, goteleport, teleport, ssh, tls, ssl, traefik reverse proxy, wireguard networking, tailscale, headscale, zerotier, duckdns domain management, letsencrypt, ACME protocol, HTTP-01 challenge, DNS-01 challenge
 tags: ['post']
 draft: false
