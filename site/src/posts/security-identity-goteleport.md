@@ -1,66 +1,70 @@
 ---
 layout: "layouts/post-with-toc.njk"
-title: "Teleport Identity Proxy in a Pure Intranet Set-Up behind a Router using the Traefik Reverse Proxy"
-description: "How to use teleport with a valid TLS/SSL certificate and automatic SSL certificate renewal in a pure intranet set-up behind a router."
+title: "Implementing Teleport Identity Proxy behind a Router using the Traefik Reverse Proxy in an Intranet Environment: A Comprehensive Guide"
+description: "How to use Teleport with a valid TLS/SSL certificate and automatic SSL certificate renewal in a pure intranet set-up behind a router."
 creationdate: 2023-08-24T13:44:00+02:00
 date: 2023-08-24T13:44:00+02:00
-keywords: security, identity, identity proxy, infrastructure access platform, goteleport, teleport, ssh, tls, ssl, traefik, wireguard, tailscale, headscale, zerotier, duckdns, letsencrypt, ACME, HTTP-01 challenge, DNS-01 challenge
+keywords: cybersecurity, digital identity, security, identity, identity proxy, infrastructure access platform, goteleport, teleport, ssh, tls, ssl, traefik reverse proxy, wireguard networking, tailscale, headscale, zerotier, duckdns domain management, letsencrypt, ACME protocol, HTTP-01 challenge, DNS-01 challenge
 tags: ['post']
 draft: false
 ---
 
-## Rational
+## Rationale
 
-In my post [Step Up Your SSH Game: A Deep Dive into FIDO2 Hardware Keys and ProxyJump Configuration](../openssh-fido2-hardwarekey) I showed how to
-improve your SSH set-up with FIDO2 hardware keys to avoid having private keys lying around on your local machine that an attacker could steal. The
-goal was to have an SSH set-up without private keys accessible on developer workstations.
+In my previous post, [Step Up Your SSH Game: A Deep Dive into FIDO2 Hardware Keys and ProxyJump Configuration,](../openssh-fido2-hardwarekey) I
+demonstrated how to enhance your SSH setup using FIDO2 hardware keys. This method eliminates the risk of having private keys on your local machine
+that could potentially be stolen by attackers. The ultimate aim was to create an SSH setup that doesn't leave private keys vulnerable on developer
+workstations.
 
-In this post I'll improve on that by introducing [Teleport](https://goteleport.com) as an "identity proxy" or "infrastructure access platform" that
-not only avoids the need to have private keys on developer workstations, but also introduces an identity and access management layer with which you
-can easily and quickly add or remove people with certain access rights to your infrastructure.
+In this article, I'll take it a step further by introducing [Teleport](https://goteleport.com), an "identity proxy" or "infrastructure access
+platform." This not only eliminates the need for private keys on developer workstations but also adds an identity and access management layer. This
+layer allows you to easily and quickly add or remove individuals with specific access rights to your infrastructure.
 
-Normally, teleport is set-up in a way that makes the web user interface accessible in the internet[^setupteleport]. I don't like set-ups where web
-user interfaces need to be exposed on the internet, **because it considerably increases your attack surface**! I prefer to have the web user
-interfaces only accessible behind a firewall/router in the intranet, but not the internet. But, by default, teleport wants to be accessible publicly
-on the internet, because it needs to get a valid TLS/SSL certificate from [Let's Encrypt](https://letsencrypt.org) or similar. For further details,
-see [Step 2/4. Set up Teleport on your Linux host](https://goteleport.com/docs/#step-24-set-up-teleport-on-your-linux-host) and the "Public internet
-deployment with Let's Encrypt" section.
+Typically, Teleport is configured in a way that make the web user interface accessible to the public internet[^setupteleport].  However, I'm not a fan
+of setups where web user interfaces are exposed on the internet as it **significantly increases your attack surface**!  I advocate for web user
+interfaces to be accessible only behind a firewall/router within the intranet, not the internet.  However, by default, Teleport wants to be accessible
+publicly on the internet because it needs to obtain a valid TLS/SSL certificate from Let's Encrypt or similar.  For more information, refer to [Step
+2/4. Set up Teleport on your Linux host](https://goteleport.com/docs/#step-24-set-up-teleport-on-your-linux-host) and the "Public internet deployment
+with Let's Encrypt" section.
 
-My first attempt was to use https://nginxproxymanager.com to generate the certificate via the
+My initial attempt involved using [Nginx Proxy Manager](https://nginxproxymanager.com) to generate the certificate via the
 [DNS-01](https://letsencrypt.org/de/docs/challenge-types) [ACME](https://github.com/acmesh-official/acme.sh) protocol and [Duck
-DNS](https://www.duckdns.org/) as described in: [Quick and Easy SSL Certificates for Your Homelab!](https://www.youtube.com/watch?v=qlcVx-k-02E) (by
-Wolfgang's Channel). In this approach, I generate the valid TLS/SSL certificate first and manually put it in the right location for teleport to pick it
-up. Obviously, this is sub-optimal, as it requires manual intervention every time the Let's Encrypt certificate expires.
+DNS](https://www.duckdns.org/), as outlined in: [Quick and Easy SSL Certificates for Your Homelab!](https://www.youtube.com/watch?v=qlcVx-k-02E) (by
+Wolfgang's Channel). In this initial/preliminary method, I first generate the valid TLS/SSL certificate and then manually place it in the correct
+location for Teleport to use. Obviously, this method is not ideal as it requires manual intervention every time the Let's Encrypt certificate expires.
 
-In this post I'll first explain my initial manual approach and then show how to improve on that by putting
-[traefik](../traefik-reverse-proxy-ansible/) as reverse proxy in front of teleport and let traefik take care of the [Let's
+In this article, I'll first walk you through my initial manual approach and then demonstrate how to enhance this by using
+[Traefik](../traefik-reverse-proxy-ansible/) as a reverse proxy in front of Teleport.  This setup allows Traefik to handle the [Let's
 Encrypt](https://letsencrypt.org) certificate renewal via the [ACME](https://github.com/acmesh-official/acme.sh)
 [DNS-01](https://letsencrypt.org/de/docs/challenge-types) protocol.
 
 ### Virtualized Mesh Networks
 
-A remark about virtualized mesh networks: in the most simple case you will have all of your machines that you need to access in a single connected
-intranet (e.g. behind a single router). Then your teleport instance, that is also in the same intranet, has immediate access to all of these
-machines. If you would need remote access to this single intranet you could use something like a [WireGuard VPN on a
+Let's talk about virtualized mesh networks.  In the most basic scenario, you'll have all your machines that you need to access within a single
+connected intranet, say, behind a single router. Your Teleport instance, also within the same intranet, can access all these machines directly.  If
+you need remote access to this single intranet, you could employ something like a [WireGuard VPN on a
 FRITZ!Box](https://en.avm.de/service/knowledge-base/dok/FRITZ-Box-7590/3685_Setting-up-a-WireGuard-VPN-to-the-FRITZ-Box-on-the-computer/) or similar
-to allow remote VPN connections to this single intranet.
+to facilitate remote VPN connections.
 
-But if you have several machines at different sites then the next best way is to set-up a virtualized mesh network, either between the sites in total
-or only between the machines that you need to access via teleport. After having tried [ZeroTier](https://www.zerotier.com) and
-[Tailscale](https://tailscale.com) I am back to [WireGuard](https://www.wireguard.com) in a Hub and Spoke topology (also known as the Star
-topology):<br> <img src="https://www.procustodibus.com/images/blog/wireguard-topologies/hub-and-spoke-outline.svg" style="max-height: 100px;
-max-width: 100%"><br> As the star center I use my [netcup Virtual Private Server (VPS)](../fuel-save-alerter-germany/#deployment-environment(s))[^vpsstarcenter].
+However, if you're dealing with multiple machines at different locations, the optimal solution is to establish a virtualized mesh network.  This could
+be either between the sites as a whole or only between the machines that you need to access via Teleport.  After experimenting with
+[ZeroTier](https://www.zerotier.com) and [Tailscale](https://tailscale.com), I've returned to using [WireGuard](https://www.wireguard.com) in a Hub
+and Spoke topology (also known as the Star topology):<br>
+<img src="https://www.procustodibus.com/images/blog/wireguard-topologies/hub-and-spoke-outline.svg" style="max-height: 100px;max-width: 100%"><br>
+I use my [netcup Virtual Private Server (VPS)](../fuel-save-alerter-germany/#deployment-environment(s))[^vpsstarcenter] as the central hub.
 
-The main problem with Tailscale and ZeroTier is that you first of all need to trust a 3rd party. In addition these 3rd parties operate a web user
-interface open to the public internet increasing the attack surface. You could avoid the 3rd party issue by going with
-[Headscale](https://github.com/juanfont/headscale), an open source, self-hosted implementation of the Tailscale control server, but the problem with
-the web user interface accessible to the public internet remains.
 
-The set-up of the [Hub and Spoke topology](https://www.procustodibus.com/blog/2020/11/wireguard-hub-and-spoke-config) with
-[WireGuard](https://www.wireguard.com) is more manual and labour intensive, but it does not require any other ui/serivce/port exposed to the public
-internet except the WireGuard [UDP](https://en.wikipedia.org/wiki/WireGuard#Networking) port.
+The main issue with Tailscale and ZeroTier is that they require you to trust a third party.  Moreover, these third parties operate a web user
+interface that's open to the public internet, which increases the potential attack surface.  You could sidestep the third-party issue by opting for
+[Headscale](https://github.com/juanfont/headscale), an open-source, self-hosted version of the Tailscale control server. However, the problem of a web
+user interface accessible to the public internet still remains.
 
-You can find more information following the below links:
+Setting up the [Hub and Spoke topology](https://www.procustodibus.com/blog/2020/11/wireguard-hub-and-spoke-config) with
+[WireGuard](https://www.wireguard.com) is a bit more manual and time-consuming, but it doesn't necessitate any other UI/service/port being exposed to
+the public internet, except for the WireGuard [UDP](https://en.wikipedia.org/wiki/WireGuard#Networking) port.
+
+For more information, check out the following links:
+
 - [WireGuard](https://www.wireguard.com)
   - [WireGuard Topologies](https://www.procustodibus.com/blog/2020/10/wireguard-topologies)
   - [Hub and Spoke topology](https://www.procustodibus.com/blog/2020/11/wireguard-hub-and-spoke-config) and [Configure Firewall on Bounce Server](https://www.procustodibus.com/blog/2020/11/wireguard-hub-and-spoke-config/#extra-configure-firewall-on-host-c)
@@ -71,53 +75,56 @@ You can find more information following the below links:
 - [Tailscale](https://tailscale.com)
   - [Headscale](https://github.com/juanfont/headscale): An open source, self-hosted implementation of the Tailscale control server
 
-It took me quite some time to get my Hub and Spoke set-up working, though, because I was missing the following lines in the `wg0.conf` at my star
-center at my netcup VPS:
+Getting my Hub and Spoke setup to work took some time, mainly because I overlooked the following lines in the `wg0.conf` at my star center at my
+netcup VPS:
+
 ```ini
 # Allow routing between clients
 PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT
 PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT
 ```
-As describe in [Wireguard Netzwerk mit Routing einrichten](https://www.edvpfau.de/wireguard-netzwerk-mit-routing-einrichten).
+
+As detailed in [Wireguard Netzwerk mit Routing einrichten](https://www.edvpfau.de/wireguard-netzwerk-mit-routing-einrichten).
 
 ## Manual DNS-01 Set-Up via Nginx Proxy Manager and Duck DNS
 
-If you prefer a video over written text then you can follow along by watching [Quick and Easy SSL Certificates for Your
-Homelab!](https://www.youtube.com/watch?v=qlcVx-k-02E) by Wolfgang's Channel.
+For those who enjoy a more visual guide, feel free to follow along with Wolfgang's Channel's engaging video tutorial, [Quick and Easy SSL Certificates
+for Your Homelab!](https://www.youtube.com/watch?v=qlcVx-k-02E)
 
 ### Domain Name via Duck DNS
 
-For the following steps we need a domain name pointing to one of our intranet IP addresses. A free option supporting DNS-01 is [Duck
-DNS](https://www.duckdns.org). After I use "Sign in with Google" I have access to the configuration web UI. There I pick a sub domain name like
-"teleport-host-behind-my-router" or whatever name you like and is still available and assign the intranet IP address on which teleport will run,
-e.g. 192.168.0.5. After that you can check that everything is working as expected by executing:
+In the upcoming steps, we'll require a domain name that points to one of our internal network IP addresses.  A free option that supports DNS-01 is
+[Duck DNS](https://www.duckdns.org). Once I've logged in using the "Sign in with Google" option, I gain access to the configuration interface. Here, I
+select a subdomain name such as "teleport-host-behind-my-router" or any other name of your choice that's still available, and assign the internal
+network IP address where teleport will operate, for instance, 192.168.0.5. To ensure everything is set up correctly, you can run a quick check by
+executing:
 
     > nslookup teleport-host-behind-my-router.duckdns.org
 
-And it should respond with:
+The response should be:
 
     Name:    teleport-host-behind-my-router.duckdns.org
     Address: 192.168.0.5
 
-As a last step copy the "token" displayed at the top of the page as we will need it later further down below.
+Lastly, make sure to copy the "token" displayed at the top of the page. We'll need this piece of information in the subsequent steps.
 
 #### Potential Issue: DNS Rebind Protection
 
-In my case, this did not work out of the box, because my Fritz!Box has a security feature called
-[DNS-Rebind-Protection](https://en.avm.de/service/knowledge-base/dok/FRITZ-Box-7590-AX/3565_FRITZ-Box-reports-Your-FRITZ-Box-s-DNS-rebind-protection-rejected-your-query-for-reasons-of-security/)
-and you need to configure hostname exceptions. If you have a Fritz!Box go to "Home Network > Network >[TAB] Network Settings >[SECTION] DNS Rebind
-Protection" and add there in the text entry field "Host name exceptions" the two entries:
+In my case, the setup didn't work seamlessly due to a security feature in my Fritz!Box known as
+[DNS-Rebind-Protection](https://en.avm.de/service/knowledge-base/dok/FRITZ-Box-7590-AX/3565_FRITZ-Box-reports-Your-FRITZ-Box-s-DNS-rebind-protection-rejected-your-query-for-reasons-of-security/).
+This feature requires you to configure hostname exceptions. If you're also using a Fritz!Box, navigate to "Home Network > Network >[TAB] Network
+Settings >[SECTION] DNS Rebind Protection" and input the necessary entries in the text field labeled "Host name exceptions."
 
     teleport-host-behind-my-router.duckdns.org
     teleport-host-behind-my-router
 
-After that it should work.
+Once you've done this, everything should be up and running smoothly.
 
 ### Let's Encrypt TLS Certificates via Nginx Proxy Manager
 
 #### Start the Docker Instance
 
-Start-up Nginx Proxy Manager via docker[^nginxproxymanagersetupinstructions]. A minimal `docker-compose.yml` file will look like this:
+Get the Nginx Proxy Manager up and running through Docker[^nginxproxymanagersetupinstructions]. Here's what a basic `docker-compose.yml` file would look like:
 
 ```yml
 services:
@@ -133,35 +140,35 @@ services:
       - ./letsencrypt:/etc/letsencrypt
 ```
 
-Create the two folder `./data` and `./letsencrypt` and execute:
+Next, create two directories, namely `./data` and `./letsencrypt`. Once done, execute the following command:
 
     > docker compose up
 
-And open http://localhost:81 in your browser. The default username is "admin@example.com" and the password is "changeme". On first login you will need
-to change these user name and credentials. **You should configure a real e-mail address, because Let's Enrypt will contact you on that e-mail
-address**.
+
+Now, navigate to http://localhost:81 on your web browser. The default login credentials are "`admin@example.com`" for the username and "`changeme`" for
+the password.  On first login you'll be prompted to update these details.  **It's advisable to set a valid email address, as Let's Encrypt will use
+this to get in touch with you**.
 
 #### Configure SSL Certificate and DuckDNS as DNS-01 Provider
 
-Next click on "SSL Certificates" at the top. Then click on "Add SSL Certificate" at the right top. In the field "Domain Names" enter:
+Firstly, navigate to "SSL Certificates" located at the top of the page. Once there, click on "Add SSL Certificate" positioned at the top right corner. In the "Domain Names" field, input the following:
+
 - `teleport-host-behind-my-router.duckdns.org`
 - `*.teleport-host-behind-my-router.duckdns.org`
 
-Enter both of them individually and press return/enter after each[^otherdnsprovidercnamerecord].
+Remember to enter each of them separately, hitting return/enter after each entry[^otherdnsprovidercnamerecord].
 
-Enable the "Use a DNS Challenge" and select as the DNS provider in the drop down list "DuckDNS" and put in the "Credentials File Content":
+
+Next, activate the "Use a DNS Challenge" option and choose "DuckDNS" as your DNS provider from the available options in the drop-down list. 
+In the "Credentials File Content" field, substitute ... with the token you copied earlier:
 
     dns_duckdns_token=...
 
-Replacing `...` with the token you copied above.
+In the "Propagation Seconds" field, input a value such as "120" or higher. This ensures that the DNS changes have ample time to propagate.
 
-Put in the "Propagation Seconds" something like "120" or higher to make sure that the DNS changes have enough time to propagate.
+Ensure to check the "I Agree to the Let's Encrypt Terms of Service" box and hit the Save button. Be patient, as you may need to wait for up to the 120 seconds that you configured until your certificate is ready.
 
-Confirm the "I Agree to the Let's Enrypt Terms of Service" check box and press the Save button. You may need to wait for up to the 120 seconds that
-you configured until you get your certificate.
-
-Finally download the generated certificate by going to the &#8942; (three vertical dots) to the right of your SSL certificate entry and select
-"Download". This will download `certificate.zip` with the following content:
+Lastly, download the generated certificate by clicking on the &#8942; (three vertical dots) located to the right of your SSL certificate entry and selecting "Download". This action will download a `certificate.zip` file with the following content:
 
      Length      Date    Time    Name
     ---------  ---------- -----   ----
@@ -170,37 +177,41 @@ Finally download the generated certificate by going to the &#8942; (three vertic
          1826  2023-08-24 07:55   chainX.pem
           306  2023-08-24 07:55   privkeyX.pem
 
-Where the `X` might be a number. For the next steps below you will need the fullchainX.pem and the privkeyX.pem.
+Where X might be a number. For the subsequent steps, you will require the fullchainX.pem and the privkeyX.pem.
 
 #### Optional: Configure Proxy Host
 
-Just in case if you would like to use Nginx Proxy Manager for what it is intended to, as a reverse proxy, you could click on "Hosts" at the top and
-select "Proxy Hosts". Then "Add Proxy Host". As an example I configure the admin panel of the Nginx Proxy Manager itself:
+Should you wish to utilize the Nginx Proxy Manager for its primary purpose, that is, as a reverse proxy, you can easily do so.  Simply click on
+"Hosts" located at the top of the interface and select "Proxy Hosts".  Next, choose "Add Proxy Host". To illustrate, I'll configure the admin panel of
+the Nginx Proxy Manager itself:
 
     Domain Name          : teleport-host-behind-my-router.duckdns.org
     Scheme               : http
     Forward Hostname / IP: localhost
     Forward Port         : 81
 
-Most of the time, the other options can stay "off". Otherwise, configure them as needed.
+Generally, you can leave the other options "off". However, feel free to adjust them as per your requirements.
 
 #### Troubleshooting
 
-In case you ran into any trouble with the above description I suggest you watch the video [Quick and Easy SSL Certificates for Your
-Homelab!](https://www.youtube.com/watch?v=qlcVx-k-02E) by Wolfgang's Channel. Sometimes seeing is easier than following a written text.
+Should you stumble upon any hiccups while following the above guide, I'd recommend you check out the video tutorial, [Quick and Easy SSL Certificates
+for Your Homelab!](https://www.youtube.com/watch?v=qlcVx-k-02E) courtesy of Wolfgang's Channel. Often, visual learning can be more intuitive than
+navigating through written instructions.
 
 ### Teleport Private Network Deployment
 
-Follow the steps from [Get Started with Teleport](https://goteleport.com/docs/) starting with [Step 2/4. Set up Teleport on your Linux host](https://goteleport.com/docs/#step-24-set-up-teleport-on-your-linux-host)
+Start the procedure by following the steps outlined in [Get Started with Teleport,](https://goteleport.com/docs) commencing from Step [Step 2/4. Set
+up Teleport on your Linux host](https://goteleport.com/docs/#step-24-set-up-teleport-on-your-linux-host). This will guide you through setting up
+Teleport on your Linux host.
 
 On your Teleport host, place a valid private key and a certificate chain in `/var/lib/teleport/privkeyX.pem` and `/var/lib/teleport/fullchainX.pem`
 respectively.
 
-On your main Teleport host run the following teleport configure command:
+Next, on your main Teleport host, execute the following Teleport configure command:
 
     > sudo teleport configure -o file --cluster-name=teleport-host-behind-my-router.duckdns.org --public-addr=teleport-host-behind-my-router.duckdns.org:443 --cert-file=/var/lib/teleport/fullchainX.pem --key-file=/var/lib/teleport/privkeyX.pem
 
-This will result in the generation of a `/etc/teleport.yaml` file. Below you will see some of the more important content items of that file:
+This will result in the generation of a `/etc/teleport.yaml` file. Let's take a closer look at some of the key content items in this file:
 
 ```yml
 teleport:
@@ -219,29 +230,32 @@ proxy_service:
 ...
 ```
 
-From here on you can just follow along with the [Get Started with Teleport](https://goteleport.com/docs/) guide or the [Set Up Teleport Open Source in
-5 Minutes | Step-by-Step](https://www.youtube.com/watch?v=BJWbSqiDLeU) video.
+From this point forward, you can just follow along with the [Get Started with Teleport](https://goteleport.com/docs/) guide or switch to the [Set Up
+Teleport Open Source in 5 Minutes | Step-by-Step](https://www.youtube.com/watch?v=BJWbSqiDLeU) video. Both resources are designed to provide you with
+a comprehensive understanding of the process.
 
 ## Automatic DNS-01 Set-Up via Traefik
 
-I have already written about [Traefik](https://traefik.io/) before in my blog post [Traefik as Reverse Proxy](../traefik-reverse-proxy-ansible/). I
-prefer Traefik over Nginx Proxy Manager, because it is more dev-ops automatable and integrates very nicely into a docker eco-system via its labels
-approach. I learned about the fact that you can use Teleport behind a Traefik reverse proxy via the [Installing Teleport + Traefik (Letsencrypt TLS
-certs)](https://www.youtube.com/watch?v=NzSdNoR-JPo) by Christian Lempa YouTube video. This video describes a set-up in which you run Traefik and
-Teleport via docker. Normally I prefer pure docker set-ups, but in this instance I like an approach in which Teleport is managed viy the APT package
-manager better. That way, Teleport updates will get automatically applied with all other OS updates. 
+In a previous blog post about [Traefik](https://traefik.io/), I've discussed the merits of [Traefik as Reverse
+Proxy](../traefik-reverse-proxy-ansible/).  My preference leans towards Traefik over Nginx Proxy Manager due to its superior dev-ops automation
+capabilities and seamless integration with Docker ecosystems through its label-centric approach.  I discovered the possibility of using Teleport
+behind a Traefik reverse proxy from Christian Lempa's YouTube video, [Installing Teleport + Traefik (Letsencrypt TLS
+certs)](https://www.youtube.com/watch?v=NzSdNoR-JPo). This informative video outlines a setup where Traefik and Teleport operate via Docker.
 
-As a side note: Christian Lempa's [boilerplates](https://github.com/ChristianLempa/boilerplates) repository on GitHub comes in handy to get started
-with different kinds of infrastructure components. In our context, especially have a look at:
+While I typically favor pure Docker setups, in this case, I find managing Teleport through the APT package manager more appealing. This method ensures
+that Teleport updates are automatically applied alongside all other OS updates, streamlining the process.
+
+On a related note, Christian Lempa's [boilerplates](https://github.com/ChristianLempa/boilerplates) repository on GitHub is a valuable resource for
+getting started with various infrastructure components. In the context of our discussion, I recommend checking out:
 
 - [docker-compose/traefik](https://github.com/ChristianLempa/boilerplates/tree/main/docker-compose/traefik)
 - [docker-compose/teleport](https://github.com/ChristianLempa/boilerplates/tree/main/docker-compose/teleport)
 
 ### Adapt teleport.yaml
 
-We only need to adapt the `web_listen_addr` as going forward traefik will be responsible to listen at the HTTPS port 443. But you need to keep the
-`public_addr` field as it was configured already above in our manual approach, so that any redirects or similar that Teleport issues will be handled
-via the Traefik entry point:
+The only modification required is to the `web_listen_addr`, as from this point onwards, Traefik will take over the responsibility of listening at the
+HTTPS port 443.  However, it's crucial to retain the `public_addr` field as it was set up in our previous manual configuration. This ensures that any
+redirects or similar actions initiated by Teleport will be managed via the Traefik entry point.
 
 Before:
 
@@ -262,44 +276,44 @@ proxy_service:
 
 ```
 
-Before you restart check that on the new port there is not already another service running:
+Before you initiate a restart, ensure that there isn't another service already operating on the new port:
 
     > telnet localhost 3080
 
-The output should look something like this:
+The output should resemble something like this:
 
     Trying ::1...
     Trying 127.0.0.1...
     telnet: Unable to connect to remote host: Connection refused
 
-If that looks ok you should restart the teleport systemd service:
+If everything appears in order, proceed to restart the Teleport systemd service:
 
     > systemctl restart teleport.service
     > systemctl status teleport.service
 
-
-And now check again that the old port is free and the new port is available for connections:
+After the restart, double-check to confirm that the old port is vacant and the new port is ready to accept connections:
 
     > telnet localhost 443
     > telnet localhost 3080
 
 ### Configure Traefik
 
-**As a pre-caution**: during my set-up process I ran into some issues with Traefik not being able to generate the TLS certificates. I am not 100% sure
-if this was the root cause, but everything started working after I deleted the certificate in Nginx Proxy Manager. You do this in the same menue from
-where you downloaded the `certificate.zip` file.
+**As a pre-caution**: During my setup process, I encountered a few hiccups with Traefik, particularly with generating the TLS certificates. While I
+can't say for certain this was the root cause, I found that deleting the certificate in Nginx Proxy Manager resolved the issue. You can do this from
+the same menu where you downloaded the `certificate.zip` file.
+
 
 As a first step create a place where we can store the Traefik configuration files:
 
     > mkdir -p /opt/traefik/config/certs
 
-In addition, during the set-up process treafik complained about UDP buffer sizes and referred me to: [UDP Buffer
-Sizes](https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes). This is why I executed:
+During the setup, Traefik flagged an issue with UDP buffer sizes and directed me to: [UDP Buffer
+Sizes](https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes). Consequently, I executed:
 
     > sysctl -w net.core.rmem_max=2500000
     > sysctl -w net.core.wmem_max=2500000
 
-Put the following content at `/opt/traefik/docker-compose.yaml`:
+Next, input the following content at `/opt/traefik/docker-compose.yaml`:
 
 ```yml
 services:
@@ -320,12 +334,11 @@ services:
     restart: unless-stopped
 ```
 
-Rememberr to put the correct token in the `DUCKDNS_TOKEN=` part of the above file. If you would like to use another DNS provider have a look at:
-[Traefik ACME](https://doc.traefik.io/traefik/https/acme/). You will have to change the environment variable name and the `dnsChallenge>provider`
-below in the static traefik configuration file.
+Don't forget to insert the correct token in the `DUCKDNS_TOKEN=` part of the file above. If you're using a different DNS provider, check out: [Traefik ACME](https://doc.traefik.io/traefik/https/acme/).
+You'll need to modify the environment variable name and the `dnsChallenge>provider` in the static Traefik configuration file.
 
-Next you should put the below content `/opt/traefik/config/traefik.yaml`. This will set-up the treafik static configuration. I suggest that you start
-with leaving the log level set to `DEBUG` initially and later, once everything is running as you want to have it, just comment that section out.
+Now, insert the following content `/opt/traefik/config/traefik.yaml`. This sets up the Traefik static configuration. I recommend keeping the log level
+set to `DEBUG` initially. Once everything is running smoothly, you can comment out that section.
 
 ```yml
 global:
@@ -382,7 +395,7 @@ providers:
     watch: true
 ```
 
-Finally we put the traefik dynamic configuration in the file `/opt/traefik/config/dynamic.yaml`:
+Next, we'll place the Traefik dynamic configuration in the file `/opt/traefik/config/dynamic.yaml`:
 
 ```yml
 http:
@@ -406,19 +419,19 @@ http:
           - url: "https://teleport-host-behind-my-router.duckdns.org:3080"
 ```
 
-Now you can start the Traefik instance via docker compose. Change into the foler `/opt/traefik` and execute:
+You're now ready to launch the Traefik instance via Docker compose. Navigate to the folder `/opt/traefik` and execute:
 
     > docker compose up
 
-This will start Traefik in the foreground, so that you can see its log messages.
+This will initiate Traefik in the foreground, allowing you to view its log messages.
 
-As a first test execute
+For an initial test, execute:
 
     > curl http://teleport-host-behind-my-router.duckdns.org
 
-You should receive a `Moved Permanently` as we have configured Traefik to redirect all HTTP traffic to HTTPS.
+You should receive a `Moved Permanently` message as we've configured Traefik to redirect all HTTP traffic to HTTPS.
 
-Next try the HTTPS protocol:
+Now, test the HTTPS protocol:
 
     > curl https://teleport-host-behind-my-router.duckdns.org
 
@@ -431,48 +444,45 @@ If you receive something like:
     establish a secure connection to it. To learn more about this situation and
     how to fix it, please visit the web page mentioned above.
 
-Your set-up is not working yet. If you receive:
+Your setup isn't quite right yet. If you receive:
 
     <a href="/web">Found</a>.
 
-You're fine. If you run into trouble, have a close look at the debug output on your console.
+You're good to go! If you encounter any issues, scrutinize the debug output on your console.
 
-Finally open [https://teleport-host-behind-my-router.duckdns.org](https://teleport-host-behind-my-router.duckdns.org) in your browser and you should
-see a working instance of Teleport. From here on you can follow the [standard Teleport documentation](https://goteleport.com/docs/).
+Finally, open https://teleport-host-behind-my-router.duckdns.org in your browser. You should now see a working instance of Teleport. From here on you can follow the [standard Teleport documentation](https://goteleport.com/docs/).
 
-If might want to have a look at the Traefik [Dashboard](http://192.168.0.5:8080) at `http://192.168.0.5:8080`.
+You might also want to check out the Traefik [Dashboard](http://192.168.0.5:8080) at `http://192.168.0.5:8080`.
 
-Once you're happy with what you have you could comment out the `log-level: DEBUG` and start Traefik in the background as a
-[daemon](https://en.wikipedia.org/wiki/Daemon_(computing)):
+Once you're satisfied with your setup, you can comment out the `log-level: DEBUG` and start Traefik in the background as a [daemon](https://en.wikipedia.org/wiki/Daemon_(computing)):
 
     > docker compose up -d
 
 #### Traefik and HTTP Strict Transport Security (HSTS)
 
-It seems that Treafik is setting by default [HSTS](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security) headers. This means that you have to
-use the IP address to access the Traefik dashboard at `http://192.168.0.5:8080`.
+It appears that Traefik is configured to set [HSTS](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security) headers by default. This implies that to access the Traefik dashboard, you'll need to use the IP address, like so: `http://192.168.0.5:8080`.
 
 The Traefik documentation talks about HSTS headers in [only one
-place](https://doc.traefik.io/traefik/middlewares/http/headers/#using-security-headers) and it doesn't even provide an example for it. Here you can
-find further details that might help you in case you want to turn off HSTS for your domain:
+place](https://doc.traefik.io/traefik/middlewares/http/headers/#using-security-headers), and unfortunately, it doesn't provide a practical example.
+However, here are some additional resources that could assist you if you're considering disabling HSTS for your domain:
 
 - [HSTS with Traefik](https://calvin.me/hsts-with-traefik/) ; [available-options](https://github.com/unrolled/secure#available-options)
 - [Traefik v2 enable HSTS, Docker ...](http://day-to-day-stuff.blogspot.com/2020/04/traefik-v2-enable-hsts-docker-and.html)
 
 ## Conclusion
 
-I am still undecided if having a component like Teleport is beneficial to my home set-up. In the end, I am using the infrastructure alone and have
-very little need to add or remove other persons. For my home set-up I am quite happy with the [FIDO2 Hardware Keys](../openssh-fido2-hardwarekey) and
-it avoids the need to run another piece of infrastructure.
+I'm still on the fence about incorporating a component like Teleport into my home setup. Given that I'm the sole user of my infrastructure, the need
+to add or remove others is practically non-existent.  As it stands, I'm quite content with the [FIDO2 Hardware Keys](../openssh-fido2-hardwarekey) for
+my home setup, as it eliminates the need to manage an additional piece of infrastructure.
 
-For a professional environment this might look completely different. There, you will have the need for an identity and access management platform with
-fine grained access control and auditing capabilities. Most likely you would set-up the same non-human account, e.g. `ubuntu` on all your machines,
-e.g. `ubuntu@my-machine.my-org.com` and then have Teleport be the piece of infrastructure that knows who connected to the machine as the non-numan
-user `ubuntu` at a given point in time for monitoring and auditing purposes. But this would render your local logs on your machines rather useless. If
-an attacker ever finds a way to access this account circumventing the Teleport infrastructure you will not even know via which user they managed to
-break into the account. But these are thoughts that lead to far for this blog post.
+However, the scenario changes dramatically in a professional setting. Here, the requirement for an identity and access management platform with
+detailed access control and auditing capabilities becomes paramount.  You'd likely establish the same non-human account, for instance, `ubuntu` on all
+your machines, such as `ubuntu@my-machine.my-org.com`.  Teleport would then serve as the infrastructure component that tracks who connected to the
+machine as the non-human user `ubuntu` at any given moment, for monitoring and auditing purposes.  This, however, could render your local logs on your
+machines somewhat useless. If an attacker ever bypasses the Teleport infrastructure to access this account, you might be left in the dark about the
+user they exploited to gain access. But let's not get too carried away with these thoughts for this blog post.
 
-Please leave comments below and let me know what you think.
+I'd love to hear your thoughts on this. Please drop your comments below and let's get the conversation started.
 
 ## Footnotes
 
