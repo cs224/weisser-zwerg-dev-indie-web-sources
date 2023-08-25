@@ -20,7 +20,7 @@ In this article, I'll take it a step further by introducing [Teleport](https://g
 platform." This not only eliminates the need for private keys on developer workstations but also adds an identity and access management layer. This
 layer allows you to easily and quickly add or remove individuals with specific access rights to your infrastructure.
 
-Typically, Teleport is configured in a way that make the web user interface accessible to the public internet[^setupteleport].
+Typically, Teleport is configured in a way that makes the web user interface accessible to the public internet[^setupteleport].
 
 > <span style="font-size:smaller">
 > In principle, Teleport is already acting as a reverse proxy and could do the same thing as Nginx Proxy Manager or Traefik are doing and implement the <a
