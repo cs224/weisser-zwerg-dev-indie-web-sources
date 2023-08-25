@@ -20,7 +20,20 @@ In this article, I'll take it a step further by introducing [Teleport](https://g
 platform." This not only eliminates the need for private keys on developer workstations but also adds an identity and access management layer. This
 layer allows you to easily and quickly add or remove individuals with specific access rights to your infrastructure.
 
-Typically, Teleport is configured in a way that make the web user interface accessible to the public internet[^setupteleport].  However, I'm not a fan
+Typically, Teleport is configured in a way that make the web user interface accessible to the public internet[^setupteleport].
+
+> <span style="font-size:smaller">
+> In principle, Teleport is already acting as a reverse proxy and could do the same thing as Nginx Proxy Manager or Traefik are doing and implement the <a
+> href="https://letsencrypt.org/de/docs/challenge-types">DNS-01</a> protocol. But as far as I am aware this is not supported (yet). At least the issue
+> in the github issue tracker is still open: <a href="https://github.com/gravitational/teleport/issues/23996">Support ACME with DNS providers</a>.
+>
+> It seems that Teleport is only supporting the <a href="https://letsencrypt.org/docs/challenge-types/#tls-alpn-01">TLS-ALPN-01</a> ACME challenge
+> type, which is only working with a direct internet connection. This is at least what is indicated in <a
+> href="https://goteleport.com/docs/deploy-a-cluster/high-availability/#tls-credential-provisioning">TLS credential provisioning</a> in the teleport
+> documentation. And this seems to be the root cause, why Teleport insists on running with its web user interface accessible to the public internet.
+> </span>
+
+However, I'm not a fan
 of setups where web user interfaces are exposed on the internet as it **significantly increases your attack surface**!  I advocate for web user
 interfaces to be accessible only behind a firewall/router within the intranet, not the internet.  However, by default, Teleport wants to be accessible
 publicly on the internet because it needs to obtain a valid TLS/SSL certificate from Let's Encrypt or similar.  For more information, refer to [Step
@@ -484,17 +497,24 @@ user they exploited to gain access. But let's not get too carried away with thes
 
 I'd love to hear your thoughts on this. Please drop your comments below and let's get the conversation started.
 
+## Further Resources
+
+**Update 2023-08-25**:
+
+* Passwordless and Passkeys support ([WebAuthn](https://webauthn.io/)): the free community edition of Teleport supports passwordless with hardware keys like a YubiKey (on the web UI and on the terminal) and passkeys (only in the web UI).
+  * [Don't use passwords anymore! Teleport with YubiKey passwordless login](https://www.youtube.com/watch?v=I10mtZfVZ1Q&t=791s)
+  * [Passkeys for Infrastructure](https://goteleport.com/blog/passkeys): the one limit is that passkeys aren't supported within the terminal for tsh.
+    * Once you have activated passwordless in Teleport and you want to make `tsh` use the OTP token fallback login method you have to add
+      `--auth=local` to `tsh` like so: `tsh login --proxy=teleport-host-behind-my-router.duckdns.org:443 --auth=local`. Otherwise `tsh` will insist
+      that you have to `Tap your security key`, which works with a real security key, but not with a passkey.
+* [Teleport Assist](https://www.youtube.com/watch?v=hSLeVeEx9VE&t=437s): describes how to setup the ChatGPT API Key in Teleport to enable [Teleport Assist](https://goteleport.com/docs/ai-assist/).
+
 ## Footnotes
 
-[^setupteleport]: [Set Up Teleport Open Source in 5 Minutes | Step-by-Step](https://www.youtube.com/watch?v=BJWbSqiDLeU); in principle it could work
-    out of the box if teleport would support the [DNS-01](https://letsencrypt.org/de/docs/challenge-types)
-    [ACME](https://github.com/acmesh-official/acme.sh) protocol. But as far as I am aware this is not supported (yet). At least the issue in the github
-    issue tracker is still open: [Support ACME with DNS providers](https://github.com/gravitational/teleport/issues/23996). Also under [Step 2/4. Set
-    up Teleport on your Linux host](https://goteleport.com/docs/#step-24-set-up-teleport-on-your-linux-host) it has "Public internet deployment with
-    Let's Encrypt" and "Private network deployment" where the fact that "Let's Enrypt" is mentioned only in the context of "public internet" indicates
-    that DNS-01 is not supported. And in [TLS credential
-    provisioning](https://goteleport.com/docs/deploy-a-cluster/high-availability/#tls-credential-provisioning) in the teleport documentation it
-    indicates that only the [TLS-ALPN-01](https://letsencrypt.org/docs/challenge-types/#tls-alpn-01) ACME challenge type is supported by teleport.
+[^setupteleport]: [Set Up Teleport Open Source in 5 Minutes | Step-by-Step](https://www.youtube.com/watch?v=BJWbSqiDLeU); also under [Step 2/4. Set up
+    Teleport on your Linux host](https://goteleport.com/docs/#step-24-set-up-teleport-on-your-linux-host) it uses the distinction between "Public
+    internet deployment with Let's Encrypt" and "Private network deployment" where the fact that "Let's Enrypt" is mentioned only in the context of
+    "public internet" indicates that DNS-01 is not supported.
 [^vpsstarcenter]: You need a machine accessible to all other machines as the star center, which basically means that the star center needs to be
     accessible to the public internet. But you don't need to expose any ui/service/port except the WireGuard
     [UDP](https://en.wikipedia.org/wiki/WireGuard#Networking) port.
