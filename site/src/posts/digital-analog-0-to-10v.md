@@ -225,6 +225,13 @@ ones like smbus2) work with the Horter or Aptinex devices. Also the i2c-tools co
 [pigpio](https://abyz.me.uk/rpi/pigpio/download.html) library and its [i2c_write_device(handle, data)](https://abyz.me.uk/rpi/pigpio/python.html#i2c_write_device)
 function, suddenly things started to work out.
 
+> <span style="font-size:smaller"> **2023-10-23 Update**: 
+> First of all, there is not only one smbus library, but several as you can see on [PyPI](https://pypi.org/search/?q=smbus).<br>
+> Have a look at https://github.com/ControlEverythingCommunity/AD5254/blob/master/Python/AD5254.py There you can see how to use the
+> [smbus-cffi](https://pypi.org/project/smbus-cffi/0.5.1/) library for i2c communication. You use the `write_i2c_block_data` method. But other `smbus`
+> libraries seem to offer that method aswell, e.g. the [smbus2](https://github.com/kplindegaard/smbus2) libarary.
+> </span>
+
 Sadly, the [pigpio](https://abyz.me.uk/rpi/pigpio/download.html) library is not really a library, but a daemon running in the background and the
 python library is only talking to that daemon via http and port 8888. And because things need to continue to be difficult the port 8888 conflicts with
 the Jupyter notebook running by default on port 8888. So, you should pay attention to first start the `pigpiod` daemon and only then start-up the
@@ -235,7 +242,7 @@ on the [web-site](https://abyz.me.uk/rpi/pigpio/download.html). Once you've gone
 
 ```sh
 pi@raspberrypi:~/pigpio-master $ conda activate py310pi
-pi@raspberrypi:~/pigpio-master $ pip install -e
+pi@raspberrypi:~/pigpio-master $ pip install -e .
 ```
 
 The first line activates the conda environment you use. The second line installs the "editable" version of the package in the conda environment. After
@@ -244,6 +251,8 @@ devices as follows:
 
 ```python
 import pigpio
+
+pi = pigpio.pi()
 
 handle = pi.i2c_open(1, 0x58)
 
