@@ -277,6 +277,9 @@ proxy_service:
   enabled: "yes"
   web_listen_addr: 0.0.0.0:443
   public_addr: teleport-host-behind-my-router.duckdns.org:443
+  https_keypairs:
+  - key_file: /var/lib/teleport/privkeyX.pem
+    cert_file: /var/lib/teleport/fullchainX.pem
 ```
 
 After:
@@ -286,7 +289,7 @@ proxy_service:
   enabled: "yes"
   web_listen_addr: 0.0.0.0:3080
   public_addr: teleport-host-behind-my-router.duckdns.org:443
-
+  https_keypairs: []
 ```
 
 Before you initiate a restart, ensure that there isn't another service already operating on the new port:
