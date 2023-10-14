@@ -18,7 +18,7 @@
   "locale": "en_US",
   "domain": "weisser-zwerg.dev",
 
-  "analytics": true,
-  "mastodonSharing": true
+  "analytics": false,
+  "mastodonSharing": false
 
 }
