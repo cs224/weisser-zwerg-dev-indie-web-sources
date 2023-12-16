@@ -9,7 +9,7 @@ tags: ['post']
 draft: false
 ---
 
-## Rational
+## Rationale
 
 For a long time, I was interested in understanding how data is transmitted "over-the-air" via radio frequency transmissions. Recently, I bought a
 868MHz weather station from Ecowitt, which presented the chance to dig deeper.<br>

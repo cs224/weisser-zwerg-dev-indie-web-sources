@@ -14,7 +14,7 @@ https://pianomanfrazier.com/post/lilypond-in-markdown/
 https://www.samroelants.com/blog/configuring-a-blog-with-eleventy/ 
 #}
 
-## Rational
+## Rationale
 
 If you have a use-case that involves supervised training then methods like cross-validation help you to decide which model works best for your data.
 But if you have to deal with unsupervised learning use-cases (like density estimation or similar) then a technique like comparing the bayes factor for different models

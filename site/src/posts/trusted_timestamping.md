@@ -8,7 +8,7 @@ date: 2022-03-12
 tags: ['post']
 ---
 
-## Rational
+## Rationale
 
 Sometimes it is useful to be able to prove that a certain file, or more generally a state of the world (like a full git repository or similar), was
 present in that exact form latest at a given timestamp. For that purpose [rfc3161](https://datatracker.ietf.org/doc/html/rfc3161) "Internet X.509

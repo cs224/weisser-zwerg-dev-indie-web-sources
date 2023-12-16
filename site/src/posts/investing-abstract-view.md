@@ -11,7 +11,7 @@ tags: ['post']
 
 This blog post is part of the [Investing via Financial Futures Contracts](../series-futures-investing) series.
 
-## Rational
+## Rationale
 
 While I am working in finance for close to 20 years I never looked in detail at what exactly do you aim for when you want to invest your own
 money. Yes, sure, you want that your funds are growing, but how exactly do you try to achieve that? Surprisingly, it seems, that there are only two

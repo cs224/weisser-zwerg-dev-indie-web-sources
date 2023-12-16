@@ -8,7 +8,7 @@ date: 2022-10-15
 tags: ['post']
 ---
 
-## Rational
+## Rationale
 
 After my experiments with the [ODROID-M1](../odroid-m1) I was talking to some people in my network about the difficulty to get hands on a Raspberry Pi
 at the moment and about my experience with the ODROID-M1. One of them mentioned the option to buy an old used thin client like a Dell Wyse or a

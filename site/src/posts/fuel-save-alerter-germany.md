@@ -10,7 +10,7 @@ tags: ['post']
 
 You can find the code on [GitHub](https://github.com/cs224/fuel-save-alerter-germany).
 
-## Rational
+## Rationale
 
 From time to time I like to look into low-code and no-code environments to see if there are any new ideas out there that make the approach more viable
 for me. Since the time of IBM [VisualAge](https://en.wikipedia.org/wiki/VisualAge) for C++ in the mid 90s I am hoping for a way to develop

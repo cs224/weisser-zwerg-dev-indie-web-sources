@@ -11,7 +11,7 @@ tags: ['post']
 
 <a class="u-in-reply-to" href="https://mastodon.social/@cs224/103079652284235547">&nbsp;</a><a href="https://fed.brid.gy">&nbsp;</a>
 
-## Rational
+## Rationale
 
 I have refined my tool-set for developing code over the past 20+ years and chosen Linux as my go-to operating system and platform. As a phone I have
 chosen to use an iOS device, mostly because my family and my colleagues at work use iOS, too. Recently, I wanted to create my first iOS app myself and

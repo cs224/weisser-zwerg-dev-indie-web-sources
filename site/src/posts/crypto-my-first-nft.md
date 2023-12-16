@@ -9,7 +9,7 @@ tags: ['post']
 # eleventyExcludeFromCollections: true
 ---
 
-## Rational
+## Rationale
 
 I have ignored the crypto space for the past 10 years, but thought that now it might be a good time to dig myself a bit deeper into that technology
 space. I've selected the [Cardano](https://docs.cardano.org/) eco-system, because some people say that it is one of the most advanced technology

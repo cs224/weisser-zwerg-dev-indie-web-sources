@@ -9,7 +9,7 @@ tags: ['post']
 # eleventyExcludeFromCollections: true
 ---
 
-## Rational
+## Rationale
 
 When I started my first home automation experiments in 2019 I was not sure what it is all about, whether I need or want it, and what kinds of problems
 it solves. At that time I simply started to buy things that said "Home Automation" or "Smart". Now, three years later, I have a better conceptual

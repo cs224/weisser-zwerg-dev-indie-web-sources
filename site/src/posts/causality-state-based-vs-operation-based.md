@@ -9,7 +9,7 @@ tags: ['post']
 # eleventyExcludeFromCollections: true
 ---
 
-## Rational
+## Rationale
 
 I am struggling since quite some time with Judea Pearl's causality theory and his [do-calculus](https://en.wikipedia.org/wiki/Causality#Causal_calculus). His work is summarized
 in the following three books (in order of publishing and in decreasing order of difficulty):

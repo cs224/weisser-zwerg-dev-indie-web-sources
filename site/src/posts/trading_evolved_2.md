@@ -11,7 +11,7 @@ tags: ['post']
 
 This blog post is part of the [Investing via Financial Futures Contracts](../series-futures-investing) series.
 
-## Rational
+## Rationale
 
 In my last blog-post [Trading Evolved: CSI-Data](../trading_evolved_1) I described how to set-up a futures backtesting environment. Since then more than 3 months have passed.
 Originally I intended to write more details and publish code, but due to lack of time I decided to at least publish pictures that show the results.

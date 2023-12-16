@@ -8,7 +8,7 @@ date: 2022-06-25
 tags: ['post']
 ---
 
-## Rational
+## Rationale
 
 As mentioned in my article [Fuel Save Alerter](../fuel-save-alerter-germany), I was originally thinking about deploying the application locally to a
 [Raspberry Pi](https://en.wikipedia.org/wiki/Raspberry_Pi), but due to the delivery problems I decided to go with an [ODROID-M1 with 8GByte
