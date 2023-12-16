@@ -9,7 +9,7 @@ tags: ['post']
 # eleventyExcludeFromCollections: true
 ---
 
-## Rational
+## Rationale
 
 I've started to follow the development of the corona virus numbers in Europe and especially in Germany some time ago and created a few jupyter notebooks
 for my own use. I am in no way a medical expert and there may be mistakes in my analysis done, but I publish the notebooks on [github](https://github.com/cs224/covid-19-data-analysis) 

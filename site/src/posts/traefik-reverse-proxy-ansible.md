@@ -10,7 +10,7 @@ tags: ['post']
 
 You can find the code on [GitHub](https://github.com/cs224/traefik-reverse-proxy-ansible-showcase).
 
-## Rational
+## Rationale
 
 In one of my last blog posts, [Fuel Save Alerter](../fuel-save-alerter-germany), I described how to create the set-up on a `netcup` virtual private
 server (VPS). I was thinking about putting a web-application front-end on top of it, but then I was thinking, what will happen if this will not be the

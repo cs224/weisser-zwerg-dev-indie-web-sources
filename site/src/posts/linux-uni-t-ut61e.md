@@ -8,7 +8,7 @@ date: 2023-12-11
 tags: ['post']
 draft: false
 ---
-## Rational
+## Rationale
 
 I was in search of a multimeter equipped with a USB interface for seamless programmable access from my Linux system. Scouring through Amazon, I
 stumbled upon the [UNI-T UT61E](https://www.amazon.de/UNI-T-Multitester-Gleichstrom-Wechselstrom-Auto-Multimeter/dp/B01M0J5DP7) digital multimeter,

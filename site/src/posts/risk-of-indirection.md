@@ -9,7 +9,7 @@ tags: ['post']
 # eleventyExcludeFromCollections: true
 ---
 
-## Rational
+## Rationale
 
 In cases where you acquire legal titles (shares, money deposits, insurances, ...) via a financial service provider there are several risks associated
 with the service provider that I feel are mostly overlooked. In this blog post I try to outline a systematic approach via which you can identify such risks

@@ -11,7 +11,7 @@ draft: false
 
 
 
-## Rational
+## Rationale
 
 Recently, I stumbled upon an exciting discovery that I'm eager to share with you. Did you know that you can use any
 [FIDO2](https://en.wikipedia.org/wiki/FIDO_Alliance#FIDO2) hardware key, like a [Yubikey](https://www.yubico.com/products/yubikey-5-overview/),

@@ -10,7 +10,7 @@ tags: ['post']
 
 You can find the code on [GitHub](https://github.com/cs224/odroid-m1-dockerized-homeassistant).
 
-## Rational
+## Rationale
 
 As mentioned in my article [Fuel Save Alerter](../fuel-save-alerter-germany), I was originally thinking about deploying the application locally to a
 [Raspberry Pi](https://en.wikipedia.org/wiki/Raspberry_Pi), but due to the delivery problems I decided to go with an [ODROID-M1 with 8GByte

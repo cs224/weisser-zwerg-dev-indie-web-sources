@@ -9,7 +9,7 @@ tags: ['post']
 draft: false
 ---
 
-## Rational
+## Rationale
 
 Recently, I had the opportunity to participate in the free [ChatGPT Prompt Engineering for Developers](https://www.deeplearning.ai/short-courses/chatgpt-prompt-engineering-for-developers) course by Andrew Ng and Isa Fulford.
 This course reignited my interest in using AI to fine-tune my writing. While tools like MS Word can catch simple grammar and spelling mistakes, I wanted an AI that could take my writing to the next level.

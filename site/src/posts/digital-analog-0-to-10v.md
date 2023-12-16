@@ -9,7 +9,7 @@ tags: ['post']
 draft: false
 ---
 
-## Rational
+## Rationale
 
 Sometimes you need to be able to control devices that react to a voltage setting between 0 to 10V. Initially, I thought, this should be simple and
 there would be ready made devices out there that can be used for these situations. But, as far as I can tell at the moment, I was wrong. This is far

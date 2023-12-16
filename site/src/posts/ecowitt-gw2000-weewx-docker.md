@@ -9,7 +9,7 @@ tags: ['post']
 draft: false
 ---
 
-## Rational
+## Rationale
 
 After my failed attempt to set-up a secondary weather station receiver in [Ecowitt WS2910 868MHz weather station and Software Defined Radio
 (SDR)](../ecowitt-ws2910-868mhz-sdr) I decided to go the "standard" route and buy an Ecowitt [GW2000](https://shop.ecowitt.com/products/gw2000)[^ecowittmhz]
