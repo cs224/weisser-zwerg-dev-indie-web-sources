@@ -57,7 +57,7 @@
     "moment": "^2.30.1",
     "node-fetch": "^3.3.2",
     "npm-check-updates": "^16.14.14",
-    "sanitize-html": "^2.11.0",
+    "sanitize-html": "^2.12.1",
     "sass": "^1.70.0",
     "xmlhttprequest-ssl": ">=2.1.1"
   },
