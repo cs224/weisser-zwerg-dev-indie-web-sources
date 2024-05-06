@@ -58,7 +58,7 @@
     "node-fetch": "^3.3.2",
     "npm-check-updates": "^16.14.20",
     "sanitize-html": "^2.13.0",
-    "sass": "^1.75.0",
+    "sass": "^1.76.0",
     "xmlhttprequest-ssl": ">=2.1.1"
   },
   "resolutions": {
