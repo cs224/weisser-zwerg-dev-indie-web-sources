@@ -1,5 +1,3 @@
-const UpgradeHelper = require("@11ty/eleventy-upgrade-help");
-
 const moment = require('moment');
 const { DateTime } = require("luxon");
 
@@ -89,7 +87,7 @@ module.exports = function(eleventyConfig) {
 
 
     let markdownIt = require("markdown-it");
-    let markdownItEmoji = require("markdown-it-emoji");
+    let markdownItEmoji = require("markdown-it-emoji").full;
     let markdownItFootnote = require('markdown-it-footnote');
     let markdownItAnchor = require('markdown-it-anchor');
     let markdownItKatex = require("markdown-it-katex");
