@@ -1,3 +1,5 @@
+const UpgradeHelper = require("@11ty/eleventy-upgrade-help");
+
 const moment = require('moment');
 const { DateTime } = require("luxon");
 
@@ -9,7 +11,6 @@ moment.locale('en');
 const pluginRss = require("@11ty/eleventy-plugin-rss");
 const pluginSyntaxHighlight = require('@11ty/eleventy-plugin-syntaxhighlight')
 
-const UpgradeHelper = require("@11ty/eleventy-upgrade-help");
 
 module.exports = function(eleventyConfig) {
     // If you have other `addPlugin` calls, it’s important that UpgradeHelper is added last.
