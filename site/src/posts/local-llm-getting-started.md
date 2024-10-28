@@ -125,6 +125,24 @@ print(response)
 
 Great job! You now have a basic understanding of what it takes to get a local LLM running. To recap: load a pre-trained model from [HuggingFace](https://huggingface.co) or similar platforms in a format compatible with your system, and follow the specific instructions provided by the model creators for interacting with the model.
 
+## Interlude: Sharding and Quantization
+
+In this section, I'll discuss the process of sharding and quantization for large language models. For a more detailed explanation, you can check out [Which Quantization Method is Right for You? (GPTQ vs. GGUF vs. AWQ): Exploring Pre-Quantized Large Language Models](https://newsletter.maartengrootendorst.com/p/which-quantization-method-is-right).
+
+When training large language models, it's crucial to work with floating point numbers of sufficient [precision](https://blog.demofox.org/2017/11/21/floating-point-precision). Higher precision means better approximation of the number you have in mind but at the cost of increased memory usage. During the training phase, high precision is important for [gradient descent](https://en.wikipedia.org/wiki/Stochastic_gradient_descent) algorithms to function well. However, once the model is trained and used for inference (providing answers), higher precision isn't necessary. You can lower floating point precision significantly without noticeably affecting the pre-trained LLM's performance.
+
+As we aim to run a large language model on moderate hardware with limited resources, we need a model with several billion parameters but want to fit it into our available 8GB of VRAM.
+This is where quantization comes in. The article mentioned above will guide you through the process of quantizing models yourself using Python and discuss sharding as another technique for fitting large models into smaller VRAM amounts.
+
+Fortunately, there are helpful individuals who have already done the hard work for us!
+Quantized model results can be stored in various formats; we'll use GGUF because it works well with execution engines like [GPT4All](https://www.nomic.ai/gpt4all) or [Ollama](https://ollama.com).
+
+Go ahead and download the pre-quantized model `Qwen2.5-7B-Instruct-Q5_K_L.gguf` from HuggingFace [bartowski/Qwen2.5-7B-Instruct-GGUF](https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF). That is the [Q5_K_L](https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF/blob/main/Qwen2.5-7B-Instruct-Q5_K_L.gguf) version.
+
+### A note about llama.cpp
+
+[llama.cpp](https://github.com/ggerganov/llama.cpp) is a framework designed for running large language model (LLM) inference in C/C++. It serves as a backend for execution engines like[GPT4All](https://www.nomic.ai/gpt4all) or [Ollama](https://ollama.com). While you can use it directly, its user interface might be more complex.
+
 ## Footnotes
 
 [^jupyternotebooktherightway]: Look at [How to set up Anaconda and Jupyter Notebook the right way](https://towardsdatascience.com/how-to-set-up-anaconda-and-jupyter-notebook-the-right-way-de3b7623ea4a) for more details.
