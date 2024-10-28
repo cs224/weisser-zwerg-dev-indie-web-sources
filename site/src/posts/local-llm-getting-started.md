@@ -141,7 +141,7 @@ Go ahead and download the pre-quantized model `Qwen2.5-7B-Instruct-Q5_K_L.gguf` 
 
 ### A note about llama.cpp
 
-[llama.cpp](https://github.com/ggerganov/llama.cpp) is a framework designed for running large language model (LLM) inference in C/C++. It serves as a backend for execution engines like[GPT4All](https://www.nomic.ai/gpt4all) or [Ollama](https://ollama.com). While you can use it directly, its user interface might be more complex.
+[llama.cpp](https://github.com/ggerganov/llama.cpp) is a framework designed for running large language model (LLM) inference in C/C++. It serves as a backend for execution engines like [GPT4All](https://www.nomic.ai/gpt4all) or [Ollama](https://ollama.com). While you can use it directly, its user interface might be more complex.
 
 ## Footnotes
 
