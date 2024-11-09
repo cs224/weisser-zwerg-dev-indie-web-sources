@@ -69,13 +69,13 @@ When people try to define the essential aspects of democracy, they often mention
 However, I believe that Rainer Mausfeld hit the nail on its head in his book [Hybris und Nemesis](https://www.amazon.de/Hybris-Nemesis-zivisilatorischen-Abgrund-Einsichten/dp/3864894077)[^mausfeld]  when he put the protection against a concentration of power — whether it's government power or the power of rich oligarchies, industry cartels, or any other form of concentrated power — at the center of democracy.
 As strengthening law enforcement always means more power to authorities, I believe that his ideas align with prioritizing liberty over safety.
 
-Historically, the go-to arguments for limiting civil liberties and increasing government control have been terrorism and child pornography[^weakandhelpless].
-In both cases, it becomes evident that we are dealing with scapegoat arguments when you consider how little attention is given to existing tools designed to protect from terrorist attacks or safeguard children from abuse.
+Historically, the go-to arguments for limiting civil liberties and increasing government control have been terrorism and child pornography.
+In both cases, it becomes evident that we are dealing with pretextual arguments when you consider how little attention is given to existing tools designed to protect from terrorist attacks or safeguard children from abuse.
 If the core concerns were truly protection from terrorist threats or shielding children from harm, these instruments would be consistently and thoroughly utilized to their fullest extent.
 I encourage readers to conduct their own research into the numerous failures in using such tools effectively.
 
 To put the "weak and helpless" at the center of arguments and to bet on empathy for those (perceived) disadvantaged groups is a common theme for expanding government powers.
-I recommend Thomas Sowell's 1996 book [The Vision Of The Anointed: Self-congratulation As A Basis For Social Policy](https://www.amazon.de/Vision-Anointed-Self-Congratulation-Social-Policy/dp/046508995X) for more insights into the strategies for expanding government powers and the numerous historical failures to achieve the promised results by introducing the proposed policies.
+I recommend Thomas Sowell's 1996 book [The Vision Of The Anointed: Self-congratulation As A Basis For Social Policy](https://www.amazon.de/Vision-Anointed-Self-Congratulation-Social-Policy/dp/046508995X) for more insights into strategies used for expanding government powers and the numerous historical failures to achieve the promised results by introducing the proposed policies.
 
 Before any new restrictions on civil liberties are proposed, evidence should be provided that existing measures have been exhausted.
 Furthermore, if truly novel mechanisms and an expansion of law enforcement powers are required, I propose that success criteria should be defined prior to implementation and assessed after one or two years.
