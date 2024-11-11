@@ -44,7 +44,7 @@ In this article, I aim at raising awareness about the different aspects of your 
 However, I will also provide a few hints at solutions where it seems fitting in this overview discussion.
 Future blog posts may delve deeper into practical ways to achieve a certain level of protection.
 
-Whenever there's a choice to be made, I will opt to ensure your digital rights through technical means rather than solely relying on commitments given by service providers in legal documents.
+Whenever there's a choice to be made, I will opt to ensure your digital rights through technical means rather than solely relying on commitments given by service providers in legal documents[^sophos].
 
 ### Trade-Offs between Digital Civil Rights and Law Enforcement
 
@@ -389,3 +389,5 @@ And finally, here is a brief, incomplete list of organizations and individuals w
 [^tod]: [Facebook, Google und der Tod So regeln Sie Ihren digitalen Nach­las](https://www.test.de/Digitaler-Nachlass-Wie-Sie-Ihren-Erben-das-Leben-leichter-machen-5028585-0)
 [^nachlass]: [Digitale Vorsorge, digitaler Nachlass: Was passiert mit meinen Daten?](https://www.verbraucherzentrale.de/wissen/digitale-welt/datenschutz/digitale-vorsorge-digitaler-nachlass-was-passiert-mit-meinen-daten-12002)
 [^analogue]: Deutsche Bahn: [Schritt für Schritt gegen das Recht auf analoges Leben](https://netzpolitik.org/2023/deutsche-bahn-schritt-fuer-schritt-gegen-das-recht-auf-analoges-leben): Die Deutsche Bahn schafft die Bahncard aus Plastik ab.
+[^sophos]: As an example of why trusting service providers promises in legal documents is not sufficient have a look at the [Sophos](https://www.heise.de/meinung/Analyse-und-Kommentar-Sophos-und-der-gebrochene-Schwur-10010073.html) case, where they spied on their own customers. Here is [Fefes Blog](https://blog.fefe.de/?ts=99ce1acd) on this issue.
+[^sophos]: As an example of why trusting service providers' promises in legal documents is not sufficient, have a look at the [Sophos](https://www.heise.de/meinung/Analyse-und-Kommentar-Sophos-und-der-gebrochene-Schwur-10010073.html) case, where they spied on their own customers. Here is [Fefe's blog](https://blog.fefe.de/?ts=99ce1acd) on this issue.
