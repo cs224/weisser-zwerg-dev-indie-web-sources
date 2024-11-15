@@ -67,3 +67,10 @@ blockquote {
 pre[class*="language-"] {
   font-size: smaller !important;
 }
+
+.roundedBorder {
+  border: 2px solid yellowgreen;
+  border-radius: 20px;
+  padding: 10px;
+  margin: 10px;  
+}

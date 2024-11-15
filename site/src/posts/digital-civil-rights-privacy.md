@@ -92,7 +92,7 @@ However, they come with their own set of problems — like needing to remember t
 This is where two-factor authentication (2FA) comes in.
 The idea behind 2FA is to use at least two factors out of something you know (like a password), something you possess (like a smartphone), something you are (biometric identifiers like fingerprints), something you do (gait or walking patterns), and somewhere you are (proximity to trusted devices or networks).
 
-I have previously discussed this topic to some degree in my blog post [Step Up Your SSH Game](https://weisser-zwerg.dev/posts/openssh-fido2-hardwarekey).
+I have previously discussed this topic to some degree in my blog post [Step Up Your SSH Game](../openssh-fido2-hardwarekey).
 Personally, I prefer hardware solutions that are single-minded security devices combining two factors in and of themselves, e.g. you own them and need to enter a PIN or similar on those devices via an integrated touchscreen to activate them.
 
 Additionally, I want the ability to create backups by, for example, having an on-paper copy of the device's seed phrase.
@@ -146,7 +146,7 @@ Using cryptocurrency for purchases online where delivery details are involved co
 On the other hand, if people don't have identifiers like blockchain wallet addresses or IP addresses to attach metadata to, no patterns can be analyzed.
 A service provider might claim not to log or record these identifiers, but how would you know they're telling the truth?
 
-From now on, I will refer to identifier collection as "fingerprinting."
+**Fingerprinting**: From now on, I will refer to identifier collection as "fingerprinting."
 Just like a fingerprint, if you only collect small partial fingerprints, it may not be enough to reveal someones identity.
 But if you gather enough partial prints, it might be possible to reconstruct the full print. 
 Modern fingerprinting techniques can identify users with surprising accuracy based on relatively small amounts of data collected from a variety of sources —  e.g., device settings, behavior, and network data, like the device's user agent string, screen resolution, and even mouse movement patterns.
