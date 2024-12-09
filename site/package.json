@@ -21,7 +21,8 @@
     "webmention-page": "webmention https://weisser-zwerg.dev/posts/activity-pub-integration-via-fed-brid-gy --limit 0 --debug --send",
     "ncu": "npm-check-updates --target minor",
     "ncu-u": "npm-check-updates --target minor -u",
-    "ncua": "npm-check-updates"
+    "ncua": "npm-check-updates",
+    "check-links": "npx broken-link-checker http://localhost:8080/posts/digital-civil-rights-nextcloud-i"
   },
   "repository": {
     "type": "git",
@@ -39,6 +40,7 @@
     "@11ty/eleventy-plugin-syntaxhighlight": "^5.0.0",
     "@remy/webmention": "^1.5.0",
     "bootstrap-scss": "^4.6.2",
+    "broken-link-checker": "^0.7.8",
     "dotenv": "^16.4.5",
     "ecstatic": ">=4.1.4",
     "eleventy-plugin-nesting-toc": "^1.3.0",

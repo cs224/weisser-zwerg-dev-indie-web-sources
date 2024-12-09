@@ -61,7 +61,10 @@ pre {
 
 blockquote {
   margin-left: 4rem;
+  padding-left: 8px;
+  box-shadow: rgb(36, 36, 36) 2px 0px 0px 0px inset;
 }
+
 
 :not(pre) > code[class*="language-"],
 pre[class*="language-"] {
