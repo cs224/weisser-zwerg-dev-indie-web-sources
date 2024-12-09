@@ -15,7 +15,7 @@ This guide empowers you to build a personal privacy infrastructure that puts you
 We'll walk through a step-by-step process to create a secure ecosystem across your devices using cutting-edge open-source tools.
 Our journey will help you to:
 
-1. Implement a privacy-first browsing experience across all your devices on as many desktop computers and [GrapheneOS](https://grapheneos.org) modile devices you wish to operate.
+1. Implement a privacy-first browsing experience across all your devices on as many desktop computers and [GrapheneOS](https://grapheneos.org) mobile devices you wish to operate.
     1. Setup privacy-respecting browsers.
     1. Establish a robust, centralized, encrypted password management system via a shared and synced password manager.
     1. Synchronize bookmarks and notes securely and privately.
