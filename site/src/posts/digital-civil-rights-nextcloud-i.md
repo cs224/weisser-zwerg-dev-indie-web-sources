@@ -500,7 +500,7 @@ To monitor the restore progress, use:
     > docker logs nextcloud-aio-nextcloud -f
 
 
-Once Nextcloud was fully operational, I had to log in to my admin account first before I was able to access my personal `me` user account.
+Once Nextcloud was fully operational, I had to log in to my `admin` account first before I was able to access my personal `me` user account.
 Additionally, I needed to renew the access tokens for various apps, such as Floccus. In some cases, I had to delete and re-create a profile or account to trigger the access token generation for the app.
 
 ### LibreWolf on KDE/Plasma KUbuntu 24.04 LTS (Noble Numbat)
