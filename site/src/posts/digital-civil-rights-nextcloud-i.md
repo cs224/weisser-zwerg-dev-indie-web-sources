@@ -495,7 +495,7 @@ To monitor the restore progress, use:
 
     > docker logs nextcloud-aio-borgbackup -f
 
-**Step 4: Verify Installation**: Once all containers are up and running, you can observe the installation process: inside the `nextcloud-aio-nextcloud` container:
+**Step 4: Verify Installation**: Once all containers are up and running, you can observe the installation process inside the `nextcloud-aio-nextcloud` container:
 
     > docker logs nextcloud-aio-nextcloud -f
 
