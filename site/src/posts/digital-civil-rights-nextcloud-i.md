@@ -450,6 +450,59 @@ exit
 
 You can repeat these steps as needed until you reach the desired Nextcloud version.
 
+### Restore on a New Server from Backup
+
+Restoring your previous Nextcloud AIO instance from a backup on a new server is straightforward if done **at the correct stage of the installation process**. Here's a step-by-step guide to ensure a smooth setup.
+
+You can test the restoration on:
+1. A brand-new machine with Docker installed, or
+1. A reset instance, ensuring it is “clean” from a Nextcloud AIO perspective. For guidance on resetting, see: [How to properly reset the instance?](https://github.com/nextcloud/all-in-one#how-to-properly-reset-the-instance)
+
+**Step 1: Start the AIO Master Container**: Run the following command to begin:
+
+    > docker compose up -d
+
+Then, navigate to `https://192.168.0.5:8088` (replace with your server's IP and port as discussed above). At this point, you'll receive a new passphrase for your AIO master container.
+
+**Step 2: Update the Passphrase (Optional)**: If you want to restore a specific passphrase:
+
+1. Stop the AIO master container:
+
+    > docker stop nextcloud-aio-mastercontainer
+
+2. Edit the configuration file and replace the "password" field with the passphrase you want to use:
+
+    > emacs -nw `/var/lib/docker/volumes/nextcloud_aio_mastercontainer/_data/data/configuration.json`
+
+3. Restart the container:
+
+    > docker compose up -d
+
+When you revisit `https://192.168.0.5:8088`, you should now see your configured passphrase.
+
+**Step 3: Restore the Backup**: This is the **key** step. Scroll down on the web interface until you see the "Restore former AIO instance from backup" option.
+
+<a href="/img/nextcloud-aio-restore-from-backup.png" target="about:blank"><img src="/img/nextcloud-aio-restore-from-backup.png" alt="Restore former AIO instance from backup" style="max-height: 200px"></a>
+
+Enter:
+
+* `Local backup location`
+* `Borg passphrase`
+
+Follow the guided steps to complete the restore process.
+
+To monitor the restore progress, use:
+
+    > docker logs nextcloud-aio-borgbackup -f
+
+**Step 4: Verify Installation**: Once all containers are up and running, you can observe the installation process: inside the `nextcloud-aio-nextcloud` container:
+
+    > docker logs nextcloud-aio-nextcloud -f
+
+
+Once Nextcloud was fully operational, I had to log in to my admin account first before I was able to access my personal `me` user account.
+Additionally, I needed to renew the access tokens for various apps, such as Floccus. In some cases, I had to delete and re-create a profile or account to trigger the access token generation for the app.
+
 ### LibreWolf on KDE/Plasma KUbuntu 24.04 LTS (Noble Numbat)
 
 Initially, I followed the installation instructions provided [for Debian-based systems](https://librewolf.net/installation/debian/), but I encountered some difficulties in getting LibreWolf to run smoothly on KDE/Plasma KUbuntu 24.04 LTS (Noble Numbat).
