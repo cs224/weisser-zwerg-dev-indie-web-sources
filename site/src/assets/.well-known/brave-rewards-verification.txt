@@ -1,0 +1,4 @@
+This is a Brave Creators publisher verification file.
+
+Domain: weisser-zwerg.dev
+Token: d3837ec8ee4992e26920a87cecf62a4f9758892308a1d982dc526d12dff4083c
