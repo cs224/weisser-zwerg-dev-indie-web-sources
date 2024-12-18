@@ -407,10 +407,17 @@ However, I prefer keeping my local Tor components under my own control for added
 
 There is some debate about whether combining VPN and Tor provides meaningful benefits.
 For more information, check out the article: [VPN + Tor: Not Necessarily a Net Gain](https://web.archive.org/web/20220228213639/https://matt.traudt.xyz/posts/2016-11-12-vpn-tor-not-net-gain/).
+If you prefer video content, consider watching: [Stop Using Tor With VPNs](https://www.youtube.com/watch?v=y8bIt4K_Kfo).
 
 Personally, I see VPN + Tor as a net gain. Tor alone offers anonymity, but combining it with a VPN hides your Tor usage from your ISP.
 Additionally, with Tor bridges, you can obscure this usage from your VPN provider too.
-This way, you achieve anonymity while ensuring nobody knows you're using anonymity tools.
+> My argument here would be: if you can't trust bridges used with a VPN provider, why trust them with plain Tor at all?
+>
+> Furthermore, a VPN provider's business hinges on trust.
+> If it ever came to light that a provider shared logs they claim not to keep, their credibility — and their entire business — would collapse.
+> This strong incentive should discourage any (open) betrayal of trust.
+
+By combining a VPN and Tor, you can achieve anonymity while masking the fact that you're using anonymity tools at all.
 
 ## Technical Details and Source Code
 
