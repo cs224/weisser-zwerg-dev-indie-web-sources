@@ -302,7 +302,7 @@ Certain VPN providers, like NordVPN, allow [connections via SOCKS5](https://supp
 
 ### SSH SOCKS Proxy Setup
 
-By using the `-D` option of the standard OpenSSH `ssh` client, you can securely route your traffic through a remote server. Here’s a quick example:
+By using the `-D` option of the standard OpenSSH `ssh` client, you can securely route your traffic through a remote server. Here's a quick example:
 
 ```bash
 ssh -D 1080 user@remote.tld
@@ -594,3 +594,71 @@ In an upcoming blog post, we'll explore additional network anonymization technol
 If you're eager to learn more now, you can check out a comparative overview of VPNs, Tor, I2P, and Nym in the article: [VPNs, Tor, I2P — how does Nym compare?](https://blog.nymtech.net/vpns-tor-i2p-how-does-nym-compare-8576824617b8).
 
 I'd love to hear your thoughts on this topic. Feel free to share your ideas or questions in the comments section below!
+
+## Appendix
+
+In a future blog post, I'll dive deeper into various network anonymization technologies. In the meantime, I'll gradually expand this appendix by adding individual sections.
+
+### Invisible Internet Project: I2P
+
+Unlike Tor, which anonymizes your activity on the standard global internet, the Invisible Internet Project (I2P) creates an anonymous "parallel internet."
+Similar to Tor's `.onion` domains, which require you to be connected to Tor, I2P has `.i2p` domains that you can only access through the I2P network.
+
+I2P is a peer-to-peer network where every user acts as a node.
+Unlike BitTorrent, I2P nodes don't store data from other users locally.
+Since it's a peer-to-peer network, there's a bootstrapping process when you first connect.
+This means you might need to wait a while before the network is fully functional for you.
+
+For the best experience, it's recommended to install I2P on a virtual private server (VPS) as a long-running, permanent process.
+This eliminates the need to repeat the bootstrapping process every time you connect.
+You can then use SSH port forwarding to securely connect your workstation to your VPS, which will act as your entry point to the I2P network.
+
+Currently, there are three main clients available for connecting to the I2P network that I know of:
+* [I2P](https://github.com/i2p/i2p.i2p): The original Java-based I2P client.
+* [I2P+](https://gitlab.com/i2pplus/I2P.Plus/): A soft fork of the Java I2P client with additional features.
+* [I2P Daemon (i2pd)](https://github.com/PurpleI2P/i2pd): A full-featured I2P client written in C++.
+
+If you're not ready to try I2P yourself, you can check out the video [Introduction To I2P](https://www.youtube.com/watch?v=KhG29riqVUE) for a quick overview.
+
+For those eager to dive in, here's a `docker-compose.yaml` file, adapted from the original [Docker.md](https://github.com/i2p/i2p.i2p/blob/master/Docker.md), to help you get started:
+```yaml
+services:
+  i2p:
+    image: geti2p/i2p:latest
+    ports:
+      - 4444:4444
+      # - 6668:6668
+      - 7657:7657
+      - 12345:12345
+      - 12345:12345/udp      
+    environment:
+      - JVM_XMX=256m
+      - EXT_PORT=12345
+    volumes:
+      - ./data/i2phome:/i2p/.i2p
+      - ./data/i2ptorrents:/i2psnark
+```
+
+Save the file as `./docker-compose-i2p.yaml` and follow this simple installation process:
+```bash
+mkdir -p /opt/docker-services/i2p/data/{i2phome,i2ptorrents}
+cp ./docker-compose-i2p.yaml /opt/docker-services/i2p/docker-compose.yaml
+cd /opt/docker-services/i2p/
+docker compose up
+```
+
+Once installed, you can connect to the I2P console by opening your browser and navigating to `http://localhost:7657`.
+Then, follow the setup instructions, which include configuring an **`HTTP`** proxy (**not** SOCKS) in your browser to point to `localhost:4444`.
+In the final setup step you reach the I2P console. There, you'll find links to resources within the I2P network, such as the I2P Wiki: <http://wiki.i2p-projekt.i2p/>.
+
+I2P is designed for anonymity and secure communication, so there's no need for HTTPS. You should use the HTTP protocol instead (`http://` in your browser).
+
+Since the I2P network doesn't have a DNS (Domain Name System) or similar tools for translating human-readable names into network addresses, accessing some links (e.g., <http://bible4u.i2p/>) can be a bit tricky.
+Watching the [Introduction To I2P](https://www.youtube.com/watch?v=KhG29riqVUE) video is a great way to learn this process step-by-step.
+
+For a deeper understanding of how I2P works, check out the video [I2P - Protocol of Invisible Internet: How the best anonymity network works](https://www.youtube.com/watch?v=95hSAMEwrlM) or explore the [i2pd documentation](https://i2pd.readthedocs.io/en/latest/), which offers insights into the I2P eco-system.
+
+Here are a few additional resources, also mentioned in the [Introduction To I2P](https://www.youtube.com/watch?v=KhG29riqVUE) video:
+* Link list: <http://identiguy.i2p/>.
+* Search engine: <http://legwork.i2p/>.
+* RSS-feed like page: <http://planet.i2p/>.
