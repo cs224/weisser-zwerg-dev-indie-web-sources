@@ -376,6 +376,15 @@ This allows you to keep your bookmarks collection synced and accessible on the g
 On a computer, you can access the Nextcloud [Notes](https://apps.nextcloud.com/apps/notes) directly through your browser.
 For [GrapheneOS](https://grapheneos.org) mobile devices, install the Nextcloud [Notes](https://f-droid.org/en/packages/it.niedermann.owncloud.notes/) mobile app to easily share and manage your personal notes.
 
+#### Expanding Text Width for Wider Screens Using Custom CSS
+
+When using Nextcloud Notes in my browser on a wide screen, I find the narrow note area frustrating.
+You can address this issue by following the steps outlined in the [Let text be wider for bigger screens](https://github.com/nextcloud/notes/issues/415) discussion.
+Start by installing the [Custom CSS](https://apps.nextcloud.com/apps/theming_customcss) app from the Nextcloud App Store. Then, as an administrator, navigate to `Administration settings > Theming > Custom CSS` and add the following CSS code:
+```css
+.editor__content{ max-width:100% !important; }
+```
+
 ### Password Manager KeePassXC Sync
 
 To sync KeePassXC with Nextcloud, follow these steps for both your desktop and mobile devices.
@@ -397,7 +406,7 @@ Configure Mobile Access: On your [GrapheneOS](https://grapheneos.org) device, se
 This avoids potential merge conflicts.
 Perform account creation and password management tasks on your desktop; the Nextcloud sync will automatically update your mobile device, where you can use the KeePassDX app to access the data.
 
-#### Adding passwords and 2FA or keypass
+#### Adding passwords and 2FA
 
 I said it already above, but I just want to repeat it here: Managing multiple databases in KeePassXC for two-factor authentication (2FA) can sometimes be tricky. Here's the approach I use to ensure everything works as expected:
 
