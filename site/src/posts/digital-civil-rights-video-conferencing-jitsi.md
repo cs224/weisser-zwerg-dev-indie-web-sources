@@ -17,7 +17,7 @@ By hosting your own instance, you can ensure your video calls remain private and
 Prefer visual guidance? Check out the YouTube video [Replace Zoom & Teams with Jitsi Meet. It's Free, Self-Hosted, and Private!](https://www.youtube.com/watch?v=q_vFOIHwXh0) by [Jim's Garage](https://www.youtube.com/@Jims-Garage) for a step-by-step walkthrough.
 
 Here are some helpful additional resources:
-* [meet.jit.si](https://meet.jit.si/): A free, public Jitsi Meet instance for  state-of-the-art video conferencing if you’d rather not host your own.
+* [meet.jit.si](https://meet.jit.si/): A free, public Jitsi Meet instance for  state-of-the-art video conferencing if you'd rather not host your own.
 * Jitsi Meet on [GitHub](https://github.com/jitsi/jitsi-meet): A secure, simple, and scalable video conferencing solution you can use as a standalone app or embed in your web application.
 * Jitsi Meet [Handbook](https://jitsi.github.io/handbook/docs/devops-guide/): A detailed resource to deepen your understanding and maximize your setup.
 
@@ -29,12 +29,12 @@ We will use [Traefik as a Reverse Proxy](../traefik-reverse-proxy-ansible) on ou
 > If you want to utilize a more recent version, check out [Christian Lempa](https://www.youtube.com/@christianlempa)'s [boilerplates](https://github.com/ChristianLempa/boilerplates) and specifically his [docker-compose/traefik](https://github.com/ChristianLempa/boilerplates/tree/main/docker-compose/traefik) file.
 > Currently, this uses `traefik:v3.3.1`.
 
-For this guide, I’ll assume you’re working with a VPS, have Traefik set up as a reverse proxy on this VPS, and that the VPS is accessible via the internet at `your-domain.tld`.
+For this guide, I'll assume you're working with a VPS, have Traefik set up as a reverse proxy on this VPS, and that the VPS is accessible via the internet at `your-domain.tld`.
 
 ## Set-Up
 
 The process for setting up a `docker compose` instance is well-documented in the [Self-Hosting Guide - Docker](https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-docker).
-For convenience, I’ll outline the steps here with a few additional comments to help you along the way.
+For convenience, I'll outline the steps here with a few additional comments to help you along the way.
 
 First, create the file system structure needed to run Jitsi Meet on your VPS. This step should be performed as the `root` user on your VPS:
 
@@ -57,10 +57,10 @@ Unzip the package:
 unzip stable-9457-2
 ```
 
-If you’re working with the `stable-9909` release, unzipping it will create a directory named `jitsi-docker-jitsi-meet-4787ac5`.
+If you're working with the `stable-9909` release, unzipping it will create a directory named `jitsi-docker-jitsi-meet-4787ac5`.
 For other versions, like the one I used (`stable-9457-2`), the directory created might look like `jitsi-docker-jitsi-meet-2423033`.
 
-From the extracted files, you’ll only need `docker-compose.yml` and the file `env.example`. For now, let’s follow the steps outlined in the documented installation procedure.
+From the extracted files, you'll only need `docker-compose.yml` and the file `env.example`. For now, let's follow the steps outlined in the documented installation procedure.
 
 ```bash
 cd jitsi-docker-jitsi-meet-2423033
@@ -70,7 +70,7 @@ bash ./gen-passwords.sh
 
 The `bash ./gen-passwords.sh` step is essential for automatically filling in the `XXX_AUTH_PASSWORD=...` settings in the `.env` file.
 
-Here’s a breakdown of the additional changes you should make to the .env file (below is a `diff` for additional clarity):
+Here's a breakdown of the additional changes you should make to the .env file (below is a `diff` for additional clarity):
 
 * `CONFIG=`: Specify the directory where all configuration files will be stored.
 * `PUBLIC_URL=`: Enter the `https://jitsi.your-domain.tld` URL where your instance will be accessible online. Replace `your-domain.tld` with the domain name of your VPS.
@@ -143,7 +143,8 @@ Below are the changes you need to make to the `docker-compose.yml` file:
 
 * **Configure the external Traefik network**: At the very bottom of the file, specify `traefik_net` as the external network used by `traefik`. To find the name of this network, run the command `docker network ls`.
 * **Update the `networks:` section**: In both the `web:` and `jvb:` services, add `traefik_net:` to their respective `networks:` sections.
-* **Set Traefik labels**: In the `web:` and `jvb:` services, configure the `labels:` required for `traefik` to handle reverse proxying.
+* **Set Traefik labels**: In the `web:` and `jvb:` services, configure the `labels:` required for `traefik` to handle reverse proxying.<br>
+  **Important Note**: Refer to the [Labels Block Mapping or Block Sequence Style](#labels-block-mapping-or-block-sequence-style) section below for more details.
 * **Expose ports for the `jvb:` service**: Make the necessary `ports:` available to the VPS machine. In my setup, I had to map port `8080` to `8088` due to a local port conflict on my VPS. This step may not be needed for your configuration.
 
 ```diff
@@ -225,6 +226,48 @@ After that you should be able to start your Jitsi instance on your VPS server:
 docker compose up -d
 ```
 
+### Labels Block Mapping or Block Sequence Style
+
+The [Compose file reference](https://docs.docker.com/reference/compose-file) explains that in the `docker-compose.yml` file, you can define the [labels:](https://docs.docker.com/reference/compose-file/services/#labels) section using either the [mapping](https://docs.docker.com/reference/compose-file/services/#mappings) or [sequence](https://docs.docker.com/reference/compose-file/services/#sequences) style.
+
+
+**Mapping Style**: The block mapping style defines labels as key-value pairs within a map structure. It is straightforward and follows standard YAML conventions. For example:
+```yaml
+services:
+  web:
+    labels:
+      com.example.description: "Accounting webapp"
+      com.example.department: "Finance"
+      com.example.label-with-empty-value: ""
+```
+
+**Sequence Style**: The block sequence style represents each label as an individual item in a list, formatted as a `key=value` string.
+This approach is often more concise and improves readability, especially with numerous labels. For instance:
+```yaml
+services:
+  web:
+    labels:
+      - "com.example.description=Accounting webapp"
+      - "com.example.department=Finance"
+      - "com.example.label-with-empty-value"
+```
+
+Both styles are functionally equivalent in Docker Compose and can be used interchangeably.
+
+**Important**: Within a single `labels:` section, you must stick to *either* the mapping style *or* the sequence style — you cannot mix the two.
+
+In the `stable-9909` release, the `docker-compose.yml` file introduced `labels:` sections that weren't present in the older `stable-9457-2` release. For example, the `web:` service contains the following in mapping style:
+```yaml
+        labels:
+            service: "jitsi-web"
+```
+
+If you decide to use the sequence style for your `traefik` labels (as shown in the provided `diffs` above), you should first convert the `service: "jitsi-web"` mapping to sequence style for consistency:
+```yaml
+        labels:
+            - "service=jitsi-web"
+```
+
 ## Creating Users
 
 Authentication with `ENABLE_AUTH` and set AUTH_TYPE to internal, then configure the settings you can see below.
@@ -268,5 +311,5 @@ config.disableThirdPartyRequests = true;
 
 ## Conclusions
 
-In this guide, you’ve learned how to set up your own Jitsi Meet video conferencing server behind `traefik` as a reverse proxy.
+In this guide, you've learned how to set up your own Jitsi Meet video conferencing server behind `traefik` as a reverse proxy.
 By hosting your own instance, you can ensure that your video calls stay private and secure, giving you complete control over your data.
