@@ -70,7 +70,7 @@ bash ./gen-passwords.sh
 
 The `bash ./gen-passwords.sh` step is essential for automatically filling in the `XXX_AUTH_PASSWORD=...` settings in the `.env` file.
 
-Here's a breakdown of the additional changes you should make to the .env file (below is a `diff` for additional clarity):
+Here's a breakdown of the additional changes you should make to the `.env` file (below is a `diff` for additional clarity):
 
 * `CONFIG=`: Specify the directory where all configuration files will be stored.
 * `PUBLIC_URL=`: Enter the `https://jitsi.your-domain.tld` URL where your instance will be accessible online. Replace `your-domain.tld` with the domain name of your VPS.

@@ -662,3 +662,58 @@ Here are a few additional resources, also mentioned in the [Introduction To I2P]
 * Link list: <http://identiguy.i2p/>.
 * Search engine: <http://legwork.i2p/>.
 * RSS-feed like page: <http://planet.i2p/>.
+
+### Nym Mixnet
+
+[Nym](https://nym.com/about) is constructing a fully decentralized network without relying on any trusted parties, central components, or single points of failure.
+All Nym features operate in a decentralized and distributed manner, similar to a decentralized Virtual Private Network (dVPN), ensuring no centralized registration option is available.
+
+For more details on Nym, explore their [Papers and Research](https://nym.com/trust-center/papers-and-research) section or visit their [@Nymtech](https://www.youtube.com/@Nymtech) YouTube Channel.
+
+As of now (current date: 2025-01-14), [NymVPN](https://nymvpn.com/en) remains free to use, offering all its features.
+However, in the upcoming weeks, NymVPN will transition to a paid service.
+Take advantage of the current free access and get ready for the world's most anonymous VPN.
+
+#### NymVPN
+
+TechRadar has highlighted mixnet technology as one of the [top three VPN innovations of 2024](https://www.techradar.com/vpn/vpn-privacy-security/the-3-biggest-vpn-innovations-of-2024-what-does-the-future-hold), stating:
+
+> While this concept has been around for a while, Nym Technologies is leading the charge in making mixnets a practical solution for everyday users.
+> Their NymVPN is currently in beta and available for free, leveraging this technology to provide a much more secure and anonymous browsing experience.
+
+Right now, you can still claim your free [Access Code](https://nym.com/account/create) to try NymVPN.
+This code is a [BIP 39 Mnemonic](https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt) Word List — a set of 24 unique words that acts as your account identifier.
+Once you've [downloaded](https://nym.com/download/linux) the app for your platform (Android, iOS, Linux, macOS, or Windows), use these 24 words to log in and access the VPN.
+
+Similar to the setup for NordVPN, I've created a Docker Compose stack that integrates a Shadowsocks SOCKS5 proxy with NymVPN.
+This setup allows you to access NymVPN through a SOCKS5 interface, combining privacy and flexibility.
+
+You can find all the source files in this GitHub Gist: [Digital Civil Rights and Privacy: Networking, VPN, Tor, Onion over VPN - Dockerized NymVPN](https://gist.github.com/cs224/1d01536c89f2fb0419674fc9152a977c).
+
+Copy the `secrets.env.example` file to `secrets.env` and replace the placeholder 24-word mnemonic list with your own word list.
+Then, follow the `install.sh` script.
+Once the Docker Compose stack is up and running, you’ll have two SOCKS5 proxies available:
+
+* **Port 1090: Fast Mode**: A decentralized 2-hop mode for faster connections and less latency thanks to WireGuard. Ideal for protections in everyday browsing, streaming, and downloading.
+* **Port 1091: Anonymous Mode**: Maximal anonymity thanks to Nym's Noise Generating Mixnet. A 5-hop decentralized network with added noise to protect users against even AI surveillance. Ideal for messaging, email, and crypto transactions.
+
+Currently, the anonymous mode is quite slow — slower than Tor and close to unusable for some activities. Hopefully, this performance will improve with future updates.
+
+
+Even without considering other features, the fast mode stands out as *superior* to any other VPN service I've encountered. Here's why:
+* **[Zero-Knowledge Proofs (ZKPs)](https://livebook.manning.com/book/real-world-cryptography/chapter-15/90)**: NymVPN uses ZKPs to enable secure payments without linking your identity to your VPN usage. This means even if you pay with a traditional method like a bank account, your payment cannot be tied to your online activity.
+* **Blockchain and Cryptocurrency Incentives**: Unlike Tor, which relies on volunteers, Nym's mixnet is powered by a blockchain-based incentive system. Node operators are rewarded with cryptocurrency, making it sustainable for individuals to run Nym nodes as a business.
+* **Enhanced Anonymity, Even in Fast Mode**: The fast mode uses a 2-hop setup, significantly increasing the difficulty even for a [Global Passive Adversary](https://news.ycombinator.com/item?id=9977465) to deanonymize your activity compared to single-hop VPNs.
+
+**Caveats**: There are a few important caveats to keep in mind. Until these are resolved, I recommend exercising caution when using NymVPN for activities that demand high levels of anonymity:
+
+* **Still in Beta**: NymVPN is currently in its beta stage, meaning it may not yet be fully stable or optimized for all use cases.
+* **No Kill Switch**: The lack of a kill switch means your connection could be exposed if the VPN unexpectedly disconnects. Their [web-site](https://nym.com/features) says: Killswitch and autoconnect: COMING SOON! Prevent all leaks with features that automatically connects the VPN and immediately suspends internet connection if the VPN connection temporarily goes down.
+
+Currently, the amount of information and documentation available for the Nym mixnet and its technology is somewhat limited.
+However, you can find helpful resources and support at the following platforms:
+
+* [Nym Forum](https://forum.nym.com): A community-driven space to discuss Nym’s technology and get answers to your questions.
+* [Nym on Discord](https://discord.com/invite/nym): Join the conversation and connect with other users and developers in real time.
+* [dev:nymtech.chat](https://matrix.to/#/%23dev:nymtech.chat) on Matrix: A Matrix chatroom for technical discussions and support.
+* Nym on [GitHub](https://github.com/nymtech/): Explore the code, report issues, and contribute to the project.
