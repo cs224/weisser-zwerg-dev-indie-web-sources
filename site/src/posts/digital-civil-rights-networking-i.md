@@ -663,7 +663,7 @@ Here are a few additional resources, also mentioned in the [Introduction To I2P]
 * Search engine: <http://legwork.i2p/>.
 * RSS-feed like page: <http://planet.i2p/>.
 
-### Nym Mixnet
+### Nym Mixnet: NymVPN
 
 [Nym](https://nym.com/about) is constructing a fully decentralized network without relying on any trusted parties, central components, or single points of failure.
 All Nym features operate in a decentralized and distributed manner, similar to a decentralized Virtual Private Network (dVPN), ensuring no centralized registration option is available.
@@ -673,8 +673,6 @@ For more details on Nym, explore their [Papers and Research](https://nym.com/tru
 As of now (current date: 2025-01-14), [NymVPN](https://nymvpn.com/en) remains free to use, offering all its features.
 However, in the upcoming weeks, NymVPN will transition to a paid service.
 Take advantage of the current free access and get ready for the world's most anonymous VPN.
-
-#### NymVPN
 
 TechRadar has highlighted mixnet technology as one of the [top three VPN innovations of 2024](https://www.techradar.com/vpn/vpn-privacy-security/the-3-biggest-vpn-innovations-of-2024-what-does-the-future-hold), stating:
 
@@ -692,7 +690,7 @@ You can find all the source files in this GitHub Gist: [Digital Civil Rights and
 
 Copy the `secrets.env.example` file to `secrets.env` and replace the placeholder 24-word mnemonic list with your own word list.
 Then, follow the `install.sh` script.
-Once the Docker Compose stack is up and running, you’ll have two SOCKS5 proxies available:
+Once the Docker Compose stack is up and running, you'll have two SOCKS5 proxies available:
 
 * **Port 1090: Fast Mode**: A decentralized 2-hop mode for faster connections and less latency thanks to WireGuard. Ideal for protections in everyday browsing, streaming, and downloading.
 * **Port 1091: Anonymous Mode**: Maximal anonymity thanks to Nym's Noise Generating Mixnet. A 5-hop decentralized network with added noise to protect users against even AI surveillance. Ideal for messaging, email, and crypto transactions.
@@ -713,7 +711,411 @@ Even without considering other features, the fast mode stands out as *superior* 
 Currently, the amount of information and documentation available for the Nym mixnet and its technology is somewhat limited.
 However, you can find helpful resources and support at the following platforms:
 
-* [Nym Forum](https://forum.nym.com): A community-driven space to discuss Nym’s technology and get answers to your questions.
+* [Nym Forum](https://forum.nym.com): A community-driven space to discuss Nym's technology and get answers to your questions.
 * [Nym on Discord](https://discord.com/invite/nym): Join the conversation and connect with other users and developers in real time.
 * [dev:nymtech.chat](https://matrix.to/#/%23dev:nymtech.chat) on Matrix: A Matrix chatroom for technical discussions and support.
+* Nym on [GitHub](https://github.com/nymtech/): Explore the code, report issues, and contribute to the project.
+
+### Nym Mixnet: Operating Your Own Nym-Node
+
+The [Nym](https://nym.com/about) mixnet is a community effort and relies on individuals like you to run nodes, which are crucial for its operation.
+To make this sustainable, Nym uses a blockchain-based incentive system that rewards node operators with cryptocurrency.
+This means running a Nym node can even become a small business opportunity.
+
+In this section, I'll walk you through how to set up and operate your own `nym-node`.
+
+The Nym mixnet combines [Proof of Stake](https://en.wikipedia.org/wiki/Proof_of_stake) (PoS) and [Proof of Work](https://en.wikipedia.org/wiki/Proof_of_work) (PoW) mechanisms:
+
+* Proof of Stake: You'll need to hold Nym tokens and bond them to your node. To maximize your node's financial performance, you'll also want to encourage others in the community to delegate some of their Nym tokens to your node. This delegation acts as a sign of trust and helps the network prioritize your node. However, the system is designed with balance in mind - nodes that hold too many delegated funds may see reduced rewards. This encourages a healthy, decentralized network. (For more details, check out the Nym [Tokenomics](https://en.wikipedia.org/wiki/Tokenomics) documentation page.)
+* Proof of Work: Your node must perform useful tasks, like participating in the Nym mixnet to ensure secure and private communication.
+
+Steps to Set Up a Nym-Node:
+1. Get Nym Tokens: Acquire some Nym tokens to begin.
+1. Choose a VPS Provider: Research and pick a Virtual Private Server (VPS) provider that fits your needs.
+1. Install the Node: Set up your `nym-node` on your VPS.
+1. Bond Tokens: Bond 100 Nym tokens to your node (currently worth around €10).
+1. Build Trust: Convince others in the community to delegate their tokens to your node.
+
+If running your own Nym node feels like too much of a commitment, you can still contribute to the network by [delegating](#delegating) your Nym tokens to an existing node (for example, mine!).
+Detailed instructions for this will follow below.
+
+#### Acquire Nym Tokens
+
+To begin, you'll need to get some Nym tokens. For detailed instructions, check out the [Nym Wallet Preparation](https://nym.com/docs/operators/nodes/preliminary-steps/wallet-preparation) page.
+
+Step 1: Set Up Your Nym Wallet:
+* Download the Nym Wallet: Visit the [Nym Wallet website](https://nym.com/wallet) and download the wallet application for your operating system.
+* Create Your Wallet Account:
+  * If you don't have an account, the wallet will guide you through creating one.
+  * You'll receive a [BIP 39 Mnemonic](https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt) Word List — a unique set of 24 words that acts as your account identifier.
+  * **Important**: Store these 24 words securely, such as in a [password manager](../digital-civil-rights-nextcloud-i/#password-manager-(2fa%2C-totp%2C-fido2%2C-passkeys%2C-webauthn)). You'll need them to log in and access your wallet in the future.
+
+Step 2: Fund Your Wallet with `NYM` Tokens:
+* To bond a node, you'll need at least 100 `NYM` tokens. However, to cover gas fees, it's recommended to have some more. I'd suggest a minimum of 200 `NYM` tokens.
+* The Nym documentation suggests using the [Bity](https://www.bity.com) broker. Here's why:
+  * Simple Payment Options: You can use a credit card or bank transfer to complete your purchase.
+  * No KYC for Small Amounts: For amounts like 200 `NYM` tokens, using a bank transfer avoids the [Know Your Customer (KYC)](https://en.wikipedia.org/wiki/Know_your_customer) verification process.
+* How It Works:
+  * Agree to Terms: On the broker's website, confirm the transaction conditions.
+  * Provide Your Wallet Address: Copy your wallet address from the Nym wallet and share it with the broker.
+  * Transfer Funds: Follow the broker's instructions to transfer money via your chosen payment method.
+  * Receive Tokens: Once the broker processes your payment, they'll transfer the `NYM` tokens to your wallet.
+
+Additional Note: `NYM` tokens are held on the [Cosmos blockchain](https://fr.wikipedia.org/wiki/Cosmos_(blockchain)). The Nym project uses this blockchain for payment-related aspects of the mixnet rather than operating a separate blockchain.
+
+#### Research and Select a Virtual Private Server (VPS) Provider
+
+Choosing the right VPS provider is crucial for running a Nym node effectively. To help you make an informed decision, the Tor Project's [Good Bad ISPs](https://community.torproject.org/relay/community-resources/good-bad-isps/) page offers valuable advice that also applies to Nym nodes.
+
+For better anonymity and network resilience, avoid VPS providers and countries that already host a large number of nodes. As of now, it's recommended to steer clear of the following providers:
+* Frantech / Ponynet / BuyVM (AS53667)
+* OVH SAS / OVHcloud (AS16276)
+* Online S.A.S. / Scaleway (AS12876)
+* Hetzner Online GmbH (AS24940)
+* IONOS SE (AS8560)
+* netcup GmbH (AS197540)
+* Psychz Networks (AS40676)
+* 1337 Services GmbH / RDP.sh (AS210558)
+
+According to the Nym blog post [Nym node Delegation Programme is now open](https://nym.com/blog/nym-node-delegation-programme-is-now-open), preference is given to nodes that avoid using popular providers like AWS, Hetzner, Contabo or Google Cloud VPS providers.
+
+You can use the [Nym node explorer](https://explorer.nymtech.net/) to identify areas with high node concentration, so you can contribute to a more diverse and balanced network.
+
+One reason for dense node concentration in certain countries is the availability of VPS providers offering excellent value for money.
+In addition, when planning to operate a Nym exit gateway, you should consider the legal [jurisdictions](https://nym.com/docs/operators/community-counsel/jurisdictions) of your provider.
+
+
+As a side note: If you receive an "Exit Gateways Abuse Report" from your ISP, the Nym project recommends using the [Response template for Tor relay operator to ISP](https://community.torproject.org/relay/community-resources/eff-tor-legal-faq/tor-dmca-response/):
+> When you receive an abuse report please use Tor template for a quick response, but modify all "tor" in the text into "proxy server" before you send it as Nym is not Tor and it's an extra red flag.
+> We are working closely with lawyers to write up Nym specific template.
+>
+> Secondly, join this matrix channel `!YfoUFsJjsXbWmijbPG:nymtech.chat` and share as much as possible (like screen prints, provider, location etc).
+>
+> Last but not least, join community legal counsel - our collective knowledge hub.
+> Read <https://nym.com/docs/operators/community-counsel> and add your findings by opening a PR: <https://nym.com/docs/operators/add-content>
+
+After some research, I chose the [VPS S](https://avoro.eu/de/vps) plan from [Avoro](https://avoro.eu/en), part of [dataforest GmbH](https://dataforest.net) in Germany.
+The plan costs €5.50 per month and includes a 4 vCPU, 8 GB RAM instance with IPv4 and IPv6 support. These specifications align perfectly with the [recommendations](https://nym.com/docs/operators/nodes/preliminary-steps/vps-setup) in the Nym operators guide.
+
+Things to Note About Avoro: At the moment you'll need to contact Avoro's support team to enable an IPv6 address, as their web interface doesn't currently support self-service for this feature.
+The web interface may show a DNS name like `v0000000000.v-server.me`, but this resolves to a different IP than the one displayed. Avoro's support clarified that the subdomain or hostname is purely symbolic and not functional.
+To handle this, I used [Duck DNS](https://www.duckdns.org), a free and simple solution for setting up a DNS entry.
+
+For the operating system, I selected `Ubuntu 24.04 LTS`, a stable and widely supported option. Once your VPS instance is configured, you're ready to proceed with installing the Nym node.
+
+#### VPS Setup & Configuration
+
+The [VPS Setup & Configuration](https://nym.com/docs/operators/nodes/preliminary-steps/vps-setup) guides you through installing and configuring your VPS, including setting up a firewall using the [UFW](https://help.ubuntu.com/community/UFW)  firewall frontend.
+```bash
+apt update -y && apt --fix-broken install
+apt -y install ca-certificates jq curl wget ufw jq tmux pkg-config build-essential libssl-dev git
+apt install ufw --fix-missing  # Double check ufw is installed correctly
+ufw version                    # Check if you have ufw installed
+```
+
+When enabling the firewall, proceed carefully to avoid locking yourself out of your VPS.
+**DON'T DISCONNECT** your ssh session unless you have executed the `ufw allow 22/tcp` after the `ufw enable` or you're locked out.
+If you were to lock yourself out the only solution will be to reinstall your VPS from scratch.
+```bash
+ufw enable
+ufw allow 22/tcp    # SSH - you're in control of these ports
+ufw allow 80/tcp    # HTTP
+ufw allow 443/tcp   # HTTPS
+ufw allow 1789/tcp  # Nym specific
+ufw allow 1790/tcp  # Nym specific
+ufw allow 8080/tcp  # Nym specific - nym-node-api
+ufw allow 9000/tcp  # Nym Specific - clients port
+ufw allow 9001/tcp  # Nym specific - wss port
+ufw allow 51822/udp # WireGuard
+ufw status
+```
+
+> Initially, I followed the standard [VPS Configuration](https://nym.com/docs/operators/nodes/preliminary-steps/vps-setup#vps-configuration) process, including setting up the UFW firewall.
+> However, I later discovered that running [network_tunnel_manager.sh](https://nym.com/docs/operators/nodes/nym-node/configuration) (or [here](https://github.com/nymtech/nym/blob/develop/scripts/network_tunnel_manager.sh)) caused the UFW package to be uninstalled.
+> Despite this issue, I recommend sticking to the outlined sequence of steps, as I eventually arrived at a fully functional setup.
+
+#### Generating the Binaries
+
+With the operating system configuration complete, the next step is to [compile](https://nym.com/docs/operators/binaries/building-nym) the Nym node binaries. Compiling the binaries from source is straightforward. Here's how to do it:
+```bash
+apt install pkg-config build-essential libssl-dev curl jq git
+
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+rustup update
+git clone https://github.com/nymtech/nym.git
+cd nym
+ 
+git reset --hard      # in case you made any changes on your branch
+git pull              # in case you've checked it out before
+ 
+git checkout master   # master branch has the latest release version: `develop` will most likely be incompatible with deployed public networks
+ 
+cargo build --release # build your binaries with **mainnet** configuration
+```
+
+Once the build process is complete, the compiled binary will be available at: `./target/release/nym-node`.
+
+
+Alternatively you can use [Pre-built Binaries](https://nym.com/docs/operators/binaries/pre-built-binaries). The following command line will tell you what is the last tag to look for on the [releases](https://github.com/nymtech/nym/releases) GitHub page:
+
+If you prefer not to build from source, you can download [Pre-built Binaries](https://nym.com/docs/operators/binaries/pre-built-binaries). To find the latest release tag on [GitHub](https://github.com/nymtech/nym/releases), use the following command:
+
+```bash
+curl --silent "https://api.github.com/repos/nymtech/nym/releases" | jq -r '.[] | select(.name | test("Nym Binaries")) | .tag_name' | head -1
+```
+
+At the time of writing, the latest release is `nym-binaries-v2025.1-reeses`. You'll need the `nym-node` binary from that release.
+```bash
+wget https://github.com/nymtech/nym/releases/download/nym-binaries-v2025.1-reeses/nym-node
+```
+
+Regardless of how you obtain the binary - either by building it yourself or downloading it - I chose to place it at `/root/nym-node`.
+
+Although it is possible to run the Nym node as a non-root user (as detailed in the [documentation](https://nym.com/docs/operators/nodes/preliminary-steps/vps-setup#running-nym-node-as-a-non-root)), I opted to use the root account since I don't plan to run anything else on this VPS instance.
+
+#### Initialize the `nym-node`
+
+The first step in setting up your `nym-node` is to initialize it. This process sets up the necessary directory structure and configuration files.
+```bash
+/root/nym-node run --init-only --write-changes --mode mixnode --public-ips "$(curl -4 https://ifconfig.me)" --http-bind-address 0.0.0.0:8080 --mixnet-bind-address 0.0.0.0:1789 --verloc-bind-address 0.0.0.0:1790 --location DE --wireguard-enabled true --expose-system-hardware false --expose-system-info false
+```
+
+This will create the following directory `.nym/nym-nodes/default-nym-node`. Within this directory, you'll find subdirectories and files needed for configuration and operation.
+
+I made changes to the `config.toml` file located at `.nym/nym-nodes/default-nym-node/config/config.toml`.
+
+Specifically, I updated the `announce_port` setting in two sections, the the `mixnet` section and the `verloc` section.
+By default, announce_port is set to 0. While I chose to update it, this step might not be necessary.
+```ini
+[mixnet]
+announce_port = 1789
+
+[verloc]
+announce_port = 1790
+```
+
+#### Start the `nym-node`
+
+After initializing your Nym node, the next step is to start it.
+For consistency, I replaced dynamic variables like `$(curl -4 https://ifconfig.me)` with static strings to ensure everything behaves as expected.
+```bash
+/root/nym-node run --mode mixnode --public-ips "94.143.231.195" --hostname "weisser-zwerg-nym-node.duckdns.org" --http-bind-address 0.0.0.0:8080 --mixnet-bind-address 0.0.0.0:1789 --verloc-bind-address 0.0.0.0:1790 --location DE --wireguard-enabled true --expose-system-hardware false --expose-system-info false --accept-operator-terms-and-conditions
+```
+
+I guess that you could alternatively use a simplified command:
+```bash
+/root/nym-node run --accept-operator-terms-and-conditions
+```
+Since all the required parameters were configured during the `--init-only --write-changes` step, this approach should work - but I haven't tested it personally.
+
+Once the node starts, monitor the log messages on the screen. If most messages don't indicate any errors, your node is running correctly.
+
+To simplify managing your Nym node, I recommend switching to a `systemd` unit. Create a file named `/etc/systemd/system/nym-node.service`:
+```ini
+[Unit]
+Description=Nym Node
+StartLimitInterval=350
+StartLimitBurst=10
+ 
+[Service]
+User=root
+LimitNOFILE=65536
+ExecStart=/root/nym-node run --mode mixnode --public-ips "94.143.231.195" --hostname "weisser-zwerg-nym-node.duckdns.org" --http-bind-address 0.0.0.0:8080 --mixnet-bind-address 0.0.0.0:1789 --verloc-bind-address 0.0.0.0:1790 --location DE --wireguard-enabled true --expose-system-hardware false --expose-system-info false --accept-operator-terms-and-conditions
+KillSignal=SIGINT
+Restart=on-failure
+RestartSec=30
+ 
+[Install]
+WantedBy=multi-user.target
+```
+
+After creating the file, activate it by running the following commands:
+```bash
+systemctl daemon-reload
+systemctl enable nym-node.service
+systemctl start nym-node.service
+```
+
+You can then view the log output in real time using: `journalctl -u nym-node.service -f -n 100`.
+
+#### Bond your `nym-node`
+
+Now it is time to [bond](https://nym.com/docs/operators/nodes/nym-node/bonding) your `nym-node`. As a firt step execute:
+
+The next step is to [bond](https://nym.com/docs/operators/nodes/nym-node/bonding) your `nym-node`.
+This process establishes your node's identity and secures its participation in the mixnet.
+To retrieve your node's identity key run the following command:
+```bash
+/root/nym-node bonding-information
+```
+This will show an `Identity Key`, which will look something like this: `E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ`.
+
+To retrieve the correct host address run this command on your VPS:
+```bash
+echo "$(curl -4 https://ifconfig.me)"
+```
+
+The bonding process is well-documented on the [Bond via the Desktop wallet (recommended)](https://nym.com/docs/operators/nodes/nym-node/bonding#bond-via-the-desktop-wallet-recommended) page.
+It includes detailed instructions and screenshots to guide you through:
+* Entering your Identity Key.
+* Configuring your host address.
+* Finalizing the bonding transaction.
+
+Follow the steps outlined there, then return here to continue.
+
+After completing the bonding process, you can view your bonding transaction here in the [block explorer](https://blocks.nymtech.net/transaction/333C6303FD528D7FD54EE969BBE4E54A259BB3608BBFEC228C8D1448D595A323) (or [here](https://nym.explorers.guru/transaction/333C6303FD528D7FD54EE969BBE4E54A259BB3608BBFEC228C8D1448D595A323)).
+
+#### Routing Configuration
+
+The next step is to go through the [Routing Configuration](https://nym.com/docs/operators/nodes/nym-node/configuration#routing-configuration) your Nym node.
+
+If you built the project from source, you'll find the `network_tunnel_manager.sh` script at `./scripts/network_tunnel_manager.sh`.
+Alternatively, you can download it from this [link](https://github.com/nymtech/nym/blob/develop/scripts/network_tunnel_manager.sh).
+
+
+As far as I understand the `nymtun0` interface is only present if you opearte an `exit-gateway`:
+> The `nymtun0` interface is dynamically managed by the `exit-gateway` service. When the service is stopped, `nymtun0` disappears, and when started, `nymtun0` is recreated.
+
+Fruthermore, the [VPS Configuration](https://nym.com/docs/operators/nodes/preliminary-steps/vps-setup#vps-configuration) explains that the `nym-node` is making use of a [wireguard](https://www.wireguard.com/) VPN tunnel:
+> The `nymwg` interface is used for creating a secure wireguard tunnel as part of the Nym Network configuration.
+> Similar to `nymtun0`, the script manages iptables rules specific to `nymwg` to ensure proper routing and forwarding through the wireguard tunnel.
+
+The first time you execute the `network_tunnel_manager.sh` script, it will modify some system-installed packages. I noted above already that:
+
+> Initially, I followed the standard [VPS Configuration](https://nym.com/docs/operators/nodes/preliminary-steps/vps-setup#vps-configuration) process, including setting up the UFW firewall.
+> However, I later discovered that running [network_tunnel_manager.sh](https://nym.com/docs/operators/nodes/nym-node/configuration) (or [here](https://github.com/nymtech/nym/blob/develop/scripts/network_tunnel_manager.sh)) caused the UFW package to be uninstalled.
+
+You may also be prompted on the first run of the `network_tunnel_manager.sh` script to save your current IPv4 and IPv6 rules — select "Yes" to preserve them.
+```bash
+# Delete IP tables rules for IPv4 and IPv6 and apply new ones:
+./network_tunnel_manager.sh remove_duplicate_rules nymtun0   # ; may only be required if you have a nymtun, e.g. you're operating an exit-gateway
+./network_tunnel_manager.sh apply_iptables_rules
+
+# At this point you should see a global ipv6 address.
+./network_tunnel_manager.sh fetch_and_display_ipv6
+
+# Check nymtun IP tables                                       ; may only be required if you have a nymtun, e.g. you're operating an exit-gateway
+./network_tunnel_manager.sh check_nymtun_iptables
+
+# Remove old and apply new rules for wireguad routing
+./network_tunnel_manager.sh remove_duplicate_rules nymwg
+./network_tunnel_manager.sh apply_iptables_rules_wg
+
+# Apply rules to configure DNS routing and allow ICMP piung test for node probing (network testing)
+./network_tunnel_manager.sh configure_dns_and_icmp_wg
+
+# Adjust and validate IP forwarding
+./network_tunnel_manager.sh adjust_ip_forwarding
+./network_tunnel_manager.sh check_ipv6_ipv4_forwarding
+
+# Check nymtun0 interface and test routing configuration       ; may only be required if you have a nymtun, e.g. you're operating an exit-gateway
+ip addr show nymtun0
+
+# Validate your IPv6 and IPv4 networking by running a joke test via Mixnet:
+./network_tunnel_manager.sh joke_through_the_mixnet          # ; may only be required if you have a nymtun, e.g. you're operating an exit-gateway
+
+# Validate your tunneling by running a joke test via WG:
+./network_tunnel_manager.sh joke_through_wg_tunnel
+```
+
+We already started the `nym-node` above with the `--wireguard-enabled true` flag and added it to our `systemd` service configuration, but only now the network configuration is complete. Therefore we have to restart our `nym-node` via our `systemd` service:
+```bash
+systemctl daemon-reload && service nym-node restart
+```
+
+To ensure the node is running correctly, monitor the service logs:
+```bash
+journalctl -u nym-node.service -f -n 100
+```
+
+#### Fund `nym-node` Client Nyx Account
+
+At this point, you might notice one remaining `Error` message in your logs:
+```
+2025-01-19T12:42:32.150873Z ERROR gateway/src/node/mod.rs:197: this gateway (n1t37ajkn703defjhh569r6ey6xhjk3txv29l4vg) has insufficient balance for possible zk-nym redemption transaction fees. it only has 0unym available.
+```
+
+I reached out to the Nym support team for clarification, and they explained:
+> You don't have to worry about it as the balance needed is only for gateway modes.
+
+This means that for a node running in `--mode mixnode`, this error can be safely ignored. However, if you prefer to resolve the issue, here's how to do it.
+
+Your node has a second Nym account, the `nym-node` client Nyx account (note: it's Nyx, not Nym). To eliminate the error, you need to fund this account.
+I transferred 25 `NYM` to my Nyx account, and the error message was cleared.
+
+For more detailed instructions, you can refer to the [Fund `nym-node` Client Nyx Account](https://nym.com/docs/operators/nodes/nym-node/bonding#fund-nym-node-client-nyx-account) documentation.
+
+#### Monitoring
+
+You can explore my [NymNode API](http://94.143.231.195:8080/api/v1/swagger/#/) through its [Swagger/OpenAPI](https://en.wikipedia.org/wiki/Swagger_(software)) interface.
+
+You can also gather some basic details about my node:
+```bash
+curl -X 'GET' 'http://94.143.231.195:8080/api/v1/build-information' -H 'accept: application/json' | jq
+{
+  "binary_name": "nym-node",
+  "build_timestamp": "2025-01-20T14:00:32.024551064Z",
+  "build_version": "1.3.1",
+  "commit_sha": "b163dba2d46fb70d37c76f85cb9d6844d233dd29",
+  "commit_timestamp": "2025-01-20T09:35:09.000000000+01:00",
+  "commit_branch": "master",
+  "rustc_version": "1.84.0",
+  "rustc_channel": "stable",
+  "cargo_profile": "release",
+  "cargo_triple": "x86_64-unknown-linux-gnu"
+}
+
+curl -X 'GET' 'http://94.143.231.195:8080/api/v1/auxiliary-details' -H 'accept: application/json' | jq
+{
+  "location": "DE",
+  "announce_ports": {
+    "verloc_port": 1790,
+    "mix_port": 1789
+  },
+  "accepted_operator_terms_and_conditions": true
+}
+```
+
+To locate my node in the overall Nym mixnet, use its `Identity Key`, such as `E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ`.
+```bash
+curl -X 'GET' 'https://validator.nymtech.net/api/v1/nym-nodes/described' -H 'accept: application/json' | jq | grep E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ
+```
+You can track my node using the [Spectre Explorer](https://explorer.nym.spectredao.net/dashboard) with the same Identity Key: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://explorer.nym.spectredao.net/nodes/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ).
+
+Additionally, my node is visible in the [Mainnet Network Explorer](https://explorer.nymtech.net/network-components/nodes/2196). However, I was unable to locate it in the [Nym Harbour Master](https://harbourmaster.nymtech.net/). The Harbour Master page notes:
+> The Harbour Master is going through some changes.
+
+There's also a [Mixnet Explorer](https://mixnet.explorers.guru/mixnodes), but please note that it's currently at its "End of Support."
+
+
+#### Delegating
+
+Earlier, I mentioned that if you prefer not to run your own `nym-node`, you can still contribute to the network by delegating your Nym tokens - such as to my node.
+But before you can delegate, you'll need to acquire some `NYM` tokens. The Nym documentation suggests purchasing them through the [Bity](https://www.bity.com) broker.
+
+While I haven't personally used these services, you can also buy `NYM` tokens on centralized exchanges ([CEX](https://iq.wiki/wiki/cex-centralized-exchange)) like [Kraken](https://www.kraken.com/) (on the native NYX network) or on decentralized exchanges ([DEX](https://en.wikipedia.org/wiki/Decentralized_finance#Decentralized_exchanges)) and CEX platforms like [KuCoin](https://www.kucoin.com/) or [ByBit](https://www.bybit.com/en/) (on the ERC20 Ethereum network)
+ However, if you purchase tokens on the ERC20 network, you'll need to transfer them to the native NYX network via [GravityBridge](https://bridge.blockscape.network/).
+
+
+There is a [Delegation Advisor](https://explorenym.net/delegation-advisor/) available, but I'm unsure of its current functionality.
+
+Anyway, to get started, you'll need a wallet. Head over to the [Nym Wallet website](https://nym.com/wallet) and download the wallet for your operating system.
+
+If you don't already have an account, you'll need to create one. The wallet will guide you through generating a [BIP 39 Mnemonic](https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt) Word List, which is a set of 24 unique words that serve as your account identifier.
+Store these words in a secure location (e.g., a [Password Manager](../digital-civil-rights-nextcloud-i/#password-manager-(2fa%2C-totp%2C-fido2%2C-passkeys%2C-webauthn))) because you'll use them to access your wallet in the future.
+
+
+Next, go to the [Spectre Explorer](https://explorer.nym.spectredao.net/dashboard) and install the [Keplr](https://www.keplr.app/get) browser extension wallet for the [Inter Blockchain Ecosystem](https://cosmos.network/ibc/).
+Once logged in using your 24 unique words, you can use the `Delegate` button on the page of your chosen node, such as mine: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://explorer.nym.spectredao.net/nodes/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ).
+
+#### Next steps
+
+By now, you've either set up your own Nym node or contributed to the network by delegating some funds.
+If you're eager to dive deeper, I recommend checking out the [Nym Docs](https://nym.com/docs) for more detailed information.
+
+You can find support at the following platforms:
+* [Nym Forum](https://forum.nym.com): A community-driven space to discuss Nym's technology and get answers to your questions.
+* [Nym on Discord](https://discord.com/invite/nym): Join the conversation and connect with other users and developers in real time.
+* [operators:nymtech.chat](https://matrix.to/#/#operators:nymtech.chat) on Matrix: A Matrix chatroom for technical discussions and support.
 * Nym on [GitHub](https://github.com/nymtech/): Explore the code, report issues, and contribute to the project.
