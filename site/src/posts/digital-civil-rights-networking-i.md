@@ -797,7 +797,7 @@ As a side note: If you receive an "Exit Gateways Abuse Report" from your ISP, th
 After some research, I chose the [VPS S](https://avoro.eu/de/vps) plan from [Avoro](https://avoro.eu/en), part of [dataforest GmbH](https://dataforest.net) in Germany.
 The plan costs €5.50 per month and includes a 4 vCPU, 8 GB RAM instance with IPv4 and IPv6 support. These specifications align perfectly with the [recommendations](https://nym.com/docs/operators/nodes/preliminary-steps/vps-setup) in the Nym operators guide.
 
-Things to Note About Avoro: At the moment you'll need to contact Avoro's support team to enable an IPv6 address, as their web interface doesn't currently support self-service for this feature.
+Things to note about avoro: At the moment you'll need to contact Avoro's support team to enable an IPv6 address, as their web interface doesn't currently support self-service for this feature.
 The web interface may show a DNS name like `v0000000000.v-server.me`, but this resolves to a different IP than the one displayed. Avoro's support clarified that the subdomain or hostname is purely symbolic and not functional.
 To handle this, I used [Duck DNS](https://www.duckdns.org), a free and simple solution for setting up a DNS entry.
 
@@ -856,9 +856,6 @@ cargo build --release # build your binaries with **mainnet** configuration
 
 Once the build process is complete, the compiled binary will be available at: `./target/release/nym-node`.
 
-
-Alternatively you can use [Pre-built Binaries](https://nym.com/docs/operators/binaries/pre-built-binaries). The following command line will tell you what is the last tag to look for on the [releases](https://github.com/nymtech/nym/releases) GitHub page:
-
 If you prefer not to build from source, you can download [Pre-built Binaries](https://nym.com/docs/operators/binaries/pre-built-binaries). To find the latest release tag on [GitHub](https://github.com/nymtech/nym/releases), use the following command:
 
 ```bash
@@ -885,7 +882,7 @@ This will create the following directory `.nym/nym-nodes/default-nym-node`. With
 
 I made changes to the `config.toml` file located at `.nym/nym-nodes/default-nym-node/config/config.toml`.
 
-Specifically, I updated the `announce_port` setting in two sections, the the `mixnet` section and the `verloc` section.
+Specifically, I updated the `announce_port` setting in two sections, the `mixnet` section and the `verloc` section.
 By default, announce_port is set to 0. While I chose to update it, this step might not be necessary.
 ```ini
 [mixnet]
@@ -941,8 +938,6 @@ You can then view the log output in real time using: `journalctl -u nym-node.ser
 
 #### Bond your `nym-node`
 
-Now it is time to [bond](https://nym.com/docs/operators/nodes/nym-node/bonding) your `nym-node`. As a firt step execute:
-
 The next step is to [bond](https://nym.com/docs/operators/nodes/nym-node/bonding) your `nym-node`.
 This process establishes your node's identity and secures its participation in the mixnet.
 To retrieve your node's identity key run the following command:
@@ -968,7 +963,7 @@ After completing the bonding process, you can view your bonding transaction here
 
 #### Routing Configuration
 
-The next step is to go through the [Routing Configuration](https://nym.com/docs/operators/nodes/nym-node/configuration#routing-configuration) your Nym node.
+The next step is to go through the [Routing Configuration](https://nym.com/docs/operators/nodes/nym-node/configuration#routing-configuration) of your Nym node.
 
 If you built the project from source, you'll find the `network_tunnel_manager.sh` script at `./scripts/network_tunnel_manager.sh`.
 Alternatively, you can download it from this [link](https://github.com/nymtech/nym/blob/develop/scripts/network_tunnel_manager.sh).
@@ -1094,8 +1089,8 @@ There's also a [Mixnet Explorer](https://mixnet.explorers.guru/mixnodes), but pl
 Earlier, I mentioned that if you prefer not to run your own `nym-node`, you can still contribute to the network by delegating your Nym tokens - such as to my node.
 But before you can delegate, you'll need to acquire some `NYM` tokens. The Nym documentation suggests purchasing them through the [Bity](https://www.bity.com) broker.
 
-While I haven't personally used these services, you can also buy `NYM` tokens on centralized exchanges ([CEX](https://iq.wiki/wiki/cex-centralized-exchange)) like [Kraken](https://www.kraken.com/) (on the native NYX network) or on decentralized exchanges ([DEX](https://en.wikipedia.org/wiki/Decentralized_finance#Decentralized_exchanges)) and CEX platforms like [KuCoin](https://www.kucoin.com/) or [ByBit](https://www.bybit.com/en/) (on the ERC20 Ethereum network)
- However, if you purchase tokens on the ERC20 network, you'll need to transfer them to the native NYX network via [GravityBridge](https://bridge.blockscape.network/).
+While I haven't personally used these services, you can also buy `NYM` tokens on centralized exchanges ([CEX](https://iq.wiki/wiki/cex-centralized-exchange)) like [Kraken](https://www.kraken.com/) (on the native NYX network) or on decentralized exchanges ([DEX](https://en.wikipedia.org/wiki/Decentralized_finance#Decentralized_exchanges)) and CEX platforms like [KuCoin](https://www.kucoin.com/) or [ByBit](https://www.bybit.com/en/) (on the ERC20 Ethereum network).
+However, if you purchase tokens on the ERC20 network, you'll need to transfer them to the native NYX network via [GravityBridge](https://bridge.blockscape.network/).
 
 
 There is a [Delegation Advisor](https://explorenym.net/delegation-advisor/) available, but I'm unsure of its current functionality.
