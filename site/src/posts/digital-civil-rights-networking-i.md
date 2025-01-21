@@ -1070,10 +1070,14 @@ curl -X 'GET' 'https://validator.nymtech.net/api/v1/nym-nodes/bonded' -H 'accept
   }
 }
 ```
+You can also view this on the Spectre Explorer page for my node: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://explorer.nym.spectredao.net/nodes/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ).
 
-Even checking my node in the [Spectre Explorer](https://explorer.nym.spectredao.net/dashboard) still displayed the previous values: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://explorer.nym.spectredao.net/nodes/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ).
+In the meantime, I discovered that Nym uses two key time intervals: `Epoch` and `Interval`.
+You can see these intervals displayed at the top-right corner of the Spectre Explorer [Dashboard](https://explorer.nym.spectredao.net/dashboard).
+For instance, it shows for the current `Interval`: `Ends ~Feb 2, 18:26:19`.
+It appears that reconfigurations only take effect during `Interval` switches - like the one happening at the beginning of February.
 
-**Waiting for Updates**: It seems I may need to wait longer for the changes to propagate. Let's see how it goes.
+According to the [Reward Sharing for Mixnets](https://nym.com/nym-cryptoecon-paper.pdf) paper, `Epoch`s last roughly 1 hour, while `Interval`s span about 1 month (30 days × 24 hours = 720 hours).
 
 #### Routing Configuration
 
