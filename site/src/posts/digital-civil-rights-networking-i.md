@@ -961,6 +961,120 @@ Follow the steps outlined there, then return here to continue.
 
 After completing the bonding process, you can view your bonding transaction here in the [block explorer](https://blocks.nymtech.net/transaction/333C6303FD528D7FD54EE969BBE4E54A259BB3608BBFEC228C8D1448D595A323) (or [here](https://nym.explorers.guru/transaction/333C6303FD528D7FD54EE969BBE4E54A259BB3608BBFEC228C8D1448D595A323)).
 
+##### Amount, Operating Cost, and Profit Margin
+
+The values you set for the `amount`, `operating cost` and `profit margin` are entirely up to you.
+
+**Bonding Amount**: The minimum bonding amount is 100 `NYM`, approximately equivalent to 10€. While it's unclear to me exactly how much a higher bonding amount impacts outcomes, it generally fosters greater trust among potential delegators. In essence, if you demonstrate confidence in your node by staking more, others are likely to trust and delegate to you. After all, you must trust yourself first before earning the trust of others.
+
+**Operating Cost**: Operating cost is straightforward. For instance, my node costs 5.50€/month, which translates to about 55 `NYM` tokens at current exchange rates. Since exchange rates can fluctuate, I'd recommend budgeting slightly higher - say 80 to 100 `NYM` tokens - to cover variations.
+
+**Profit Margin**: Profit margin (PM) is crucial to both your revenue and your ability to attract delegators. In essence, Nym nodes operate similarly to blockchains that incentivize transaction verification or proof-of-work systems. Nodes earn revenue by routing and mixing user traffic through the Nym mixnet, a process called mixmining. In the blog post [Nym nodes approve min. profit margin](https://nym.com/blog/nym-nodes-approve-min-profit-margin) you can read:
+
+> Like blockchains which incentivize transaction verifications, or proof-of-work, Nym nodes can earn revenue by routing and mixing user traffic through the Nym mixnet, effectively mixmining.
+
+> Nym nodes are rewarded from a mixmining pool based on their performance and stake. The rewards cover, first, an operator's operational cost, then the operator gets a profit margin and finally, the remaining rewards are shared with people who have staked on their node. In short: the profit margin (PM) is the operator's revenue after their costs have been covered, with the remaining rewards going to their stakers.
+
+For potential delegators, a lower `profit margin` is appealing because it means more rewards are shared with them. However, the blog post notes an important balance:
+
+> Besides being a main source of revenue, PM is also how node operators compete with one another to attract delegations from the community. Nodes with lower PMs are thus more attractive to delegators because they offer a higher delegator annual percentage yield (APY). Left unchecked, this competition can lead to a race to the bottom in which node operators cannot remain competitive by setting a PM that yields adequate operator rewards.
+
+Recent Updates to Profit Margin: As of 2024-09-11, the Nym community has [voted](https://www.tradingview.com/news/coindar:eed0ccf4a094b:0-nym-to-update-profit-margin/) to set a minimum `profit margin` of 20% for all nodes. This ensures operators maintain fair earnings while staying competitive. For most operators, setting the PM at 20% is now considered a standard and balanced approach.
+
+##### Changing Amount, Operating Cost, and Profit Margin / Unbonding and Rebonding
+
+When I first bonded my node, I didn't pay much attention to the values I set, assuming I could adjust them later once everything was up and running.
+However, I discovered it's more challenging than expected because the current version of the Nym wallet doesn't support this functionality via its GUI.
+
+Here’s an excerpt from a conversation with operators on [operators:nymtech.chat](https://matrix.to/#/#operators:nymtech.chat):
+
+Question:
+> One more question: If I want to change the profit margin of my node, do I have to unbond and rebond? Or is there another way how to set this parameter?
+
+Answer:
+
+> **NEVER UNBOND AND REBOND** unless you must. Good that you asking first.<br>
+> For a new node like yours there is no problem, but it's bad once you have delegations and also it's no bueno for the network.<br>
+> However, right now we have an issue that the GUI wallet is not having that option. There was a problem with implementation.<br>
+> So to change it, you will need to wait for a new wallet version coming out in something like 2 weeks.<br>
+> May be also possible with Nym CLI, I never tried this action, can have a look later on.
+
+Another person added:
+> I was using older version of nym-wallet for this but it might not work anymore as we have new API URLs. Never tried nym-cli too but could be an option.
+
+**Using the Nym CLI**:  The [nym-cli](https://github.com/nymtech/nym/tree/develop/tools/nym-cli) is part of the Nym GitHub project and is located in `./tools/nym-cli`. According to the documentation:
+> It provides a convenient wrapper around the `nyxd` client with similar functionality to the `nyxd` binary for querying the chain or executing smart contract methods.
+
+
+> Just for reference, documentation for the mentioned `nyxd` binary can be found here:
+> * [Nym CLI Cheatsheet](https://polkachu.com/cheatsheets/nym)
+> * [CLI Wallet](https://nym.com/docs/developers/chain/cli-wallet)
+> > You can use the nyxd as a minimal CLI wallet if you want to set up an account (or multiple accounts).
+> > Just compile the binary as per the [documentation](https://nym.com/docs/operators/nodes/validator-setup#building-your-validator), stopping after the building your validator step is complete.
+> > You can then run `nyxd keys --help` to see how you can set up and store different keypairs with which to interact with the Nyx blockchain.
+
+You can build the `nym-cli` by:
+```bash
+cd ./tools/nym-cli
+make
+```
+
+After building the `nym-cli`, the binary will be generated in `./target/release/nym-cli`.
+
+**Running the Command**: After exploring the documentation (`./documentation/docs`) and the source code (`./tools/nym-cli`), I constructed the following command line:
+```bash
+nym-cli mixnet operators nymnode settings update-cost-parameters --mnemonic 'xxx' --profit-margin-percent 20 --interval-operating-cost 80000000
+```
+You'll need to provide your 24-word mnemonic as the `--mnemonic` parameter. This unique set of words identifies the Nym account you used to bond your node.
+
+**Command Output**: Running the command produced the following output:
+```
+ 2025-01-21T15:45:01.704Z INFO  nym_cli_commands::validator::mixnet::operators::nymnode::settings::update_cost_params > Starting cost params updating using NodeCostParams { profit_margin_percent: Percent(Decimal(0.2)), interval_operating_cost: Coin { 80000000 "unym" } } !
+ 2025-01-21T15:45:09.850Z INFO  nym_cli_commands::validator::mixnet::operators::nymnode::settings::update_cost_params > Cost params result: ExecuteResult { logs: [Log { msg_index: 0, events: [Event { ty: "message", attributes: [Attribute { key: "action", value: "/cosmwasm.wasm.v1.MsgExecuteContract" }, Attribute { key: "sender", value: "n127c69pasr35p76amfczemusnutr8mtw78s8xl7" }, Attribute { key: "module", value: "wasm" }] }, Event { ty: "execute", attributes: [Attribute { key: "_contract_address", value: "n17srjznxl9dvzdkpwpw24gg668wc73val88a6m5ajg6ankwvz9wtst0cznr" }] }, Event { ty: "wasm-v2_pending_cost_params_update", attributes: [Attribute { key: "_contract_address", value: "n17srjznxl9dvzdkpwpw24gg668wc73val88a6m5ajg6ankwvz9wtst0cznr" }, Attribute { key: "node_id", value: "2196" }, Attribute { key: "updated_mixnode_cost_params", value: "{\"profit_margin_percent\":\"0.2\",\"interval_operating_cost\":{\"denom\":\"unym\",\"amount\":\"80000000\"}}" }] }] }], msg_responses: [MsgResponse { type_url: "/cosmwasm.wasm.v1.MsgExecuteContractResponse", value: [] }], events: [Event { kind: "coin_spent", attributes: [V037(EventAttribute { key: "spender", value: "n127c69pasr35p76amfczemusnutr8mtw78s8xl7", index: true }), V037(EventAttribute { key: "amount", value: "4695unym", index: true })] }, Event { kind: "coin_received", attributes: [V037(EventAttribute { key: "receiver", value: "n17xpfvakm2amg962yls6f84z3kell8c5lza5z5c", index: true }), V037(EventAttribute { key: "amount", value: "4695unym", index: true })] }, Event { kind: "transfer", attributes: [V037(EventAttribute { key: "recipient", value: "n17xpfvakm2amg962yls6f84z3kell8c5lza5z5c", index: true }), V037(EventAttribute { key: "sender", value: "n127c69pasr35p76amfczemusnutr8mtw78s8xl7", index: true }), V037(EventAttribute { key: "amount", value: "4695unym", index: true })] }, Event { kind: "message", attributes: [V037(EventAttribute { key: "sender", value: "n127c69pasr35p76amfczemusnutr8mtw78s8xl7", index: true })] }, Event { kind: "tx", attributes: [V037(EventAttribute { key: "fee", value: "4695unym", index: true }), V037(EventAttribute { key: "fee_payer", value: "n127c69pasr35p76amfczemusnutr8mtw78s8xl7", index: true })] }, Event { kind: "tx", attributes: [V037(EventAttribute { key: "acc_seq", value: "n127c69pasr35p76amfczemusnutr8mtw78s8xl7/2", index: true })] }, Event { kind: "tx", attributes: [V037(EventAttribute { key: "signature", value: "5QTLaEMkRiM3THBZQ/zbSAHI3ENqLsdZuKCnnWm0YMAaAQmQLTXKzg1StgrDReqZ+nwqMAhRzBg5yYuj37vjPw==", index: true })] }, Event { kind: "message", attributes: [V037(EventAttribute { key: "action", value: "/cosmwasm.wasm.v1.MsgExecuteContract", index: true }), V037(EventAttribute { key: "sender", value: "n127c69pasr35p76amfczemusnutr8mtw78s8xl7", index: true }), V037(EventAttribute { key: "module", value: "wasm", index: true })] }, Event { kind: "execute", attributes: [V037(EventAttribute { key: "_contract_address", value: "n17srjznxl9dvzdkpwpw24gg668wc73val88a6m5ajg6ankwvz9wtst0cznr", index: true })] }, Event { kind: "wasm-v2_pending_cost_params_update", attributes: [V037(EventAttribute { key: "_contract_address", value: "n17srjznxl9dvzdkpwpw24gg668wc73val88a6m5ajg6ankwvz9wtst0cznr", index: true }), V037(EventAttribute { key: "node_id", value: "2196", index: true }), V037(EventAttribute { key: "updated_mixnode_cost_params", value: "{\"profit_margin_percent\":\"0.2\",\"interval_operating_cost\":{\"denom\":\"unym\",\"amount\":\"80000000\"}}", index: true })] }], transaction_hash: Hash::Sha256(7BC1BE7C3EE1CB434DB8AF6B1852A5106D43C440191B6D3D8118ED3AAD33F06C), gas_info: GasInfo { gas_wanted: 187794, gas_used: 143679 } }
+```
+
+**Verifying the Update**: To confirm the change, you can:
+1. Use the [block explorer](https://blocks.nymtech.net/transaction/7BC1BE7C3EE1CB434DB8AF6B1852A5106D43C440191B6D3D8118ED3AAD33F06C) to check the transaction.
+1. Verify via the command line:
+```bash
+curl -X 'GET' 'https://api.nymtech.net/cosmos/tx/v1beta1/txs/7BC1BE7C3EE1CB434DB8AF6B1852A5106D43C440191B6D3D8118ED3AAD33F06C' -H 'accept: application/json' | jq '.tx.body.messages' 
+[
+  {
+    "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+    "sender": "n127c69pasr35p76amfczemusnutr8mtw78s8xl7",
+    "contract": "n17srjznxl9dvzdkpwpw24gg668wc73val88a6m5ajg6ankwvz9wtst0cznr",
+    "msg": {
+      "update_cost_params": {
+        "new_costs": {
+          "profit_margin_percent": "0.2",
+          "interval_operating_cost": {
+            "denom": "unym",
+            "amount": "80000000"
+          }
+        }
+      }
+    },
+    "funds": []
+  }
+]
+```
+
+However, after some time, querying the bonded API endpoint (`https://validator.nymtech.net/api/v1/nym-nodes/bonded`) still showed my old parameters:
+```bash
+curl -X 'GET' 'https://validator.nymtech.net/api/v1/nym-nodes/bonded' -H 'accept: application/json' | jq '.data[] | select(.bond_information.node.identity_key=="E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ") | .rewarding_details.cost_params'
+{
+  "profit_margin_percent": "0.4",
+  "interval_operating_cost": {
+    "denom": "unym",
+    "amount": "550000000"
+  }
+}
+```
+
+Even checking my node in the [Spectre Explorer](https://explorer.nym.spectredao.net/dashboard) still displayed the previous values: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://explorer.nym.spectredao.net/nodes/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ).
+
+**Waiting for Updates**: It seems I may need to wait longer for the changes to propagate. Let's see how it goes.
+
 #### Routing Configuration
 
 The next step is to go through the [Routing Configuration](https://nym.com/docs/operators/nodes/nym-node/configuration#routing-configuration) of your Nym node.
@@ -1075,7 +1189,11 @@ curl -X 'GET' 'http://94.143.231.195:8080/api/v1/auxiliary-details' -H 'accept: 
 To locate my node in the overall Nym mixnet, use its `Identity Key`, such as `E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ`.
 ```bash
 curl -X 'GET' 'https://validator.nymtech.net/api/v1/nym-nodes/described' -H 'accept: application/json' | jq | grep E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ
+curl -X 'GET' 'https://validator.nymtech.net/api/v1/nym-nodes/bonded' -H 'accept: application/json' | jq | grep E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ
 ```
+
+
+
 You can track my node using the [Spectre Explorer](https://explorer.nym.spectredao.net/dashboard) with the same Identity Key: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://explorer.nym.spectredao.net/nodes/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ).
 
 Additionally, my node is visible in the [Mainnet Network Explorer](https://explorer.nymtech.net/network-components/nodes/2196). However, I was unable to locate it in the [Nym Harbour Master](https://harbourmaster.nymtech.net/). The Harbour Master page notes:
