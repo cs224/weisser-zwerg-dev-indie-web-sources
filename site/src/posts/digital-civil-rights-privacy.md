@@ -196,7 +196,7 @@ The equivalent of [anonymously distributing flyers](https://en.wikipedia.org/wik
 Another form of one-to-many communication is publishing online newspapers.
 Here, trained journalists investigate real-world events and publish their stories to subscribers and readers of the newspaper.
 As these publishers rely on income from their work for the (online) newspaper, it is crucial to ensure they can participate in financial payment systems.
-Recently, there have been numerous reports about [de-banking of publishers](https://www.hintergrund.de/kurzmeldung/oppositionelle-medien-verlieren-bankkonten).
+Recently, there have been numerous reports about [de-banking of publishers](https://www.hintergrund.de/kurzmeldung/oppositionelle-medien-verlieren-bankkonten)[^robbraxmannewcontrol].
 It remains an open question how to guarantee the continued operation of publishers in light of such threats.
 
 But not only are those who receive money transactions at risk from de-banking actions; individuals contributing to causes they support are also monitored and may face similar repressive measures[^banktransfercontrol].
@@ -391,3 +391,4 @@ And finally, here is a brief, incomplete list of organizations and individuals w
 [^analogue]: Deutsche Bahn: [Schritt für Schritt gegen das Recht auf analoges Leben](https://netzpolitik.org/2023/deutsche-bahn-schritt-fuer-schritt-gegen-das-recht-auf-analoges-leben): Die Deutsche Bahn schafft die Bahncard aus Plastik ab.
 [^sophos]: As an example of why trusting service providers promises in legal documents is not sufficient have a look at the [Sophos](https://www.heise.de/meinung/Analyse-und-Kommentar-Sophos-und-der-gebrochene-Schwur-10010073.html) case, where they spied on their own customers. Here is [Fefes Blog](https://blog.fefe.de/?ts=99ce1acd) on this issue.
 [^sophos]: As an example of why trusting service providers' promises in legal documents is not sufficient, have a look at the [Sophos](https://www.heise.de/meinung/Analyse-und-Kommentar-Sophos-und-der-gebrochene-Schwur-10010073.html) case, where they spied on their own customers. Here is [Fefe's blog](https://blog.fefe.de/?ts=99ce1acd) on this issue.
+[^robbraxmannewcontrol]: Rob Braxman Tech: [A New Control Tool to Disrupt Freedom and Free Speech - YouTube](https://www.youtube.com/watch?v=MmO2Lxz_Uu8): Debanking
