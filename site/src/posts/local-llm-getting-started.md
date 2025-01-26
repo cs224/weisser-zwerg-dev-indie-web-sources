@@ -356,6 +356,26 @@ I hope this blog post inspires you to try some experiments of your own.
 I'm currently exploring if an external Graphics Breakaway Box like a [Razer Core X](https://www.amazon.de/Razer-Externes-Grafikkarten-Geh%C3%A4use-Thunderbolt/dp/B07D4NBPBC) or [Sonnet eGFX](https://www.amazon.de/SoNNeT-Breakaway-750ex-Graka-GPU-750WEX-TB3/dp/B08Q755RQS), which connect via Thunderbolt 3/4 at 40 Gbit/s to your computer, could enhance the local use case even further.
 A preliminary indication of such a solution can be found in [Generative AI using eGPU on Slackware Linux](https://www.tumfatig.net/2024/generative-ai-using-egpu-on-slackware-linux).
 
+### Further Material
+
+* [Fahd Mirza](https://www.youtube.com/@fahdmirza/videos): Learn AI, Cloud, DevOps and Databases. Become a Better AI Cloud Engineer.
+    * [Qwen2.5 72B with Ollama - Install and Play Locally](https://www.youtube.com/watch?v=r8D_fV3LGwc)
+    * [Install Qwen2.5 Math Locally - World's Leading Open-Sourced Mathematical LLM](https://www.youtube.com/watch?v=boOqdylKx28)
+    * [Qwen2.5-Coder - High Quality Coding Model - Install and Test Locally](https://www.youtube.com/watch?v=lN_0PTMvbvM)
+    * [Un-censored Qwen 2 Model (Abliterated) - Install Locally](https://www.youtube.com/watch?v=K6jcXivindU)
+    * [Install HuggingFace Models Directly in Open WebUI with Ollama Locally](https://www.youtube.com/watch?v=yLAIWsb5-ls)
+    * [Run Models Directly from Hugging Face with Ollama Locally](https://www.youtube.com/watch?v=6ZCHwKzBd7o)
+    * [Tool To Find Cheapest or Fastest LLM API Provider - LLM API Showdown](https://www.youtube.com/watch?v=O3ATShq2PG8)
+        * [LLM API Showdown](https://llmshowdown.vercel.app/): Compare LLM API providers on price and speed.
+        * [WHAT LLM PROVIDER?](https://whatllm.vercel.app)
+        * [Independent analysis of AI models and API providers](https://artificialanalysis.ai/)
+        * [Fast ML Inference, Simple API](https://deepinfra.com/pricing)
+    * [Easiest Installation of Ministral-8B Instruct Locally and Testing](https://www.youtube.com/watch?v=lrBapVo3OmU)
+* [SkillCurb](https://www.youtube.com/@skillcurb/videos)
+    * [BEST Opensource Coding LLM Qwen 2.5 (Local Install)](https://www.youtube.com/watch?v=FosFd0w9yt8): Qwen2.5-Coder
+* [Massed Compute](https://massedcompute.com/about-us): is a cloud compute provider that serves cutting-edge GPUs without bulky contracts. 
+* [Together AI](https://www.together.ai/products#inference)
+
 ## Footnotes
 
 [^jupyternotebooktherightway]: Look at [How to set up Anaconda and Jupyter Notebook the right way](https://towardsdatascience.com/how-to-set-up-anaconda-and-jupyter-notebook-the-right-way-de3b7623ea4a) for more details.
