@@ -1188,6 +1188,13 @@ curl -X 'GET' 'http://94.143.231.195:8080/api/v1/auxiliary-details' -H 'accept: 
   },
   "accepted_operator_terms_and_conditions": true
 }
+
+curl -X 'GET' 'http://94.143.231.195:8080/api/v1/load' -H 'accept: application/json' | jq
+{
+  "total": "low",
+  "machine": "negligible",
+  "network": "negligible"
+}
 ```
 
 To locate my node in the overall Nym mixnet, use its `Identity Key`, such as `E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ`.
