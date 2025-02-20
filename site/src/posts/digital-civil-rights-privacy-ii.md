@@ -398,6 +398,11 @@ My aim is to keep this page up-to-date to serve as a comprehensive starting poin
 
 Please feel free to share your thoughts on this topic by leaving comments at the bottom of this page.
 
+## Appendix
+
+* 2024-11-15 [What To Use Instead of PGP](https://soatok.blog/2024/11/15/what-to-use-instead-of-pgp/)
+* 2025-01-14 [Session Round 2](https://soatok.blog/2025/01/20/session-round-2/): Last week, I wrote a blog post succinctly titled, [Don't Use Session](https://soatok.blog/2025/01/14/dont-use-session-signal-fork/).
+
 ## Footnotes
 
 [^xzbackdoor]: Have a look at the story behind the [xz backdoor](https://www.heise.de/hintergrund/Eine-Analyse-der-xz-Hintertuer-Teil-1-9788145.html) to get an idea of the level of sophistication these supply chain attacks have reached.
