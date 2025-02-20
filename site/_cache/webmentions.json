@@ -1,5 +1,5 @@
 {
-  "lastFetched": "2024-12-11T15:22:52.051Z",
+  "lastFetched": "2025-02-20T04:04:58.355Z",
   "children": [
     {
       "type": "entry",
@@ -251,6 +251,25 @@
       "rels": {
         "canonical": "https://cybe.press/2023/08/16/photovoltaics-for-city-spaces-shadow-effects-on-balcony-energy-stations/top/thehackernews/"
       }
+    },
+    {
+      "type": "entry",
+      "author": {
+        "type": "card",
+        "name": "",
+        "photo": "",
+        "url": ""
+      },
+      "url": "https://redterminal.org/webmentiontest.gmi",
+      "published": null,
+      "wm-received": "2025-02-11T02:34:03Z",
+      "wm-id": 1884168,
+      "wm-source": "https://redterminal.org/webmentiontest.gmi",
+      "wm-target": "https://weisser-zwerg.dev/posts/webmention-test/",
+      "wm-protocol": "webmention",
+      "mention-of": "https://weisser-zwerg.dev/posts/webmention-test/",
+      "wm-property": "mention-of",
+      "wm-private": false
     }
   ]
 }
