@@ -465,6 +465,28 @@ For example, a system with an RTX 6000 and an eGPU enclosure like the Razer Core
 Alternatively, an Apple Mac Studio M2 Ultra with 24 cores, 128 GB of RAM, and a 2 TB SSD could be another option, costing around €5,200.
 However, for that amount of money, I could rent many hours of bare-metal cloud systems, which might be a more cost-effective solution.
 
+## Appendix
+
+### CPU Offload / Sequential Loading
+
+Although I haven't personally tried, you can run a model on a single GPU even if the model is larger than that GPU's available VRAM - although it requires some form of sharding and offloading so that the model's full parameters do not have to be loaded into GPU memory all at once.
+
+[DeepSpeed](https://www.deepspeed.ai/tutorials/zero-offload/) ([ZeRO-Infinity](https://www.microsoft.com/en-us/research/blog/zero-infinity-and-deepspeed-unlocking-unprecedented-model-scale-for-deep-learning-training/), [GitHub](https://github.com/microsoft/DeepSpeed)):
+* **What it does**: Uses stage-based "ZeRO" optimizations for both training and inference. Part of this includes CPU offload and memory swapping so that not all model weights have to live on the GPU simultaneously.
+* **How it helps**: At inference time, DeepSpeed can keep portions of the model on CPU and stream them to the GPU when needed.
+* **Considerations**: 
+  * Slower than having everything in GPU memory, but can still be practical for inference if you have a fast CPU and a decent PCIe bandwidth.
+  * More complexity to set up (DeepSpeed config, etc.).
+
+Hugging Face [Accelerate](https://huggingface.co/docs/accelerate/index) / CPU Offload:
+* **What it does**: Hugging Face's accelerate library can automatically shard your model and offload pieces to CPU or GPU.
+* **How it helps**: Similar idea: only part of the model is on the GPU at any moment; the rest is stored in CPU RAM.
+* **Considerations**: Slower than purely GPU-based, but you can run larger models on smaller GPU memory footprints.
+
+Bottom Line: you can run a large model on one GPU in a "sequential" or partially-offloaded manner by using CPU offload/model sharding tools (DeepSpeed ZeRO, Hugging Face Accelerate, etc.).
+
+As far as I am aware there is at the moment no execution environment available like `vLLM` or any other which implements a built-in CPU offload or "ZeRO"-style sharding.
+
 ## Footnotes
 
 [^dockernetworknamespace]: This means it will run in a separate [network namespace](https://blog.kubesimplify.com/docker-networking-demystified).
