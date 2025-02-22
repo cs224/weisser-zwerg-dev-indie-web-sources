@@ -212,7 +212,7 @@ http:
       compress: true
   routers:
     gitea-router:
-      rule: "Host(`gitea..your-domain.tld`)"
+      rule: "Host(`gitea.your-domain.tld`)"
       service: gitea-service
       middlewares:
         - compresstraefik
