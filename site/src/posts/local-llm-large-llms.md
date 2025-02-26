@@ -68,6 +68,12 @@ However, this is still a work in progress as it involves reverse-engineering App
 
 For those interested in renting bare-metal hardware, [MacStadium, Inc](https://www.macstadium.com/bare-metal-mac), headquartered in Atlanta, Georgia, offers such services.
 
+**\[Addendum 2025-02-26\]**: A new player has entered the system-on-a-chip (SoC) arena: [Framework | Introducing the Framework Desktop](https://frame.work/de/de/blog/introducing-the-framework-desktop)
+
+> The top-end Ryzen AI Max+ 395 configuration with 128GB of memory starts at just $1999 USD. This is excellent for gaming, but it is a truly wild value proposition for AI workloads.
+
+Apple isn't the only one leveraging shared memory between the CPU and GPU anymore. This architecture means you can run large LLM models locally - and not on macOS, but on Linux!
+
 ### NVIDIA GPUs
 
 To get started with running large language models locally, understanding your GPU's capabilities is crucial. Visit NVIDIA’s [GPU Compute Capability](https://developer.nvidia.com/cuda-gpus#compute) page to learn more about their current lineup and specifications.
