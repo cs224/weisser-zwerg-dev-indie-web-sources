@@ -799,7 +799,7 @@ The plan costs €5.50 per month and includes a 4 vCPU, 8 GB RAM instance with I
 
 Things to note about avoro: At the moment you'll need to contact Avoro's support team to enable an IPv6 address, as their web interface doesn't currently support self-service for this feature.
 The web interface may show a DNS name like `v0000000000.v-server.me`, but this resolves to a different IP than the one displayed. Avoro's support clarified that the subdomain or hostname is purely symbolic and not functional.
-To handle this, I used [Duck DNS](https://www.duckdns.org), a free and simple solution for setting up a DNS entry.
+To handle this, I used [No-IP](https://www.noip.com/), a free and simple solution for setting up a DNS entry[^duckdns].
 
 For the operating system, I selected `Ubuntu 24.04 LTS`, a stable and widely supported option. Once your VPS instance is configured, you're ready to proceed with installing the Nym node.
 
@@ -897,7 +897,7 @@ announce_port = 1790
 After initializing your Nym node, the next step is to start it.
 For consistency, I replaced dynamic variables like `$(curl -4 https://ifconfig.me)` with static strings to ensure everything behaves as expected.
 ```bash
-/root/nym-node run --mode mixnode --public-ips "94.143.231.195" --hostname "weisser-zwerg-nym-node.duckdns.org" --http-bind-address 0.0.0.0:8080 --mixnet-bind-address 0.0.0.0:1789 --verloc-bind-address 0.0.0.0:1790 --location DE --wireguard-enabled true --expose-system-hardware false --expose-system-info false --accept-operator-terms-and-conditions
+/root/nym-node run --mode mixnode --public-ips "94.143.231.195" --hostname "wznymnode.webhop.me" --http-bind-address 0.0.0.0:8080 --mixnet-bind-address 0.0.0.0:1789 --verloc-bind-address 0.0.0.0:1790 --location DE --wireguard-enabled true --expose-system-hardware false --expose-system-info false --accept-operator-terms-and-conditions
 ```
 
 I guess that you could alternatively use a simplified command:
@@ -918,7 +918,7 @@ StartLimitBurst=10
 [Service]
 User=root
 LimitNOFILE=65536
-ExecStart=/root/nym-node run --mode mixnode --public-ips "94.143.231.195" --hostname "weisser-zwerg-nym-node.duckdns.org" --http-bind-address 0.0.0.0:8080 --mixnet-bind-address 0.0.0.0:1789 --verloc-bind-address 0.0.0.0:1790 --location DE --wireguard-enabled true --expose-system-hardware false --expose-system-info false --accept-operator-terms-and-conditions
+ExecStart=/root/nym-node run --mode mixnode --public-ips "94.143.231.195" --hostname "wznymnode.webhop.me" --http-bind-address 0.0.0.0:8080 --mixnet-bind-address 0.0.0.0:1789 --verloc-bind-address 0.0.0.0:1790 --location DE --wireguard-enabled true --expose-system-hardware false --expose-system-info false --accept-operator-terms-and-conditions
 KillSignal=SIGINT
 Restart=on-failure
 RestartSec=30
@@ -986,7 +986,7 @@ Recent Updates to Profit Margin: As of 2024-09-11, the Nym community has [voted]
 When I first bonded my node, I didn't pay much attention to the values I set, assuming I could adjust them later once everything was up and running.
 However, I discovered it's more challenging than expected because the current version of the Nym wallet doesn't support this functionality via its GUI.
 
-Here’s an excerpt from a conversation with operators on [operators:nymtech.chat](https://matrix.to/#/#operators:nymtech.chat):
+Here's an excerpt from a conversation with operators on [operators:nymtech.chat](https://matrix.to/#/#operators:nymtech.chat):
 
 Question:
 > One more question: If I want to change the profit margin of my node, do I have to unbond and rebond? Or is there another way how to set this parameter?
@@ -1213,6 +1213,98 @@ Additionally, my node is visible in the [Mainnet Network Explorer](https://explo
 There's also a [Mixnet Explorer](https://mixnet.explorers.guru/mixnodes), but please note that it's currently at its "End of Support."
 
 
+#### Reverse Proxy & Web Secure Socket
+
+In the [Nym Operator's guide](https://nym.com/docs/operators/introduction), there is a section called [Reverse Proxy & Web Secure Socket](https://nym.com/docs/operators/nodes/nym-node/configuration/proxy-configuration) that covers how to set up a reverse proxy for Nym node HTTP requests and create a custom landing page for your node.
+
+I chose a slightly different approach by using the [Traefik](https://doc.traefik.io/traefik/) reverse proxy in a Docker-based setup. Traefik will also handle the [Web Secure Socket](https://nym.com/docs/operators/nodes/nym-node/configuration/proxy-configuration#web-secure-socket-setup).
+
+I will use a combination of offline and online templating so that the configuration can be adapted to your own setup. You can find the necessary files in this GitHub [Gist](https://gist.github.com/cs224/2c796f842e6dee6b7a8df39401dfa217).
+
+In this example, the complete configuration will be placed in `/root/docker-traefik-web-landing-page-assets_`. However, you can change this directory if needed (instructions are provided later).
+
+First, download the files from the [Gist](https://gist.github.com/cs224/2c796f842e6dee6b7a8df39401dfa217) and set up the following directory structure:
+```
+~/docker-traefik-web-landing-page-assets_# tree .
+.
+├── .env
+├── Makefile
+├── docker-compose.yaml
+├── dynamic.yml
+├── index.html.in
+└── traefik.yml.in
+```
+
+The first step will be to adapt the variables defined in `.env` to your situation:
+```sh
+HOST_IP=94.143.231.195
+HOST_NAME=wznymnode.webhop.me
+OPERATOR_EMAIL=operator@mail.here
+CERTIFICATE_EMAIL=operator@mail.here
+NODE_WS_PORT=9000
+NODE_HTTP_PORT=8080
+WSS_PORT=9001
+```
+
+Next, run `make install` (or `make install TARGET_DIR=/your/dir`), which performs the offline templating step and generates the following structure:
+```
+~/docker-traefik-web-landing-page-assets_# tree -a .
+.
+├── docker
+│   ├── .env
+│   ├── config
+│   │   └── traefik
+│   │       ├── certs
+│   │       │   └── acme.json
+│   │       ├── dynamic
+│   │       │   └── dynamic.yml
+│   │       └── traefik.yml
+│   └── docker-compose.yaml
+└── www
+    └── index.html
+```
+
+At this stage, edit the Nym node's `config.toml` located at `/root/.nym/nym-nodes/default-nym-node/config/config.toml` and make the following two changes:
+```
+landing_page_assets_path = '/root/docker-traefik-web-landing-page-assets_/www'
+announce_wss_port =  9001
+```
+
+Both settings must match your environment - for example, the `TARGET_DIR` you used and the `WSS_PORT` from your `.env` file. After making these changes, restart the node:
+```bash
+systemctl restart nym-node.service
+```
+
+Change into the `docker` directory and run `docker compose config` to check the online templating that will occur when you run `docker compose up`.
+
+The Traefik documentation on the [file](https://doc.traefik.io/traefik/providers/file) configuration provider includes a section on [Go templating](https://doc.traefik.io/traefik/providers/file/#go-templating) that states:
+> <small>Go Templating:</small>
+>
+> <small>Warning: Go Templating only works with dedicated dynamic configuration files. Templating does not work in the Traefik main static configuration file.</small>
+>
+> <small>Traefik supports using Go templating to automatically generate repetitive sections of configuration files. These sections must be a valid Go template, and can use sprig template functions.</small>
+
+Because online templating is not supported in the main `traefik.yml` file, we must rely on both offline and online templating in this setup.
+
+Unfortunately, Traefik does not provide a direct way to verify its online templating (like `docker compose config` does). The only way is to enable `log-level: DEBUG`, start the Docker container, and check the logs.
+```bash
+traefik-1  | 2025-02-26T12:59:10Z DBG github.com/traefik/traefik/v3/pkg/server/configurationwatcher.go:227 > Configuration received config={"http":{"middlewares":{"cors-headers":{"headers":{"accessControlAllowCredentials":true,"accessControlAllowHeaders":["*"],"accessControlAllowMethods":["GET","POST","OPTIONS","HEAD"],"accessControlAllowOriginList":["*"]}}},"routers":{"nym-node-http":{"entryPoints":["web"],"rule":"Host(`wznymnode.webhop.me`)","service":"nym-node-web"},"nym-node-https":{"entryPoints":["web-secure"],"rule":"Host(`wznymnode.webhop.me`)","service":"nym-node-web","tls":{"certResolver":"default"}},"nym-node-wss-router":{"entryPoints":["wss"],"middlewares":["cors-headers"],"rule":"Host(`wznymnode.webhop.me`)","service":"nym-node-ws","tls":{"certResolver":"default"}}},"services":{"nym-node-web":{"loadBalancer":{"passHostHeader":true,"responseForwarding":{"flushInterval":"100ms"},"servers":[{"url":"http://94.143.231.195:8080"}]}},"nym-node-ws":{"loadBalancer":{"passHostHeader":true,"responseForwarding":{"flushInterval":"100ms"},"servers":[{"url":"http://94.143.231.195:9000"}]}}}},"tcp":{},"tls":{},"udp":{}} providerName=file
+```
+To make this output more readable, you can pipe it through `jq`:
+```bash
+echo '{"http":{"middlewares":{"cors-headers":{"headers":{"accessControlAllowCredentials":true,"accessControlAllowHeaders":["*"],"accessControlAllowMethods":["GET","POST","OPTIONS","HEAD"],"accessControlAllowOriginList":["*"]}}},"routers":{"nym-node-http":{"entryPoints":["web"],"rule":"Host(`wznymnode.webhop.me`)","service":"nym-node-web"},"nym-node-https":{"entryPoints":["web-secure"],"rule":"Host(`wznymnode.webhop.me`)","service":"nym-node-web","tls":{"certResolver":"default"}},"nym-node-wss-router":{"entryPoints":["wss"],"middlewares":["cors-headers"],"rule":"Host(`wznymnode.webhop.me`)","service":"nym-node-ws","tls":{"certResolver":"default"}}},"services":{"nym-node-web":{"loadBalancer":{"passHostHeader":true,"responseForwarding":{"flushInterval":"100ms"},"servers":[{"url":"http://94.143.231.195:8080"}]}},"nym-node-ws":{"loadBalancer":{"passHostHeader":true,"responseForwarding":{"flushInterval":"100ms"},"servers":[{"url":"http://94.143.231.195:9000"}]}}}},"tcp":{},"tls":{},"udp":{}}' | jq .
+```
+
+If the logs look good, you can check your [landing page](https://wznymnode.webhop.me/) to confirm that everything is working.
+
+The landing page I use is a slightly modified version of the one provided in the [Nym Operators Guide](https://nym.com/docs/operators/nodes/nym-node/configuration/proxy-configuration#2-create-html-landing-page).
+You can find the original template by clicking on:
+> An example template for `index.html` page
+
+Before configuring the `Web Secure Socket`, I couldn't see my node in the [Nym Harbour Master](https://harbourmaster.nymtech.net).
+Once I completed this setup, my node became visible there as well (for example: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://harbourmaster.nymtech.net/gateway/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ)).
+
+
 #### Delegating
 
 Earlier, I mentioned that if you prefer not to run your own `nym-node`, you can still contribute to the network by delegating your Nym tokens - such as to my node.
@@ -1243,3 +1335,7 @@ You can find support at the following platforms:
 * [Nym on Discord](https://discord.com/invite/nym): Join the conversation and connect with other users and developers in real time.
 * [operators:nymtech.chat](https://matrix.to/#/#operators:nymtech.chat) on Matrix: A Matrix chatroom for technical discussions and support.
 * Nym on [GitHub](https://github.com/nymtech/): Explore the code, report issues, and contribute to the project.
+
+## Footnotes
+
+[^duckdns]: Originally, I used [Duck DNS](https://www.duckdns.org), but it encountered several downtimes and service degradations.
