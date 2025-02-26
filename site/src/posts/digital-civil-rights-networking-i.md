@@ -716,6 +716,74 @@ However, you can find helpful resources and support at the following platforms:
 * [dev:nymtech.chat](https://matrix.to/#/%23dev:nymtech.chat) on Matrix: A Matrix chatroom for technical discussions and support.
 * Nym on [GitHub](https://github.com/nymtech/): Explore the code, report issues, and contribute to the project.
 
+#### Amnezia WireGuard for Censorship Resistance
+
+The Nym VPN team has [announced](https://x.com/nymproject/status/1881674646170534032) that the commercial version of [NymVPN](https://nym.com/) will launch on March 13 with features that include...
+* 💀 A killswitch across all apps
+* 🛡️ Amnezia WireGuard for censorship resistance
+* 🚪 Individual gateway selection
+* 🕵️‍♂️ Zk-nyms for unlinkable payments
+
+In this section, I want to explore [Amnezia WireGuard](https://amnezia.org/en) in more detail. If you need additional information, you can refer to the official [documentation](https://docs.amnezia.org/documentation/amnezia-wg/).
+
+
+AmneziaWG is a modern [fork](https://github.com/amnezia-vpn/amneziawg-go) of the popular VPN protocol, [WireGuard](https://www.wireguard.com).
+It's based on the [WireGuard-Go](https://github.com/WireGuard/wireguard-go) library, with added protection against detection by [Deep Packet Inspection](https://en.wikipedia.org/wiki/Deep_packet_inspection) (DPI) systems.
+At the same time, it preserves WireGuard's simplified architecture and high performance.
+
+Virtual Private Networks (VPNs) create an encrypted "tunnel" between a client and a server.
+Traffic passing through this tunnel is hidden from ISPs or other hostile networks.
+However, some countries and organizations use DPI to detect and block distinct VPN protocol signatures.
+
+DPI evasion technologies use various techniques - such as encryption, obfuscation, or protocol mimicry - to avoid being flagged by firewalls or censorship systems.
+
+While WireGuard is known for its simplicity and speed, it can be recognized by DPI due to its unique packet signature.
+Amnezia's fork modifies WireGuard-Go to add stealth and obfuscation features, making it harder to detect in places with heavy restrictions.
+
+Amnezia is an open-source VPN manager/client that simplifies deploying self-hosted VPN servers.
+With Amnezia, you can create a [Self-hosted VPN](https://amnezia.org/en/self-hosted) on your own server, meeting high privacy requirements.
+Essentially, you rent or own a server (for example, a VPS) and install Amnezia.
+Amnezia then configures the server with your chosen VPN protocol and provides client setups.
+
+They also promote the [Xray Reality](https://github.com/XTLS/Xray-core) protocol, which can work in countries like China, Iran, and Turkmenistan - places where many other VPNs fail.
+
+> [Project X](https://xtls.github.io/en/) originates from XTLS protocol, providing a set of network tools such as [Xray-core](https://github.com/XTLS/Xray-core) and [REALITY](https://github.com/XTLS/REALITY).
+
+
+Take a look at Amnezia's full <a href="https://amnezia.org/img/en/protocols.svg" target="about:blank">protocols</a> overview. Below is a quick introduction to some of the key terms:
+
+
+
+* OpenVPN over Cloak / [ShadowSocks](#shadowsocks%3A-a-secure-alternative)
+  * Cloak disguises traffic as ordinary HTTPS sessions and is often paired with ShadowSocks or other proxies for additional stealth.
+  * We discussed ShadowSocks in a lot of detail [above](#shadowsocks%3A-a-secure-alternative).
+* Xray (Project X, XTLS, Reality, VLESS, VMess)
+  * V2Ray: A platform for building proxies (VMess, VLESS, etc.) commonly used to circumvent firewalls.
+  * Xray: A fork of V2Ray offering additional enhancements and stronger obfuscation.
+  * Protocols Under Xray:
+    * VMess: The original secure transport for V2Ray.
+    * VLESS: A lightweight variant of VMess aimed at better performance.
+    * Reality: Evolved from VLESS + XTLS to closely mimic real TLS sessions ("TLS impersonation"). It uses genuine TLS handshakes and certificates, making it very difficult for DPI to detect.
+  * Why Xray/REALITY?
+    * In heavily censored regions (e.g., China, Iran, Turkmenistan), simply encrypting traffic isn't enough. The censors look for patterns that typical VPN tunnels or proxies exhibit. REALITY tries to blend into common web traffic by using a genuine TLS handshake with recognizable (often "borrowed") server certificates and domain fronting techniques. This stealth approach is more likely to pass DPI filters than typical VPN protocols.
+* IKEv2 (Internet Key Exchange, Version 2): Commonly used with IPsec for encrypting IP traffic. Without extra obfuscation, it's not always ideal in heavily censored regions. However, it has native support in many operating systems.
+
+By hosting your own VPN server, you avoid relying on commercial VPN providers that may keep logs or become targets for blocking. Tools like Amnezia simplify self-hosted setups significantly.
+
+The [How to run your VPN](https://amnezia.org/en/starter-guide) guide shows you, in three simple steps, how to create a VPN on a virtual server.
+
+
+> Side note: On their [How to run your VPN](https://amnezia.org/en/starter-guide) page, Amnezia also lists some Virtual Private Server (VPS) providers:
+> * [PQhosting](https://pq.hosting/de/): Servers: Netherlands, Canada, UK, Latvia, USA, Ukraine, Bulgaria, Romania, Portugal, Sweden, Ireland, France, Estonia, Denmark, Germany, Moldova, Czech Republic, Italy, Switzerland, Spain, Austria, Russia, and another +12<br>
+>   Legal address: **Moldova**, Payment from $4.77/month, Mastercard/Visa/MIR (Russian banks), Mastercard/Visa (Foreign banks), PayPal, SPB, Bank transfer for legal entities, Cashless payment for legal entities, QIWI, WebMoney, YouMoney, ApplePay, SamsungPay, GooglePay, Crypto Payment
+> * [Is*hosting](https://ishosting.com/en): Servers: Austria, Bulgaria, Denmark, Hungary, Spain, Netherlands, Poland, Serbia, France, Belgium, United Kingdom, Germany, Ireland, Italy, Norway, Japan, Singapore (and 14 others)<br>
+>   Legal address: **Estonia**, Payment from $5/month, Visa/Mastercard, Cards of Russian banks + SPB and payment systems, Cryptocurrencies, Intercash, Payeer, Unionpay Cina, Boleto Brasil, Alipay China
+> * [AEZA](https://aeza.net/): Servers: Austria, France, Germany, Netherlands, Sweden, Finland, Russia<br>
+>   Legal Address: **United Kingdom**, Payment from $5.5/month, Visa/Mastercard (foreign banks), Russian bank cards, Ukrainian bank cards, SPB, Yandex Pay, Tinkoff Pay, Steam Pay, Cryptocurrencies, USDT, YooMoney, WebMoney, Perfect Mone
+
+Since most people prefer a hassle-free alternative to setting up their own VPS, it's great that the NymVPN team has integrated Amnezia's stealth features into their [dVPN](https://nym.com/features) (2-hop) mode.
+This approach delivers stronger censorship resistance and privacy with minimal user effort.
+
 ### Nym Mixnet: Operating Your Own Nym-Node
 
 The [Nym](https://nym.com/about) mixnet is a community effort and relies on individuals like you to run nodes, which are crucial for its operation.
@@ -765,7 +833,7 @@ Additional Note: `NYM` tokens are held on the [Cosmos blockchain](https://fr.wik
 
 #### Research and Select a Virtual Private Server (VPS) Provider
 
-Choosing the right VPS provider is crucial for running a Nym node effectively. To help you make an informed decision, the Tor Project's [Good Bad ISPs](https://community.torproject.org/relay/community-resources/good-bad-isps/) page offers valuable advice that also applies to Nym nodes.
+Choosing the right VPS provider[^vpsprovideradditions] is crucial for running a Nym node effectively. To help you make an informed decision, the Tor Project's [Good Bad ISPs](https://community.torproject.org/relay/community-resources/good-bad-isps/) page offers valuable advice that also applies to Nym nodes.
 
 For better anonymity and network resilience, avoid VPS providers and countries that already host a large number of nodes. As of now, it's recommended to steer clear of the following providers:
 * Frantech / Ponynet / BuyVM (AS53667)
@@ -1339,3 +1407,4 @@ You can find support at the following platforms:
 ## Footnotes
 
 [^duckdns]: Originally, I used [Duck DNS](https://www.duckdns.org), but it encountered several downtimes and service degradations.
+[^vpsprovideradditions]: I only discovered after writing this section that the Amnezia [How to run your VPN](https://amnezia.org/en/starter-guide) page lists some Virtual Private Server (VPS) providers. I've already included a few in the [Amnezia WireGuard for Censorship Resistance](#amnezia-wireguard-for-censorship-resistance) section.
