@@ -532,6 +532,17 @@ One more thing to be aware of is that LibreWolf's configuration files in the Fla
 
 After several attempts to get LibreWolf running with the Flatpak version and eventually giving up, I uninstalled and reinstalled LibreWolf [for Debian-based systems](https://librewolf.net/installation/debian/). To my surprise, the issue was resolved.
 
+**\[Addendum 2025-02-27\]**: There is an open ticket addressing this issue on LibreWolf's [Codeberg](https://codeberg.org/librewolf) issue tracker: [Space between words too large (on some websites) in LibreWolf](https://codeberg.org/librewolf/issues/issues/2179).
+Users there have identified the root cause and suggested workarounds.
+One fix is to set the fonts in `> Settings > General > Fonts` to the `DejaVu` font family.
+Another solution involves modifying the `/etc/fonts/conf.d/56-kubuntu-noto.conf` file on your Kubuntu system.
+Commenting out the first font listed for all families (`Noto Color Emoji`) resolves the issue.
+
+Additionally, an [arkenfox/user.js](https://github.com/arkenfox/user.js) ticket titled [Problems with RFP/FPP fonts on Kubuntu 24.04 LTS [Solved: system font config]](https://github.com/arkenfox/user.js/issues/1844) includes an older `/etc/fonts/conf.d/56-kubuntu-noto.conf` file from previous Kubuntu versions that did not have this problem.
+
+The issue appears to be related to Resist Fingerprinting (RFP) ([`privacy.resistFingerprinting`](https://support.mozilla.org/en-US/kb/resist-fingerprinting)) and Fingerprinting Protection (FPP) ([`privacy.fingerprintingProtection`](https://discuss.privacyguides.net/t/firefox-prefs-privacy-resistfingerprinting-vs-privacy-fingerprintingprotection/13042)). This explains why the problem occurs in LibreWolf but not in Firefox.
+
+
 
 ## Footnotes
 
