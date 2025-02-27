@@ -18,6 +18,7 @@ Here, we focus on how to set up and operate a Nym node so you can help defend ou
 
 If you want to learn about using the NymVPN as a user, please refer to my earlier blog post: [Nym Mixnet: NymVPN](../digital-civil-rights-networking-i/#nym-mixnet%3A-nymvpn).
 
+If you're eager to dive deeper, I recommend checking out the [Nym Docs](https://nym.com/docs) for more detailed information.
 Currently, the amount of information and documentation available for the Nym mixnet and its technology is somewhat limited.
 However, you can find helpful resources and support at the following platforms:
 
