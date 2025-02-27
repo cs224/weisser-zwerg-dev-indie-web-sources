@@ -1372,6 +1372,43 @@ You can find the original template by clicking on:
 Before configuring the `Web Secure Socket`, I couldn't see my node in the [Nym Harbour Master](https://harbourmaster.nymtech.net).
 Once I completed this setup, my node became visible there as well (for example: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://harbourmaster.nymtech.net/gateway/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ)).
 
+#### Nym Node Description (Optional)
+
+Your Nym node's main configuration file, located at `~/.nym/nym-nodes/default-nym-node/config/config.toml`, contains a line like this:
+```toml
+description = '/root/.nym/nym-nodes/default-nym-node/data/description.toml'
+```
+
+By default, this file includes the following empty fields:
+```toml
+moniker = ""
+website = ""
+security_contact = ""
+details = ""
+```
+
+I customized mine with the following content:
+```toml
+moniker = "weisser-zwerg.dev (wznymnode.webhop.me)"
+website = "https://weisser-zwerg.dev/posts/digital-civil-rights-networking-i/#nym-mixnet%3A-operating-your-own-nym-node"
+security_contact = "operator@@weisser-zwerg.dev"
+details = "weisser-zwerg.dev operated nym-node"
+```
+
+This information will appear when you run: `./nym-node node-details` or when you query the node API's `description` endpoint:
+```bash
+curl -X 'GET' 'http://94.143.231.195:8080/api/v1/description' -H 'accept: application/json' | jq
+{
+  "moniker": "weisser-zwerg.dev (wznymnode.webhop.me)",
+  "website": "https://weisser-zwerg.dev/posts/digital-civil-rights-networking-i/#nym-mixnet%3A-operating-your-own-nym-node",
+  "security_contact": "operator@weisser-zwerg.dev",
+  "details": "weisser-zwerg.dev operated nym-node"
+}
+```
+
+Additionally, this information is publicly visible on the [Spectre Explorer](https://explorer.nym.spectredao.net/dashboard). You can check my node here: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://explorer.nym.spectredao.net/nodes/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ).
+
+There will be also a `Description` section displayed in the [Nym Harbour Master](https://harbourmaster.nymtech.net). You can check my node in the Nym Harbour Master here: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://harbourmaster.nymtech.net/gateway/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ).
 
 #### Delegating
 
