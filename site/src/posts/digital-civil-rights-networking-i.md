@@ -1372,6 +1372,265 @@ You can find the original template by clicking on:
 Before configuring the `Web Secure Socket`, I couldn't see my node in the [Nym Harbour Master](https://harbourmaster.nymtech.net).
 Once I completed this setup, my node became visible there as well (for example: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://harbourmaster.nymtech.net/gateway/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ)).
 
+#### Node Modes: mixnode, entry-gateway, exit-gateway, wireguard-enabled (aka dVPN, aka 2-hop)
+
+In this section, I'll walk through my attempts to run a Nym node that allows a "2‑hop Wireguard" (sometimes called dVPN) connection - covering what I tried, what did (and didn't) work, and what surprised me.
+
+**Node Modes and How They Affect Roles**: According to Nym's  [Essential Parameters & Variables](https://nym.com/docs/operators/variables) documentation, your node can run in one of several modes:
+* `mixnode`
+* `entry-gateway`
+* `exit-gateway`
+* `--wireguard-enabled` (whether Wireguard / 2-hop / dVPN service is enabled)
+
+Changing the `--mode` flag changes the "roles" that your node exposes.
+Below are the outputs from my node's `/roles` endpoint illustrating this:
+
+When running as `entry-gateway`
+```bash
+curl -X 'GET' 'http://94.143.231.195:8080/api/v1/roles' -H 'accept: application/json' | jq
+{
+  "mixnode_enabled": false,
+  "gateway_enabled": true,
+  "network_requester_enabled": false,
+  "ip_packet_router_enabled": false
+}
+```
+
+When running as `exit-gateway`
+```bash
+curl -X 'GET' 'http://94.143.231.195:8080/api/v1/roles' -H 'accept: application/json' | jq
+{
+  "mixnode_enabled": false,
+  "gateway_enabled": true,
+  "network_requester_enabled": true,
+  "ip_packet_router_enabled": true
+}
+```
+
+From these logs, it appears that `network_requester_enabled` and `ip_packet_router_enabled` only become true if you run your node as `exit-gateway`. To me it seems that you cannot control the variables `network_requester_enabled` and `ip_packet_router_enabled` independently.
+
+Running as `exit-gateway` also seems to be the only way to participate in the `2‑hop` Wireguard (dVPN) network.
+If I tried to run my node as `entry-gateway` I was not able to connect to it via the NymVPN client with `--enable-two-hop` with my node, neither as `--entry-gateway-id` nor as `--exit-gateway-id`.
+
+**Comparison of Entry vs. Exit Gateway**: Below is a quick comparison of results when my node runs in these two modes:
+<style>
+table {
+  border-collapse: collapse;
+}
+th, td {
+  border: 1px solid black;
+  padding: 8px;
+}
+</style>
+|                                            | **Entry Gateway**                               | **Exit Gateway**                                        |
+|--------------------------------------------|-------------------------------------------------|---------------------------------------------------------|
+| **Can connect via 2‑hop Wireguard NymVPN** | **No**                                          | **Yes**                                                 |
+| **Errors in Nym node logs**                | None (all "green")                              | None (all "green")                                      |
+| **Errors in NymVPN client logs**           | Yes (cannot connect)                            | Yes (but *can* connect despite errors)                  |
+| **Status in Nym Harbour Master**           | "Greener" status, fewer alarms/errors           | More red flags and "errors," but actually works         |
+
+
+Surprisingly, running as `exit-gateway` produces more "alarms" in the [Nym Harbour Master](https://harbourmaster.nymtech.net) interface and in the VPN client logs, yet it actually allows me to connect via the NymVPN client.
+Conversely, the "cleaner" `entry‑gateway` mode does not permit any `2‑hop` connections at all.
+
+**Detailed Observations and Logs**: 
+
+**A. NymVPN Client Output**: When configured to use my node (id = `E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ`; mode = `exit-gateway`):
+```bash
+/usr/bin/nym-vpnc connect --enable-two-hop --entry-gateway-id E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ --exit-gateway-id 2BuMSfMW3zpeAjKXyKLhmY4QW1DXurrtSPEJ6CjX3SEh
+tail -f /var/log/vpnd.log
+```
+Here are some of the log outputs of the NymVPN client:
+```bash
+ INFO nym_vpn_lib::tunnel_state_machine::tunnel::gateway_selector: Found 144 entry gateways
+ INFO nym_vpn_lib::tunnel_state_machine::tunnel::gateway_selector: Found 144 exit gateways
+ INFO nym_vpn_lib::tunnel_state_machine::tunnel::gateway_selector: Using entry gateway: E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ, location: DE, performance: 50%
+ INFO nym_vpn_lib::tunnel_state_machine::tunnel::gateway_selector: Using exit gateway: 2BuMSfMW3zpeAjKXyKLhmY4QW1DXurrtSPEJ6CjX3SEh, location: CH, performance: 99%
+...
+ INFO nym_vpn_lib::tunnel_state_machine::tunnel_monitor: Created entry tun device: tun0
+ INFO nym_vpn_lib::tunnel_state_machine::tunnel_monitor: Created exit tun device: tun1
+ INFO nym_dns: Setting DNS servers: Tunnel DNS: {1.1.1.1, 1.0.0.1, 2606:4700:4700::1111, 2606:4700:4700::1001} Non-tunnel DNS: {}
+ INFO nym_wg_gateway_client: Remaining wireguard bandwidth with gateway E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ for today: 476.84 MB
+ INFO nym_wg_gateway_client: Remaining wireguard bandwidth with gateway 2BuMSfMW3zpeAjKXyKLhmY4QW1DXurrtSPEJ6CjX3SEh for today: 421.33 MB
+...
+ ERROR nym_authenticator_client: Timed out waiting for reply to connect request
+  WARN nym_vpn_lib::bandwidth_controller: Error querying remaining bandwidth AuthenticatorClientError(TimeoutWaitingForConnectResponse)
+  WARN nym_client_core::client::real_messages_control::message_handler: Could not process the packet - the network topology is invalid - no node with identity E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ is known    
+  WARN nym_client_core::client::real_messages_control::acknowledgement_control::input_message_listener: failed to send a plain message - no node with identity E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ is known  
+```
+
+Even though I see these `ERROR` and `WARN` messages, the client does successfully tunnel traffic, and I can browse the web.
+
+**B. Nym Node Logs**: In both modes (entry and exit), the node logs look relatively clean - no obvious errors, just standard INFO entries.
+
+**C. Nym Harbour Master**:
+* As `exit-gateway`, the Harbour Master page indicates connection or routing errors (e.g., "ERROR nym_gateway_probe: Failed to connect to mixnet: the current network topology seem to be insufficient to route any packets through").
+* As `entry-gateway`, the Harbour Master page is mostly "green," yet no `2‑hop` VPN connection is possible.
+
+Harbour Master screenshots comparing these statuses:
+
+As [exit-gateway](https://htmlpreview.github.io/?https://gist.githubusercontent.com/cs224/088fedf065b31d947c0af680ebe9f669/raw/039221e65eb5c39b5bcf2522aaba88b2cad77358/Nym%2520Harbour%2520Master%2520-%2520E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ%2520-%2520exit-gateway.html) (click on the link to see details):<br>
+<a href="/img/nym-harbour-master--E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ-exit-gateway.png" target="about:blank"><img src="/img/nym-harbour-master--E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ-exit-gateway.png" alt="Nym Harbour Master for Exit Gateway" style="max-height: 200px"></a>
+
+As [entry-gateway](https://htmlpreview.github.io/?https://gist.githubusercontent.com/cs224/088fedf065b31d947c0af680ebe9f669/raw/eb0d59c34f7986cefc45d6d8d16842f8bc2adb9e/Nym%2520Harbour%2520Master%2520-%2520E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ%2520-%2520entry-gateway.html):<br>
+<a href="/img/nym-harbour-master--E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ-entry-gateway.png" target="about:blank"><img src="/img/nym-harbour-master--E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ-entry-gateway.png" alt="Nym Harbour Master for Entry Gateway" style="max-height: 200px"></a>
+
+Please click on the [exit-gateway](https://htmlpreview.github.io/?https://gist.githubusercontent.com/cs224/088fedf065b31d947c0af680ebe9f669/raw/eb0d59c34f7986cefc45d6d8d16842f8bc2adb9e/Nym%2520Harbour%2520Master%2520-%2520E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ%2520-%2520exit-gateway.html) or [entry-gateway](https://htmlpreview.github.io/?https://gist.githubusercontent.com/cs224/088fedf065b31d947c0af680ebe9f669/raw/eb0d59c34f7986cefc45d6d8d16842f8bc2adb9e/Nym%2520Harbour%2520Master%2520-%2520E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ%2520-%2520entry-gateway.html) links to look at complete Nym Harbour Master pages for my node running in these modes.
+
+**The Core Puzzle (and My Questions)**:
+* Why does `exit-gateway` mode "look worse" in Harbour Master logs but actually work better for 2‑hop connectivity?
+* Why does the NymVPN client display error messages when connecting through my `exit-gateway`, if it ultimately does succeed?
+* Is there a known reason the node never appears in the Android NymVPN client's drop-down of available `2‑hop` gateways, even though it's connectable via the command line?
+
+When I run my Nym node as `entry-gateway` the Nym Harbour Master status page looks "greener" than when I run it as `exit-gateway`. In both cases the Nym node's own logs are "green" and do not show any errors.
+If I run my node as `entry-gateway` I cannot connect to it via the NymVPN 2-hop wireguard mode at all. If I run it as `exit-gateway` I can connect to it via the NymVPN client, but I see errors in the NymVPN client logs.
+The Android NymVPN client also offers the ability to see all available 2-hop wireguard gateways in a drop down box and while I can connect to my node via the NymVPN client, my node does not show up.
+
+I find it strange, that just by changing the mode of the node from `entry-gateway` to `exit-gateway` the Nym Harbour Master page indicates so much more problems, while the actual behaviour seems better in the sense that I actually can connect to my node.
+
+
+**Request for Assistance**: I hope this breakdown helps fellow Nym node operators who want to set up a dVPN (two-hop Wireguard) gateway. If any of this looks familiar - or if you have insight into why "exit-gateway" mode triggers so many error messages despite working - I'd love to hear it.
+
+Questions for the Nym Team:
+* Are these Harbour Master "Failed to connect to mixnet" messages expected?
+* What do the client log errors mean?
+* Are there additional diagnostics or configuration steps I should check?
+
+Please feel free to reach out with any advice, tips, or clarifications. I’ll keep the post updated as I learn more.
+
+
+**Additional Note**: The [Nym Node Troubleshooting](https://nym.com/docs/operators/troubleshooting/nodes) guide mentions to check the `blacklist`, which you can do as follows:
+```bash
+curl -X 'GET' --silent https://validator.nymtech.net/api/v1/gateways/blacklisted | jq | grep E67
+```
+My node does not seem to be on the blacklist.
+
+##### Complete Nym Harbour Master Logs for `exit-gateway` Mode
+
+The node can be found in the [Spectre Explorer](https://explorer.nym.spectredao.net/dashboard) with the Identity Key: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://explorer.nym.spectredao.net/nodes/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ).
+
+I include here the [Nym Harbour Master](https://harbourmaster.nymtech.net) logs showing the errors for my node: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://harbourmaster.nymtech.net/gateway/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ), so that search engines can pick them up.
+```txt
+Probe Log
+2025-02-27T03:52:43.698417Z  INFO nym_gateway_probe: nym-api: https://validator.nymtech.net/api/
+2025-02-27T03:52:43.698444Z  INFO nym_gateway_probe: nym-vpn-api: https://nymvpn.com/api/
+2025-02-27T03:52:43.698526Z  INFO nym_gateway_directory::gateway_client: Fetching all described nodes from nym-api...
+2025-02-27T03:52:43.840567Z  INFO nym_gateway_directory::gateway_client: Fetching skimmed entry assigned nodes from nym-api...
+2025-02-27T03:52:43.856320Z  INFO nym_gateway_directory::gateway_client: Appending mixnet_performance to gateways
+2025-02-27T03:52:43.856483Z  INFO nym_gateway_probe: Probing gateway: Gateway { identity: "E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ", location: Some(Location { two_letter_iso_country_code: "DE", latitude: 0.0, longitude: 0.0 }), ipr_address: Some(IpPacketRouterAddress(DnxDpj42exX1RL8gFTxWDGYpkgjcutWNhymHBsXEk4NW.6TpNuDFu9AWpifneH3n7qz29VdoiDPh8id9T6Fr8mubn@E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ)), authenticator_address: Some(AuthAddress(Some(9JKctbXTSaAzcRok3bG8ns3jvr5h2UzKFhuweQuEmFYz.DgvesE5mw2V4dpBTLrz71LpAvddycXuzPYvwAwYTuUBB@E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ))), last_probe: None, host: Some(Hostname("wznymnode.webhop.me")), clients_ws_port: Some(9000), clients_wss_port: Some(9001), mixnet_performance: Some(Percent(Decimal(0.49))) }
+2025-02-27T03:52:43.936720Z  INFO nym_client_core::init::helpers: nym-api reports 234 valid gateways    
+2025-02-27T03:52:44.428082Z  INFO nym_client_core::client::base_client: Starting nym client    
+2025-02-27T03:52:44.428143Z  INFO nym_client_core::client::base_client: Starting statistics control...    
+2025-02-27T03:52:44.428205Z  INFO nym_client_core::client::base_client: Obtaining initial network topology    
+2025-02-27T03:52:44.516188Z ERROR nym_client_core::client::base_client: the gateway we're supposedly connected to does not exist. We'll not be able to send any packets to ourselves: Gateway with identity key E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ doesn't exist    
+2025-02-27T03:52:44.516246Z ERROR nym_gateway_probe: Failed to connect to mixnet: the current network topology seem to be insufficient to route any packets through
+{
+  "gateway": "E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ",
+  "outcome": {
+    "as_entry": {
+      "can_connect": false,
+      "can_route": false
+    },
+    "as_exit": null,
+    "wg": null
+  }
+}
+2025-02-27T03:52:44.516354Z ERROR TaskClient-BaseNymClient-statistics_control-controller: [TaskClient-BaseNymClient-statistics_control-controller] Polling shutdown failed: channel closed    
+2025-02-27T03:52:44.516371Z ERROR TaskClient-BaseNymClient-statistics_control-controller: [TaskClient-BaseNymClient-statistics_control-controller] Assuming this means we should shutdown...    
+Description
+{
+  "moniker": "weisser-zwerg.dev (wznymnode.webhop.me)",
+  "website": "https://weisser-zwerg.dev/posts/digital-civil-rights-networking-i/#nym-mixnet%3A-operating-your-own-nym-node",
+  "security_contact": "operator@weisser-zwerg.dev",
+  "details": "weisser-zwerg.dev operated nym-node"
+}
+Self Described
+{
+  "authenticator": {
+    "address": "9JKctbXTSaAzcRok3bG8ns3jvr5h2UzKFhuweQuEmFYz.DgvesE5mw2V4dpBTLrz71LpAvddycXuzPYvwAwYTuUBB@E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ"
+  },
+  "auxiliary_details": {
+    "accepted_operator_terms_and_conditions": true,
+    "announce_ports": {
+      "mix_port": 1789,
+      "verloc_port": 1790
+    },
+    "location": "DE"
+  },
+  "build_information": {
+    "binary_name": "nym-node",
+    "build_timestamp": "2025-02-13T11:49:34.670488195Z",
+    "build_version": "1.5.0",
+    "cargo_profile": "release",
+    "cargo_triple": "x86_64-unknown-linux-gnu",
+    "commit_branch": "HEAD",
+    "commit_sha": "a3e19b4563843055b305ea9a397eb1ad84b5c378",
+    "commit_timestamp": "2025-02-10T18:14:47.000000000+01:00",
+    "rustc_channel": "stable",
+    "rustc_version": "1.84.1"
+  },
+  "declared_role": {
+    "entry": true,
+    "exit_ipr": true,
+    "exit_nr": true,
+    "mixnode": false
+  },
+  "host_information": {
+    "hostname": "wznymnode.webhop.me",
+    "ip_address": [
+      "94.143.231.195"
+    ],
+    "keys": {
+      "ed25519": "E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ",
+      "x25519": "8PDvfnym8jxQGDwk6H1xoDcBttWscD1GezB1mAuVSfa4",
+      "x25519_noise": null
+    }
+  },
+  "ip_packet_router": {
+    "address": "DnxDpj42exX1RL8gFTxWDGYpkgjcutWNhymHBsXEk4NW.6TpNuDFu9AWpifneH3n7qz29VdoiDPh8id9T6Fr8mubn@E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ"
+  },
+  "last_polled": "2025-02-27 03:12:58.366326938 +00:00:00",
+  "mixnet_websockets": {
+    "ws_port": 9000,
+    "wss_port": 9001
+  },
+  "network_requester": {
+    "address": "43kSZTm2V7Y6u5So57gLTLdhmjfpWj5RzsmM9mvBhxF9.DGS2HPGAvHko6V3ixcGfSwJWEAkLsvvxA8TV7HmnuodH@E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ",
+    "uses_exit_policy": true
+  },
+  "wireguard": {
+    "port": 51822,
+    "public_key": "HLnpRvFCcUq3xmUZZPGcyZ8QMST7woJCZdQwCvGgM1QZ"
+  }
+}
+Explorer API
+{
+  "block_height": 16380988,
+  "gateway": {
+    "clients_port": 9000,
+    "host": "94.143.231.195",
+    "identity_key": "E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ",
+    "location": "Germany",
+    "mix_port": 1789,
+    "sphinx_key": "8PDvfnym8jxQGDwk6H1xoDcBttWscD1GezB1mAuVSfa4",
+    "version": "1.5.0"
+  },
+  "location": {
+    "country_name": "Germany",
+    "latitude": 51.2993,
+    "longitude": 9.491,
+    "three_letter_iso_country_code": "DEU",
+    "two_letter_iso_country_code": "DE"
+  },
+  "owner": "n127c69pasr35p76amfczemusnutr8mtw78s8xl7",
+  "pledge_amount": {
+    "amount": "100000000",
+    "denom": "unym"
+  },
+  "proxy": null
+}
+```
+
 #### Nym Node Description (Optional)
 
 Your Nym node's main configuration file, located at `~/.nym/nym-nodes/default-nym-node/config/config.toml`, contains a line like this:
