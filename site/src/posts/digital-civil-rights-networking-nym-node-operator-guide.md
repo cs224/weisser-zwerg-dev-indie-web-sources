@@ -544,6 +544,83 @@ To ensure the node is running correctly, monitor the service logs:
 journalctl -u nym-node.service -f -n 100
 ```
 
+### `joke_through_the_mixnet` and `joke_through_wg_tunnel`
+
+Just for reference purposes I document here the output of the `joke_through_the_mixnet` and `joke_through_wg_tunnel` commands:
+
+```txt
+# ./network_tunnel_manager.sh joke_through_the_mixnet
+iptables-persistent is already installed.
+
+checking tunnel connectivity and fetching a joke for nymtun0...
+if these test succeeds, it confirms your machine can reach the outside world via IPv4 and IPv6.
+however, probes and external clients may experience different connectivity to your nym-node.
+
+------------------------------------
+detected IPv4 address: 10.0.0.1
+testing IPv4 connectivity...
+
+IPv4 connectivity is working. fetching a joke...
+IPv4 joke: Why can't your nose be 12 inches long? Because then it'd be a foot!
+
+------------------------------------
+detected IPv6 address: fc00::1
+testing IPv6 connectivity...
+
+IPv6 connectivity is working. fetching a joke...
+IPv6 joke: Two satellites decided to get married. The wedding wasn't much, but the reception was incredible.
+joke fetching processes completed for nymtun0.
+------------------------------------
+
+
+### connectivity testing recommendations ###
+- use the following command to test WebSocket connectivity from an external client:
+  wscat -c wss://<your-ip-address/ hostname>:9001 
+- test UDP connectivity on port 51822 (commonly used for nym wireguard) 
+  from another machine, use tools like nc or socat to send UDP packets 
+  echo 'test message' | nc -u <your-ip-address> 51822 
+if connectivity issues persist, ensure port forwarding and firewall rules are correctly configured 
+
+operation joke_through_the_mixnet completed successfully.
+```
+
+```txt
+# ./network_tunnel_manager.sh joke_through_wg_tunnel
+iptables-persistent is already installed.
+
+checking tunnel connectivity and fetching a joke for nymwg...
+if these test succeeds, it confirms your machine can reach the outside world via IPv4 and IPv6.
+however, probes and external clients may experience different connectivity to your nym-node.
+
+------------------------------------
+detected IPv4 address: 10.1.0.1
+testing IPv4 connectivity...
+
+IPv4 connectivity is working. fetching a joke...
+IPv4 joke: Where do you take someone who’s been injured in a peek-a-boo accident? To the I.C.U.
+
+------------------------------------
+detected IPv6 address: fc01::1
+testing IPv6 connectivity...
+
+IPv6 connectivity is working. fetching a joke...
+IPv6 joke: How do you get two whales in a car? Start in England and drive West.
+joke fetching processes completed for nymwg.
+------------------------------------
+
+
+### connectivity testing recommendations ###
+- use the following command to test WebSocket connectivity from an external client:
+  wscat -c wss://<your-ip-address/ hostname>:9001 
+- test UDP connectivity on port 51822 (commonly used for nym wireguard) 
+  from another machine, use tools like nc or socat to send UDP packets 
+  echo 'test message' | nc -u <your-ip-address> 51822 
+if connectivity issues persist, ensure port forwarding and firewall rules are correctly configured 
+
+operation joke_through_wg_tunnel completed successfully.
+```
+
+
 ### `wscat` and UDP Connectivity Test
 
 At the end of the `./network_tunnel_manager.sh joke_through_wg_tunnel` script, you will see these instructions:
