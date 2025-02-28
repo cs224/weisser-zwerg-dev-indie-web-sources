@@ -183,6 +183,12 @@ The first step in setting up your `nym-node` is to initialize it. This process s
 /root/nym-node run --init-only --write-changes --mode mixnode --public-ips "$(curl -4 https://ifconfig.me)" --http-bind-address 0.0.0.0:8080 --mixnet-bind-address 0.0.0.0:1789 --verloc-bind-address 0.0.0.0:1790 --location DE --wireguard-enabled true --expose-system-hardware false --expose-system-info false
 ```
 
+> When I first wrote this blog post, I set everything up in `--mode mixnode`. However, I now recommend using `--mode exit-gateway` instead. This mode offers the full range of functionality, making it the best starting point.
+> Once you confirm everything is running smoothly, you can switch to a more restricted mode if needed.
+>
+> Keep in mind that `--wireguard-enabled true` only works in `--mode exit-gateway`. This is because WireGuard mode (also known as dVPN or `2-hop` mode) does not differentiate between entry and exit nodes.
+> If you want to participate in the WireGuard-based `2-hop` dVPN, your node must be configured as an exit-gateway.
+
 This will create the following directory `.nym/nym-nodes/default-nym-node`. Within this directory, you'll find subdirectories and files needed for configuration and operation.
 
 I made changes to the `config.toml` file located at `.nym/nym-nodes/default-nym-node/config/config.toml`.
@@ -384,140 +390,6 @@ It appears that reconfigurations only take effect during `Interval` switches - l
 
 According to the [Reward Sharing for Mixnets](https://nym.com/nym-cryptoecon-paper.pdf) paper, `Epoch`s last roughly 1 hour, while `Interval`s span about 1 month (30 days × 24 hours = 720 hours).
 
-## Routing Configuration
-
-The next step is to go through the [Routing Configuration](https://nym.com/docs/operators/nodes/nym-node/configuration#routing-configuration) of your Nym node.
-
-If you built the project from source, you'll find the `network_tunnel_manager.sh` script at `./scripts/network_tunnel_manager.sh`.
-Alternatively, you can download it from this [link](https://github.com/nymtech/nym/blob/develop/scripts/network_tunnel_manager.sh).
-
-
-As far as I understand the `nymtun0` interface is only present if you opearte an `exit-gateway`:
-> The `nymtun0` interface is dynamically managed by the `exit-gateway` service. When the service is stopped, `nymtun0` disappears, and when started, `nymtun0` is recreated.
-
-Fruthermore, the [VPS Configuration](https://nym.com/docs/operators/nodes/preliminary-steps/vps-setup#vps-configuration) explains that the `nym-node` is making use of a [wireguard](https://www.wireguard.com/) VPN tunnel:
-> The `nymwg` interface is used for creating a secure wireguard tunnel as part of the Nym Network configuration.
-> Similar to `nymtun0`, the script manages iptables rules specific to `nymwg` to ensure proper routing and forwarding through the wireguard tunnel.
-
-The first time you execute the `network_tunnel_manager.sh` script, it will modify some system-installed packages. I noted above already that:
-
-> Initially, I followed the standard [VPS Configuration](https://nym.com/docs/operators/nodes/preliminary-steps/vps-setup#vps-configuration) process, including setting up the UFW firewall.
-> However, I later discovered that running [network_tunnel_manager.sh](https://nym.com/docs/operators/nodes/nym-node/configuration) (or [here](https://github.com/nymtech/nym/blob/develop/scripts/network_tunnel_manager.sh)) caused the UFW package to be uninstalled.
-
-You may also be prompted on the first run of the `network_tunnel_manager.sh` script to save your current IPv4 and IPv6 rules — select "Yes" to preserve them.
-```bash
-# Delete IP tables rules for IPv4 and IPv6 and apply new ones:
-./network_tunnel_manager.sh remove_duplicate_rules nymtun0   # ; may only be required if you have a nymtun, e.g. you're operating an exit-gateway
-./network_tunnel_manager.sh apply_iptables_rules
-
-# At this point you should see a global ipv6 address.
-./network_tunnel_manager.sh fetch_and_display_ipv6
-
-# Check nymtun IP tables                                       ; may only be required if you have a nymtun, e.g. you're operating an exit-gateway
-./network_tunnel_manager.sh check_nymtun_iptables
-
-# Remove old and apply new rules for wireguad routing
-./network_tunnel_manager.sh remove_duplicate_rules nymwg
-./network_tunnel_manager.sh apply_iptables_rules_wg
-
-# Apply rules to configure DNS routing and allow ICMP piung test for node probing (network testing)
-./network_tunnel_manager.sh configure_dns_and_icmp_wg
-
-# Adjust and validate IP forwarding
-./network_tunnel_manager.sh adjust_ip_forwarding
-./network_tunnel_manager.sh check_ipv6_ipv4_forwarding
-
-# Check nymtun0 interface and test routing configuration       ; may only be required if you have a nymtun, e.g. you're operating an exit-gateway
-ip addr show nymtun0
-
-# Validate your IPv6 and IPv4 networking by running a joke test via Mixnet:
-./network_tunnel_manager.sh joke_through_the_mixnet          # ; may only be required if you have a nymtun, e.g. you're operating an exit-gateway
-
-# Validate your tunneling by running a joke test via WG:
-./network_tunnel_manager.sh joke_through_wg_tunnel
-```
-
-We already started the `nym-node` above with the `--wireguard-enabled true` flag and added it to our `systemd` service configuration, but only now the network configuration is complete. Therefore we have to restart our `nym-node` via our `systemd` service:
-```bash
-systemctl daemon-reload && service nym-node restart
-```
-
-To ensure the node is running correctly, monitor the service logs:
-```bash
-journalctl -u nym-node.service -f -n 100
-```
-
-## Fund `nym-node` Client Nyx Account
-
-At this point, you might notice one remaining `Error` message in your logs:
-```
-2025-01-19T12:42:32.150873Z ERROR gateway/src/node/mod.rs:197: this gateway (n1t37ajkn703defjhh569r6ey6xhjk3txv29l4vg) has insufficient balance for possible zk-nym redemption transaction fees. it only has 0unym available.
-```
-
-I reached out to the Nym support team for clarification, and they explained:
-> You don't have to worry about it as the balance needed is only for gateway modes.
-
-This means that for a node running in `--mode mixnode`, this error can be safely ignored. However, if you prefer to resolve the issue, here's how to do it.
-
-Your node has a second Nym account, the `nym-node` client Nyx account (note: it's Nyx, not Nym). To eliminate the error, you need to fund this account.
-I transferred 25 `NYM` to my Nyx account, and the error message was cleared.
-
-For more detailed instructions, you can refer to the [Fund `nym-node` Client Nyx Account](https://nym.com/docs/operators/nodes/nym-node/bonding#fund-nym-node-client-nyx-account) documentation.
-
-## Monitoring
-
-You can explore my [NymNode API](http://94.143.231.195:8080/api/v1/swagger/#/) through its [Swagger/OpenAPI](https://en.wikipedia.org/wiki/Swagger_(software)) interface.
-
-You can also gather some basic details about my node:
-```bash
-curl -X 'GET' 'http://94.143.231.195:8080/api/v1/build-information' -H 'accept: application/json' | jq
-{
-  "binary_name": "nym-node",
-  "build_timestamp": "2025-01-20T14:00:32.024551064Z",
-  "build_version": "1.3.1",
-  "commit_sha": "b163dba2d46fb70d37c76f85cb9d6844d233dd29",
-  "commit_timestamp": "2025-01-20T09:35:09.000000000+01:00",
-  "commit_branch": "master",
-  "rustc_version": "1.84.0",
-  "rustc_channel": "stable",
-  "cargo_profile": "release",
-  "cargo_triple": "x86_64-unknown-linux-gnu"
-}
-
-curl -X 'GET' 'http://94.143.231.195:8080/api/v1/auxiliary-details' -H 'accept: application/json' | jq
-{
-  "location": "DE",
-  "announce_ports": {
-    "verloc_port": 1790,
-    "mix_port": 1789
-  },
-  "accepted_operator_terms_and_conditions": true
-}
-
-curl -X 'GET' 'http://94.143.231.195:8080/api/v1/load' -H 'accept: application/json' | jq
-{
-  "total": "low",
-  "machine": "negligible",
-  "network": "negligible"
-}
-```
-
-To locate my node in the overall Nym mixnet, use its `Identity Key`, such as `E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ`.
-```bash
-curl -X 'GET' 'https://validator.nymtech.net/api/v1/nym-nodes/described' -H 'accept: application/json' | jq | grep E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ
-curl -X 'GET' 'https://validator.nymtech.net/api/v1/nym-nodes/bonded' -H 'accept: application/json' | jq | grep E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ
-```
-
-
-
-You can track my node using the [Spectre Explorer](https://explorer.nym.spectredao.net/dashboard) with the same Identity Key: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://explorer.nym.spectredao.net/nodes/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ).
-
-Additionally, my node is visible in the [Mainnet Network Explorer](https://explorer.nymtech.net/network-components/nodes/2196). However, at this stage of the set-up, I was unable to locate it in the [Nym Harbour Master](https://harbourmaster.nymtech.net/). The Harbour Master page notes:
-> The Harbour Master is going through some changes.
-
-There's also a [Mixnet Explorer](https://mixnet.explorers.guru/mixnodes), but please note that it's currently at its "End of Support."
-
-
 ## Reverse Proxy & Web Secure Socket
 
 In the [Nym Operator's guide](https://nym.com/docs/operators/introduction), there is a section called [Reverse Proxy & Web Secure Socket](https://nym.com/docs/operators/nodes/nym-node/configuration/proxy-configuration) that covers how to set up a reverse proxy for Nym node HTTP requests and create a custom landing page for your node.
@@ -608,6 +480,197 @@ You can find the original template by clicking on:
 
 Before configuring the `Web Secure Socket`, I couldn't see my node in the [Nym Harbour Master](https://harbourmaster.nymtech.net).
 Once I completed this setup, my node became visible there as well (for example: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://harbourmaster.nymtech.net/gateway/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ)).
+
+## Routing Configuration
+
+The next step is to go through the [Routing Configuration](https://nym.com/docs/operators/nodes/nym-node/configuration#routing-configuration) of your Nym node.
+
+If you built the project from source, you'll find the `network_tunnel_manager.sh` script at `./scripts/network_tunnel_manager.sh`.
+Alternatively, you can download it from this [link](https://github.com/nymtech/nym/blob/develop/scripts/network_tunnel_manager.sh).
+
+
+As far as I understand the `nymtun0` interface is only present if you opearte an `exit-gateway`:
+> The `nymtun0` interface is dynamically managed by the `exit-gateway` service. When the service is stopped, `nymtun0` disappears, and when started, `nymtun0` is recreated.
+
+Fruthermore, the [VPS Configuration](https://nym.com/docs/operators/nodes/preliminary-steps/vps-setup#vps-configuration) explains that the `nym-node` is making use of a [wireguard](https://www.wireguard.com/) VPN tunnel:
+> The `nymwg` interface is used for creating a secure wireguard tunnel as part of the Nym Network configuration.
+> Similar to `nymtun0`, the script manages iptables rules specific to `nymwg` to ensure proper routing and forwarding through the wireguard tunnel.
+
+The first time you execute the `network_tunnel_manager.sh` script, it will modify some system-installed packages. I noted above already that:
+
+> Initially, I followed the standard [VPS Configuration](https://nym.com/docs/operators/nodes/preliminary-steps/vps-setup#vps-configuration) process, including setting up the UFW firewall.
+> However, I later discovered that running [network_tunnel_manager.sh](https://nym.com/docs/operators/nodes/nym-node/configuration) (or [here](https://github.com/nymtech/nym/blob/develop/scripts/network_tunnel_manager.sh)) caused the UFW package to be uninstalled.
+
+You may also be prompted on the first run of the `network_tunnel_manager.sh` script to save your current IPv4 and IPv6 rules — select "Yes" to preserve them.
+```bash
+# Delete IP tables rules for IPv4 and IPv6 and apply new ones:
+./network_tunnel_manager.sh remove_duplicate_rules nymtun0   # ; may only be required if you have a nymtun, e.g. you're operating an exit-gateway
+./network_tunnel_manager.sh apply_iptables_rules
+
+# At this point you should see a global ipv6 address.
+./network_tunnel_manager.sh fetch_and_display_ipv6
+
+# Check nymtun IP tables                                       ; may only be required if you have a nymtun, e.g. you're operating an exit-gateway
+./network_tunnel_manager.sh check_nymtun_iptables
+
+# Remove old and apply new rules for wireguad routing
+./network_tunnel_manager.sh remove_duplicate_rules nymwg
+./network_tunnel_manager.sh apply_iptables_rules_wg
+
+# Apply rules to configure DNS routing and allow ICMP piung test for node probing (network testing)
+./network_tunnel_manager.sh configure_dns_and_icmp_wg
+
+# Adjust and validate IP forwarding
+./network_tunnel_manager.sh adjust_ip_forwarding
+./network_tunnel_manager.sh check_ipv6_ipv4_forwarding
+
+# Check nymtun0 interface and test routing configuration       ; may only be required if you have a nymtun, e.g. you're operating an exit-gateway
+ip addr show nymtun0
+
+# Validate your IPv6 and IPv4 networking by running a joke test via Mixnet:
+./network_tunnel_manager.sh joke_through_the_mixnet          # ; may only be required if you have a nymtun, e.g. you're operating an exit-gateway
+
+# Validate your tunneling by running a joke test via WG:
+./network_tunnel_manager.sh joke_through_wg_tunnel
+```
+
+We already started the `nym-node` above with the `--wireguard-enabled true` flag and added it to our `systemd` service configuration, but only now the network configuration is complete. Therefore we have to restart our `nym-node` via our `systemd` service:
+```bash
+systemctl daemon-reload && service nym-node restart
+```
+
+To ensure the node is running correctly, monitor the service logs:
+```bash
+journalctl -u nym-node.service -f -n 100
+```
+
+### `wscat` and UDP Connectivity Test
+
+At the end of the `./network_tunnel_manager.sh joke_through_wg_tunnel` script, you will see these instructions:
+
+```txt
+### connectivity testing recommendations ###
+- use the following command to test WebSocket connectivity from an external client:
+  wscat -c wss://<your-ip-address/ hostname>:9001
+- test UDP connectivity on port 51822 (commonly used for nym wireguard)
+  from another machine, use tools like nc or socat to send UDP packets
+  echo 'test message' | nc -u <your-ip-address> 51822
+if connectivity issues persist, ensure port forwarding and firewall rules are correctly configured 
+```
+<p></p>
+
+**About the WebSocket Connectivity Test**: A `wss://` test will only work when you use a fully qualified domain name (FQDN), for example:
+```bash
+wscat -c wss://wznymnode.webhop.me:9001
+```
+This is because SSL/TLS certificates are recognized only if you connect to the exact hostname in the certificate.
+If you try using an IP address, you may see a self-signed certificate error, for example:
+```bash
+wscat -c wss://94.143.231.195:9001
+error: self-signed certificate
+```
+Or here via `openssl`:
+```bash
+openssl s_client -connect 94.143.231.195:9001 -showcerts
+Can't use SSL_get_servername
+```
+If you really need to connect by IP, you must explicitly provide the `-servername` option:
+```bash
+openssl s_client -connect 94.143.231.195:9001 -servername wznymnode.webhop.me -showcerts
+```
+<p></p>
+
+**About the UDP Connectivity Test**: The command `echo 'test message' | nc -u <your-ip-address> 51822` by itself will not show errors even if UDP packets are lost or ignored, because UDP is a connectionless protocol.
+
+To confirm packets are actually arriving, run a tool like `tcpdump` on the server side while sending UDP traffic from another machine.
+First, identify which interface (e.g., `eth0`) is linked to your IP address by using a command like `ifconfig -a`.
+Then, in a separate terminal on your server:
+```bash
+tcpdump -i eth0 -n -l -X udp port 51822
+```
+
+When you send the test message from another machine, you should see a line that includes the UDP packet details, similar to:
+```bash
+# the follwing will be the output of tcpdump when you execute `echo 'test message' | nc -u 94.143.231.195 51822` from another machine:
+tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
+listening on eth0, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+07:37:45.158882 IP 194.182.191.207.23785 > 94.143.231.195.51822: UDP, length 13
+        0x0000:  4528 0029 dd30 4000 3111 5dfd d537 f2e3  E(.).0@.1.]..7..
+        0x0010:  5e8f e7c3 5ce9 ca6e 0015 777c 7465 7374  ^...\..n..w|test
+        0x0020:  206d 6573 7361 6765 0a00 0000 0000       .message......
+```
+
+This confirms that the server is receiving UDP packets on port 51822.
+
+## Fund `nym-node` Client Nyx Account
+
+At this point, you might notice one remaining `Error` message in your logs:
+```
+2025-01-19T12:42:32.150873Z ERROR gateway/src/node/mod.rs:197: this gateway (n1t37ajkn703defjhh569r6ey6xhjk3txv29l4vg) has insufficient balance for possible zk-nym redemption transaction fees. it only has 0unym available.
+```
+
+I reached out to the Nym support team for clarification, and they explained:
+> You don't have to worry about it as the balance needed is only for gateway modes.
+
+This means that for a node running in `--mode mixnode`, this error can be safely ignored. However, if you prefer to resolve the issue, here's how to do it.
+
+Your node has a second Nym account, the `nym-node` client Nyx account (note: it's Nyx, not Nym). To eliminate the error, you need to fund this account.
+I transferred 25 `NYM` to my Nyx account, and the error message was cleared.
+
+For more detailed instructions, you can refer to the [Fund `nym-node` Client Nyx Account](https://nym.com/docs/operators/nodes/nym-node/bonding#fund-nym-node-client-nyx-account) documentation.
+
+## Monitoring
+
+You can explore my [NymNode API](http://94.143.231.195:8080/api/v1/swagger/#/) through its [Swagger/OpenAPI](https://en.wikipedia.org/wiki/Swagger_(software)) interface.
+
+You can also gather some basic details about my node:
+```bash
+curl -X 'GET' 'http://94.143.231.195:8080/api/v1/build-information' -H 'accept: application/json' | jq
+{
+  "binary_name": "nym-node",
+  "build_timestamp": "2025-01-20T14:00:32.024551064Z",
+  "build_version": "1.3.1",
+  "commit_sha": "b163dba2d46fb70d37c76f85cb9d6844d233dd29",
+  "commit_timestamp": "2025-01-20T09:35:09.000000000+01:00",
+  "commit_branch": "master",
+  "rustc_version": "1.84.0",
+  "rustc_channel": "stable",
+  "cargo_profile": "release",
+  "cargo_triple": "x86_64-unknown-linux-gnu"
+}
+
+curl -X 'GET' 'http://94.143.231.195:8080/api/v1/auxiliary-details' -H 'accept: application/json' | jq
+{
+  "location": "DE",
+  "announce_ports": {
+    "verloc_port": 1790,
+    "mix_port": 1789
+  },
+  "accepted_operator_terms_and_conditions": true
+}
+
+curl -X 'GET' 'http://94.143.231.195:8080/api/v1/load' -H 'accept: application/json' | jq
+{
+  "total": "low",
+  "machine": "negligible",
+  "network": "negligible"
+}
+```
+
+To locate my node in the overall Nym mixnet, use its `Identity Key`, such as `E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ`.
+```bash
+curl -X 'GET' 'https://validator.nymtech.net/api/v1/nym-nodes/described' -H 'accept: application/json' | jq | grep E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ
+curl -X 'GET' 'https://validator.nymtech.net/api/v1/nym-nodes/bonded' -H 'accept: application/json' | jq | grep E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ
+```
+
+
+
+You can track my node using the [Spectre Explorer](https://explorer.nym.spectredao.net/dashboard) with the same Identity Key: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://explorer.nym.spectredao.net/nodes/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ).
+
+Additionally, my node is visible in the [Mainnet Network Explorer](https://explorer.nymtech.net/network-components/nodes/2196). If you did set-up the Web Secure Socket earlier your node should also be visible in the [Nym Harbour Master](https://harbourmaster.nymtech.net/) with the same Identity Key: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://harbourmaster.nymtech.net/gateway/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ).
+
+There's also a [Mixnet Explorer](https://mixnet.explorers.guru/mixnodes), but please note that it's currently at its "End of Support."
+
 
 ## Node Modes: mixnode, entry-gateway, exit-gateway, wireguard-enabled (aka dVPN, aka 2-hop)
 
@@ -776,6 +839,14 @@ For reference, here's the command line I use to start my Nym node:
                    --expose-system-hardware false 
                    --expose-system-info false 
                    --accept-operator-terms-and-conditions
+```
+And here is the first line of the logs after start-up:
+```bash
+ INFO nym-node/src/node/mod.rs:1008: starting Nym Node E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ with the following modes:
+  mixnode: false,
+  entry: true,
+  exit: true,
+  wireguard: true
 ```
 <br>
 
