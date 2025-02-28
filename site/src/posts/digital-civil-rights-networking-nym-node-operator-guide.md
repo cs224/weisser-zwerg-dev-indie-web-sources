@@ -1034,6 +1034,70 @@ Additionally, this information is publicly visible on the [Spectre Explorer](htt
 
 There will be also a `Description` section displayed in the [Nym Harbour Master](https://harbourmaster.nymtech.net). You can check my node in the Nym Harbour Master here: [E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ](https://harbourmaster.nymtech.net/gateway/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ).
 
+### Automatic Upgrades
+
+The official Nym Operators guide has a section on [Automatic Node Upgrade: Nymvisor Setup & Usage](https://nym.com/docs/operators/nodes/maintenance/nymvisor-upgrade).
+It references this endpoint: `https://nymtech.net/.wellknown/nym-node/upgrade-info.json`, which unfortunately no longer appears to work.
+
+When I looked at the `nymvisor` source code, I noticed it still tries to use that endpoint.
+So I asked in the [Node Operators](https://matrix.to/#/#operators:nymtech.chat) Matrix room if `nymvisor` was still supposed to work.
+The response was that `nymvisor` is no longer up-to-date with the latest changes.
+
+Because of that, I created my own approach using a nightly `systemd.timer` job plus a Python CLI script (built with [Click](https://click.palletsprojects.com/en/stable/)).
+This script checks the GitHub <https://api.github.com/repos/nymtech/nym/releases> endpoint for new Nym releases.
+If one is found, it downloads everything, sets up the files, and sends a notification to my mobile phone via [Pushover](https://pushover.net/).
+
+I prefer to finalize updates manually so I can review logs or handle migration tasks if necessary.
+So the script stops short of automatically swapping in the new binary - it just alerts me.
+
+Once you're ready to perform the update you will only have to change one symlink and restart the `nym-node` service:
+```bash
+rm /root/nym-node
+ln -s /root/nym-node-v2025.3-ruta /root/nym-node
+systemctl restart nym-node
+journalctl -u nym-node -f -n 100
+```
+
+The CLI script also waits two days (configurable) after detecting a new release before downloading the new release and sending that alert.
+I do this because dev teams often issue quick follow-up releases if any bugs show up.
+The two-day delay helps avoid "hot off the press" critical issues.
+
+As usual, you can find the entire code in my [GitHub Gist](https://gist.github.com/cs224/cff0fd1e862d023491aa25ea05354cb7).
+
+Here are the installation instructions. Simply follow these steps in your terminal:
+```bash
+mkdir /root/nym-update
+cd /root/nym-update
+# install UV as our python package manager:
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# create the python environment
+uv venv py312nu --python 3.12 --seed
+# activate the environment
+source /root/nym-update/py312nu/bin/activate
+
+# download the files from the gist: https://gist.github.com/cs224/cff0fd1e862d023491aa25ea05354cb7
+
+# install the additional requirements
+uv pip install -r ./requirements.in
+
+# update the nym-update.py script with your 'token' and 'user';
+#  see the api documentation for more details: https://pushover.net/api
+
+# check that that pushover alert actually works:
+/root/nym-update/py312nu/bin/python /root/nym-update/nym-update.py --test-alert
+# run the script with debug messages to see that it does what it is supposed to do:
+/root/nym-update/py312nu/bin/python /root/nym-update/nym-update.py --debug
+
+# set-up the systemd service and timer:
+cp nym-update.service /etc/systemd/system/nym-update.service
+cp nym-update.timer   /etc/systemd/system/nym-update.timer
+systemctl daemon-reload
+systemctl enable nym-update.timer
+systemctl start nym-update.timer
+# check the logs:
+journalctl -u nym-update.service -f -n 100
+```
+
 ## Delegating
 
 Earlier, I mentioned that if you prefer not to run your own `nym-node`, you can still contribute to the network by delegating your Nym tokens - such as to my node.
