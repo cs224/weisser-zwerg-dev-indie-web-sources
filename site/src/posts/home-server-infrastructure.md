@@ -18,6 +18,16 @@ Finally, using Btrfs snapshots helps streamline backup and restore, making maint
 
 If you're unsure which hardware to choose for your home server, check out my earlier blog post: [Thin Clients as Home Servers: Dell Wyse 5060 and Fujitsu Futro S920: an Experience Report](../dell-wyse-fujitsu-futro).
 
+### Motivation
+
+In previous blog posts, I showed you how to set up local services like [Nextcloud](../digital-civil-rights-nextcloud-i) or [Gitea](../digital-civil-rights-gitea) to reclaim your digital independence and privacy.
+However, I realized that I wasn't using these self-hosted services as much as I had originally expected. This led me to ask: why is that?
+
+My conclusion was that I didn't have local disk encryption at rest, because unattended reboots are crucial for headless servers (with no keyboard or monitor) and disk encryption runs against unattended reboots.
+Secondly, while backups might seem less critical for services like Nextcloud or Gitea - because data is synchronized across multiple clients - the lack of reliable off-site backups still felt risky.
+
+That is why the primary purpose of this blog post is to support those earlier guides and help you gain confidence in running your own local services, ensuring you can truly reclaim your digital independence and privacy.
+
 
 ## Unattended Reboot and Disk Encryption at Rest
 
@@ -516,9 +526,49 @@ Hence, if you want automatic chaining, you must express it from the parent's sid
 That is the short of it: in systemd-land, "when A is up, also start B" is always done by having A say "Wants= B."
 The child unit's "Requires= A" is just to ensure the correct ordering if somebody starts the child first, but does not cause child to start once the parent has come up.
 
+## Kopia Backup
+
+### Install
+
+Follow the [Linux installation using APT (Debian, Ubuntu)](https://kopia.io/docs/installation/#linux-installation-using-apt-debian-ubuntu) installation guide:
+```bash
+curl -s https://kopia.io/signing-key | gpg --dearmor -o /etc/apt/keyrings/kopia-keyring.gpg
+echo "deb [signed-by=/etc/apt/keyrings/kopia-keyring.gpg] http://packages.kopia.io/apt/ stable main" | tee /etc/apt/sources.list.d/kopia.list
+apt update && apt install kopia
+```
+
+I will use [Rclone](https://rclone.org/) for the handling of my offsite remote backup location and I set it up with the identifier `rclone-backup-sharepoint-site:`.
+I will talk more about how to set-up a rclone target via Office365 Sharepoint.
+```bash
+curl https://rclone.org/install.sh | sudo bash
+rclone ls rclone-backup-sharepoint-site:
+```
 
 
+I want to use the kopia backup tool (https://kopia.io) on a linux system to backup the "/mnt/luks_btrfs_volume/@offsite_backup_storage" btrfs subvolume.
 
+The process shold work as follows:
+1) Create a read-only snapshot of /mnt/luks_btrfs_volume/@offsite_backup_storage at /mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap
+2) run kopa on /mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap
+3) use kopia's rclone capabilities and use "rclone-backup-sharepoint-site:" as the backup target.
+4) rename the file /mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap to /mnt/luks_btrfs_volume/@offsite_backup_storage_snapshot-2025-03-01-0400 (as an example, e.g. with a date and time suffix).
+
+Automate it via systemd timer to run at 4:00am every day.
+Explain to me in detail how to get the whole set-up for kopia going starting from installing the software, going  through the init procedure (if any) and then explaining the daily routine.
+Also explain how to to a restore either on the machine where the backup was created or on a different machine.
+
+
+Use a subfolder of `rclone-backup-sharepoint-site:` with the machine's `hostname` as the folder name.
+
+And how would I deal with an additional requirement of "becoming sparser, daily, weekly, monthly, yearly", e.g. have daily backups, then weekly, then monthly and then yearly or similar?
+
+
+2025/03/03 11:41:08 Failed to create file system for "rclone-backup-sharepoint-site:": failed to get root: Get "https://graph.microsoft.com/v1.0/drives/b!QZMPJaovskWZE5Pm-m1v5eUv9450rHBHrf7ItWk3Jp-iYM_dOTCCTZ_XF_tudDku/root": token expired and there's no refresh token - manually refresh with "rclone config reconnect rclone-backup-sharepoint-site:"
+
+
+rclone config reconnect rclone-backup-sharepoint-site:
+rclone about rclone-backup-sharepoint-site:
+rclone lsd rclone-backup-sharepoint-site:
 
 ## Additonal Resources
 
