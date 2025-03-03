@@ -355,7 +355,8 @@ Btrfs subvolumes and snapshots have many useful features. I encourage you to rea
 
 ## Systemd Setup: Coordinating Docker with Your File System Dependencies
 
-To recap our goal: after a reboot, the encrypted volume at `/opt/luks-btrfs-volume.img` remains locked until we enter the password.
+**To recap our goal**: after a reboot, we want to pull the file system mounts before docker starts.
+We want that after a reboot the encrypted volume at `/opt/luks-btrfs-volume.img` remains locked until we enter the password.
 Once the system is up, running `systemctl start docker.service` should trigger a chain of systemd dependencies to ensure that:
 - The encrypted volume `/mnt/luks_btrfs_volume` is decrypted and mounted.
 - The subdirectories under `/mnt/luks_btrfs_volume` are mounted at `/opt/offsite_backup_storage` and `/opt/docker_services`.
@@ -394,6 +395,7 @@ systemctl show -p FragmentPath opt-docker_services.mount
 # FragmentPath=/run/systemd/generator/opt-docker_services.mount
 systemctl status opt-docker_services.mount
 ```
+<p></p>
 
 It's important to note that the normal `mount` command does not respect this `systemd` dependency structure. For example:
 ```bash
