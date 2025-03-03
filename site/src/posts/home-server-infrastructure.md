@@ -515,7 +515,6 @@ Everything looks good. Note that the only surprise here is that `df -h` shows on
 However, any files created under `/mnt/luks_btrfs_volume/@offsite_backup_storage/docker_services` or `/mnt/luks_btrfs_volume/@offsite_backup_storage/storage`
 will appear under `/opt/docker_services` and `/opt/offsite_backup_storage` respectively, as expected.
 
-
 ### Pull vs. Push
 
 Initially, I considered a "half pull, half push" approach, where mounting `/mnt/luks_btrfs_volume` would automatically trigger the unlocking of the encrypted volume (pull) and then push-mount `/opt/offsite_backup_storage`, `/opt/docker_services`, and finally start `docker.service`.
@@ -544,31 +543,318 @@ curl https://rclone.org/install.sh | sudo bash
 rclone ls rclone-backup-sharepoint-site:
 ```
 
+Next we will create the repository (or connect to it if you have already a remote repository set-up):
+```bash
+HOSTNAME="$(hostname -s)"
+kopia repository create rclone --password <mysecret> --remote-path=rclone-backup-sharepoint-site:"${HOSTNAME}" --description="My Offsite BTRFS Snapshots for ${HOSTNAME}" --content-cache-size-mb=512 --metadata-cache-size-mb=512
+# Or, if you already have a repository in that subfolder:
+kopia repository connect rclone --remote-path=rclone-backup-sharepoint-site:"${HOSTNAME}"
+# check
+rclone ls rclone-backup-sharepoint-site:${HOSTNAME}
+```
 
-I want to use the kopia backup tool (https://kopia.io) on a linux system to backup the "/mnt/luks_btrfs_volume/@offsite_backup_storage" btrfs subvolume.
+> Just for your reference, here is the complete output of the `kopia repository create` command:
+>
+> ```txt
+> Initializing repository with:
+>   block hash:          BLAKE2B-256-128
+>   encryption:          AES256-GCM-HMAC-SHA256
+>   key derivation:      scrypt-65536-8-1
+>   splitter:            DYNAMIC-4M-BUZHASH
+> Connected to repository.
+>
+> NOTICE: Kopia will check for updates on GitHub every 7 days, starting 24 hours after first use.
+> To disable this behavior, set environment variable KOPIA_CHECK_FOR_UPDATES=false
+> Alternatively you can remove the file "/root/.config/kopia/repository.config.update-info.json".
+>
+> Retention:
+>   Annual snapshots:                 3   (defined for this target)
+>   Monthly snapshots:               24   (defined for this target)
+>   Weekly snapshots:                 4   (defined for this target)
+>   Daily snapshots:                  7   (defined for this target)
+>   Hourly snapshots:                48   (defined for this target)
+>   Latest snapshots:                10   (defined for this target)
+>   Ignore identical snapshots:   false   (defined for this target)
+> Compression disabled.
+>
+> To find more information about default policy run 'kopia policy get'.
+> To change the policy use 'kopia policy set' command.
+>
+> NOTE: Kopia will perform quick maintenance of the repository automatically every 1h0m0s
+> and full maintenance every 24h0m0s when running as root@futro.
+>
+> See https://kopia.io/docs/advanced/maintenance/ for more information.
+>
+> NOTE: To validate that your provider is compatible with Kopia, please run:
+>
+> $ kopia repository validate-provider
+> ```
 
-The process shold work as follows:
-1) Create a read-only snapshot of /mnt/luks_btrfs_volume/@offsite_backup_storage at /mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap
-2) run kopa on /mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap
-3) use kopia's rclone capabilities and use "rclone-backup-sharepoint-site:" as the backup target.
-4) rename the file /mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap to /mnt/luks_btrfs_volume/@offsite_backup_storage_snapshot-2025-03-01-0400 (as an example, e.g. with a date and time suffix).
+Next we try the suggested validate that our provider (SharePoint via rclone in my case) is compatible with Kopia:
+> ```txt
+> kopia repository validate-provider
+> Opening 4 equivalent storage connections...
+> Validating storage capacity and usage
+> Validating blob list responses
+> Validating non-existent blob responses
+> Writing blob (5000000 bytes)
+> Validating conditional creates...
+> Validating list responses...
+> Validating partial reads...
+> Validating full reads...
+> Validating metadata...
+> Running concurrency test for 30s...
+> Cleaning up temporary data...
+> ERROR provider validation error: error validating concurrency: encountered errors: unexpected error when reading z0d359ad7-7bc8-4bb7-9dd8-8369ba975ac6bbca0f780bdf096cdec74554d8e4b05a2: error getting metadata: BLOB not found
+> ```
 
-Automate it via systemd timer to run at 4:00am every day.
-Explain to me in detail how to get the whole set-up for kopia going starting from installing the software, going  through the init procedure (if any) and then explaining the daily routine.
-Also explain how to to a restore either on the machine where the backup was created or on a different machine.
+As you can see we run into a problem similar to: [Read error when validating concurrency in new Google Drive repo](https://github.com/kopia/kopia/issues/4272).
+
+I guess the issue is with the fact the some backends simply do not support the level of concurrency that kopia expects.
+When I reduce the concurrency I don't get errors:
+> ```txt
+> kopia repository validate-provider --num-storage-connections=1 --put-blob-workers=1 --get-blob-workers=1 --get-metadata-workers=1
+> Opening 0 equivalent storage connections...
+> Validating storage capacity and usage
+> Validating blob list responses
+> Validating non-existent blob responses
+> Writing blob (5000000 bytes)
+> Validating conditional creates...
+> Validating list responses...
+> Validating partial reads...
+> Validating full reads...
+> Validating metadata...
+> Running concurrency test for 30s...
+> All good.
+> Cleaning up temporary data...
+> ```
+
+Next we take care of backup policies:
+```bash
+kopia policy set --global --max-parallel-snapshots=1 --max-parallel-file-reads=1
+kopia policy set --global --keep-latest=7 --keep-hourly=0 --keep-daily=14 --keep-weekly=4 --keep-monthly=12 --keep-annual=3
+kopia policy set --global --compression=pgzip
+# reduce parallelism:
+# check that everything is as expected
+kopia policy get --global # kopia policy show --global
+kopia repository status
+# do a connect: this will ask you for your password and make sure you remember your password:
+kopia repository connect rclone --remote-path=rclone-backup-sharepoint-site:"${HOSTNAME}"
+```
+
+The reduction of parallelism should also lead to [Decrease Kopia's CPU Usage](https://kopia.io/docs/faqs/#how-do-i-decrease-kopias-cpu-usage) and [Decrease Kopia's Memory (RAM) Usage](https://kopia.io/docs/faqs/#how-do-i-decrease-kopias-memory-ram-usage).
+
+We want to do the following each day at 4:00 AM:
+
+1. Create a read-only btrfs snapshot of `/mnt/luks_btrfs_volume/@offsite_backup_storage` at `/mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap`.
+1. Run Kopia on that snapshot: `kopia snapshot create --parallel=1 /mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap`.
+    1. You could check via `rclone ls rclone-backup-sharepoint-site:`.
+1. Rename that snapshot to `/mnt/luks_btrfs_volume/@offsite_backup_storage_snapshot-YYYY-MM-DD-HHMM`.
+
+And we want to do all of that via inline scripting to keep everything in one place.
+We therefore embed a shell snippet directly in the systemd service.
+
+Create a file named `/usr/local/bin/btrfs-kopia-backup.sh`:
+```bash
+#!/usr/bin/env bash
+
+# ---------------------------------------------------------
+# btrfs-kopia-backup.sh
+#
+# 1) Create a read-only BTRFS snapshot
+# 2) Run a Kopia snapshot
+# 3) Rename the snapshot with a date/time suffix
+# 4) (Optional) Send a Pushover alert if something fails
+# ---------------------------------------------------------
+
+set -e
+
+###############################################################################
+# CONFIG SECTION
+#
+# Toggle this to "true" to enable Pushover alerts on error, or to "false" (or
+# comment out) if you do not want alerts.
+###############################################################################
+ALERT_ENABLED=true
+
+# Pushover credentials (DO NOT store secrets in version control!)
+PUSHOVER_TOKEN="PUT_YOUR_TOKEN_HERE"
+PUSHOVER_USER="PUT_YOUR_USERKEY_HERE"
 
 
-Use a subfolder of `rclone-backup-sharepoint-site:` with the machine's `hostname` as the folder name.
+###############################################################################
+# Pushover function
+# You can comment out the entire function if you never want to use it,
+# or just set ALERT_ENABLED=false above.
+###############################################################################
+function pushover_alert() {
+  local message="$1"
+  local title="$2"
 
-And how would I deal with an additional requirement of "becoming sparser, daily, weekly, monthly, yearly", e.g. have daily backups, then weekly, then monthly and then yearly or similar?
+  # If your Pushover config includes more data (HTML, link, etc.), adapt as needed
+  curl -s --fail \
+    -F "token=${PUSHOVER_TOKEN}" \
+    -F "user=${PUSHOVER_USER}" \
+    -F "sound=none" \
+    -F "title=${title}" \
+    -F "message=${message}" \
+    -F "html=1" \
+    https://api.pushover.net/1/messages.json \
+  || echo "Warning: Failed to send Pushover alert (curl error)."
+}
+
+###############################################################################
+# Error Handler
+# This function is called automatically on any command error
+# (because of 'set -e' plus the 'trap' directive).
+###############################################################################
+function error_handler() {
+  local exit_code=$?
+  local line_no=$1
+
+  echo "ERROR: Backup script failed at line ${line_no}. Exit code: ${exit_code}"
+  if [ "$ALERT_ENABLED" = "true" ]; then
+    # Build an alert message. Adjust to taste:
+    pushover_alert \
+      "Backup on host $(hostname) failed at line ${line_no} (exit code ${exit_code})" \
+      "BTRFS-Kopia Backup Failed"
+  fi
+
+  # Exit with the same code to signal failure
+  exit "$exit_code"
+}
+
+# If alerts are enabled, set a trap to catch errors and call 'error_handler'
+if [ "$ALERT_ENABLED" = "true" ]; then
+  trap 'error_handler $LINENO' ERR
+fi
 
 
-2025/03/03 11:41:08 Failed to create file system for "rclone-backup-sharepoint-site:": failed to get root: Get "https://graph.microsoft.com/v1.0/drives/b!QZMPJaovskWZE5Pm-m1v5eUv9450rHBHrf7ItWk3Jp-iYM_dOTCCTZ_XF_tudDku/root": token expired and there's no refresh token - manually refresh with "rclone config reconnect rclone-backup-sharepoint-site:"
+###############################################################################
+# Main Backup Logic
+###############################################################################
+
+TIMESTAMP="$(date +%Y-%m-%d-%H%M)"
+SNAP_NAME="@offsite_backup_storage_backup-snap"
+SRC_SUBVOL="/mnt/luks_btrfs_volume/@offsite_backup_storage"
+SNAP_DEST="/mnt/luks_btrfs_volume/${SNAP_NAME}"
+
+echo "Creating read-only BTRFS snapshot...: btrfs subvolume snapshot -r ${SRC_SUBVOL} ${SNAP_DEST}"
+btrfs subvolume snapshot -r "$SRC_SUBVOL" "$SNAP_DEST"
+
+echo "Running Kopia snapshot...: /usr/bin/kopia snapshot create --parallel=1 ${SNAP_DEST}"
+/usr/bin/kopia snapshot create --parallel=1 "$SNAP_DEST"
+
+NEW_NAME="/mnt/luks_btrfs_volume/@offsite_backup_storage_snapshot-${TIMESTAMP}"
+echo "Renaming snapshot to $NEW_NAME"
+mv "$SNAP_DEST" "$NEW_NAME"
+
+echo "Backup completed successfully!"
+```
+
+Don'f forget to make the script executable:
+```bash
+chmod +x /usr/local/bin/btrfs-kopia-backup.sh
+```
+
+Create a file named `/etc/systemd/system/btrfs-kopia-backup.service`:
+```ini
+[Unit]
+Description=BTRFS to Kopia Backup (Offsite)
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=HOME="/root"
+ExecStart=/usr/local/bin/btrfs-kopia-backup.sh
+```
+
+Notes:
+* We set `Type=oneshot` so it runs the script once and exits.
+* Inline Bash script is placed in `ExecStart=/usr/bin/bash -c '...'`.
+* `set -e` ensures that if any command fails, the script exits with an error.
+
+Create a file named `/etc/systemd/system/btrfs-kopia-backup.timer`:
+```ini
+[Unit]
+Description=Daily BTRFS to Kopia Backup at 4:00 AM
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+* `OnCalendar=*-*-* 04:00:00` means daily at 4:00 AM.
+* `Persistent=true` ensures that if the machine was off at 4:00 AM, the job will run at the next opportunity upon boot.
+
+Enable and Start the Timer
+```bash
+systemctl daemon-reload
+systemctl enable btrfs-kopia-backup.timer
+systemctl start btrfs-kopia-backup.timer
+# check its status with:
+systemctl status btrfs-kopia-backup.timer
+systemctl status btrfs-kopia-backup.service
+ll /mnt/luks_btrfs_volume/
+# in case that due to your tests the directory @offsite_backup_storage_backup-snap would still be present: 
+# btrfs subvolume delete /mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap
+/usr/local/bin/btrfs-kopia-backup.sh
+ll /mnt/luks_btrfs_volume/
+# in case that due to your tests the directory @offsite_backup_storage_backup-snap would still be present: 
+# btrfs subvolume delete /mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap
+systemctl start btrfs-kopia-backup.service
+systemctl status btrfs-kopia-backup.service
+journalctl -u btrfs-kopia-backup.service
+# list subvolumes
+btrfs subvolume list -t -o /mnt/luks_btrfs_volume/
+# list snapshots
+btrfs subvolume list -t -o -s /mnt/luks_btrfs_volume/
+```
+
+**Maintenance scheduling in Kopia**: Maintenance tasks in Kopia typically include garbage collection of unreferenced data, compaction of indexes, and other tasks needed to keep the repository efficient and healthy. When you see a note like:
+```txt
+NOTE: Kopia will perform quick maintenance of the repository automatically every 1h0m0s and full maintenance every 24h0m0s when running as root@xxx.
+```
+it means Kopia will try to trigger these maintenance operations on a certain schedule.
+However, this is an internal scheduling mechanism - it does not rely on cron, systemd timers, or other OS-level schedulers.
+Instead, Kopia tracks the last time it performed maintenance and will run the next one when it deems it's due, under one of these conditions:
+
+1. If Kopia is running as a persistent server (e.g., `kopia server start`), it will have its own internal timer that kicks off maintenance in the background.
+1. If you run Kopia CLI commands regularly (e.g., `kopia snapshot` or `kopia policy set`) and enough time has passed since the last maintenance, Kopia may trigger the maintenance at the start or end of those operations.
+
+In other words, Kopia does not install any cron jobs or systemd timer units.
+The note merely tells you that if this process (or user) keeps Kopia running or triggers Kopia commands regularly, Kopia will attempt to maintain the repository in those intervals (hourly for quick tasks, daily for full tasks).
+You can verify:
+```bash
+kopia repository status
+```
+
+If you prefer to explicitly schedule or force maintenance:
+```bash
+# Quick maintenance (compact small indexes, etc.)
+kopia maintenance run
+
+# Pruning/Retention: Kopia also has internal "maintenance" or "prune" commands for removing old data from the repository:
+kopia snapshot prune --delete
+
+# Full maintenance (rebuild indexes, more thorough compaction, etc.): It's a good idea to schedule a periodic run of:
+kopia maintenance run --full
+```
+
+**BTRFS Snapshot Rotation**: We might want a similar daily/weekly/monthly/annual scheme for BTRFS snapshots themselves.
+That would be a separate rotation policy and process, because Kopia only manages its own snapshot retention in the repository, not the local BTRFS subvolumes.
+
+Here is an example approach: After renaming the snapshot in the script, you could keep old ones only for 14 days. Something like:
+```bash
+# in the ExecStart inline script, after renaming:
+find /mnt/luks_btrfs_volume/ -maxdepth 1 -name "@offsite_backup_storage_snapshot-*" -type d -mtime +14 -exec btrfs subvolume delete {} \;
+```
 
 
-rclone config reconnect rclone-backup-sharepoint-site:
-rclone about rclone-backup-sharepoint-site:
-rclone lsd rclone-backup-sharepoint-site:
 
 ## Additonal Resources
 
