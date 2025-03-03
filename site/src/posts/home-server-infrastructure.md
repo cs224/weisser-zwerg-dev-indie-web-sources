@@ -581,7 +581,7 @@ rclone ls rclone-backup-sharepoint-site:${HOSTNAME}
 > To change the policy use 'kopia policy set' command.
 >
 > NOTE: Kopia will perform quick maintenance of the repository automatically every 1h0m0s
-> and full maintenance every 24h0m0s when running as root@futro.
+> and full maintenance every 24h0m0s when running as root@xxx.
 >
 > See https://kopia.io/docs/advanced/maintenance/ for more information.
 >
@@ -752,10 +752,13 @@ mv "$SNAP_DEST" "$NEW_NAME"
 echo "Backup completed successfully!"
 ```
 
-Don'f forget to make the script executable:
+Don't forget to make the script executable:
 ```bash
 chmod +x /usr/local/bin/btrfs-kopia-backup.sh
 ```
+<p></p>
+
+And either set `ALERT_ENABLED=false` or provide the [Pushover](https://pushover.net/) credentials in `PUSHOVER_TOKEN="PUT_YOUR_TOKEN_HERE"` and `PUSHOVER_USER="PUT_YOUR_USERKEY_HERE"`.
 
 Create a file named `/etc/systemd/system/btrfs-kopia-backup.service`:
 ```ini
@@ -817,7 +820,8 @@ btrfs subvolume list -t -o -s /mnt/luks_btrfs_volume/
 
 **Maintenance scheduling in Kopia**: Maintenance tasks in Kopia typically include garbage collection of unreferenced data, compaction of indexes, and other tasks needed to keep the repository efficient and healthy. When you see a note like:
 ```txt
-NOTE: Kopia will perform quick maintenance of the repository automatically every 1h0m0s and full maintenance every 24h0m0s when running as root@xxx.
+NOTE: Kopia will perform quick maintenance of the repository automatically every 1h0m0s
+and full maintenance every 24h0m0s when running as root@xxx.
 ```
 it means Kopia will try to trigger these maintenance operations on a certain schedule.
 However, this is an internal scheduling mechanism - it does not rely on cron, systemd timers, or other OS-level schedulers.
