@@ -42,7 +42,7 @@ This way, Docker won't start until the encrypted volume is mounted.
 One of the best parts about Docker is that you can organize all service files in one place.
 A common folder structure might look like this:
 ```txt
-/opt
+/opt/docker-services
 └── service
     ├── config
     │   ├── container-service-one
@@ -283,7 +283,19 @@ systemd-tty-ask-password-agent
 At this point, your sparse file-based encrypted volume and the `btrfs` filesystem on it should be functioning properly.
 We can now move on to the next step.
 
-### Btrfs File structure
+### Btrfs File Structure
+
+```bash
+findmnt -no FSTYPE /mnt/luks_btrfs_volume 
+# btrfs
+cd /mnt/luks_btrfs_volume/
+btrfs subvolume list -t -s -o .
+findmnt -vno SOURCE /mnt/luks_btrfs_volume
+# /dev/mapper/luks_btrfs_volume
+```
+
+With Btrfs, only subvolumes (not arbitrary directories) can be mounted as if they were separate filesystems using the -o subvol= option.
+If you want to “mount” a normal directory somewhere else, you would use a bind mount (a generic Linux feature), not the Btrfs subvolume mechanism.
 
 
 ## Additonal Resources
@@ -300,52 +312,7 @@ We can now move on to the next step.
 * Sweet Tea Dorminy on [Encrypted Btrfs Subvolumes: Keeping Container Storage Safe](https://www.youtube.com/watch?v=6YIc2fVLVPU)
 * [How do I work with /dev/mapper devices](https://www.linuxquestions.org/questions/linux-server-73/dev-mapper-devices-and-how-to-use-4175582538/): `lvdisplay`, `vgdisplay`, `pvdisplay`
 * [btrbk](https://github.com/digint/btrbk): Tool for creating snapshots and remote backups of btrfs subvolumes
-
-
-
-Have a look at the following two commands:
-- mount -t btrfs /dev/mapper/luks_btrfs_volume /mnt/luks_btrfs_volume
-- mount -o noatime,compress=zstd /dev/mapper/luks_btrfs_volume /mnt/luks_btrfs_volume
-
-Why would I use the one over the other? And with the first one, should I use the -o option(s) in addition?
-
-And one more question: once a device is mounted, can I call some command that would generate a text line that I can copy and paste verbatim into /etc/fstab to replicate the current state of the mount?
-
-Look at the following two fstab lines and explain their arguments "rw,noatime,compress=zstd:3,ssd,space_cache=v2" and "rw,relatime,ssd,space_cache=v2" in detail:
-# /dev/mapper/luks_btrfs_volume   /mnt/luks_btrfs_volume       btrfs   rw,noatime,compress=zstd:3,ssd,space_cache=v2       0 0
-# /dev/mapper/luks_btrfs_volume   /mnt/luks_btrfs_volume       btrfs   rw,relatime,ssd,space_cache=v2       0 0
-
-Which one should I use?
-
-Are there "cross correlations" between options like noatime and ssd? I guess noatime is mostly used to avoid writes to ssds, e.g. is noatime already included in the ssd argument?
-
----------
-
-To remount:
-
----------
-
-cryptsetup -v luksOpen /dev/DISKNAME mybackup
-
-mount -o noatime,compress=zstd /dev/mapper/mybackup /mnt/mybackup
-
----------
-
-To unmount:
-
----------
-
-umount /mnt/mybackup
-
-cryptsetup luksClose mybackup
-
---------------------------
-
-https://www.linuxquestions.org/questions/linux-server-73/dev-mapper-devices-and-how-to-use-4175582538/
-
-
-lvdisplay
-
-vgdisplay
-
-pvdisplay
+* [rclone serve restic](https://rclone.org/commands/rclone_serve_restic/)
+    * [REST Server](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#rest-server)
+    * [Other Services via rclone](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#other-services-via-rclone)
+* [repository connect rclone](https://kopia.io/docs/reference/command-line/common/repository-connect-rclone/)
