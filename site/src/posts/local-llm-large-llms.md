@@ -473,6 +473,11 @@ However, for that amount of money, I could rent many hours of bare-metal cloud s
 
 ## Appendix
 
+### Further Resources
+
+* [Introduction to vLLM and PagedAttention](https://blog.runpod.io/introduction-to-vllm-and-how-to-run-vllm-on-runpod-serverless)
+  * [How to run vLLM with RunPod Serverless](https://blog.runpod.io/how-to-run-vllm-with-runpod-serverless-2)
+
 ### CPU Offload / Sequential Loading
 
 Although I haven't personally tried, you can run a model on a single GPU even if the model is larger than that GPU's available VRAM - although it requires some form of sharding and offloading so that the model's full parameters do not have to be loaded into GPU memory all at once.
