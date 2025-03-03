@@ -286,7 +286,11 @@ We can now move on to the next step.
 
 ## Btrfs File Structure
 
-As a next step we'll set-up the Btrfs file structure. First let's perform a few analysis commands on our current mounted Btrfs volume:
+As a next step, we'll set up the Btrfs file structure.  
+Btrfs is a modern Linux filesystem known for its advanced features such as subvolumes, snapshots, compression, and copy-on-write.
+These features make it well-suited for home server setups where you want easy backups and efficient storage management.
+
+First, let's run a few commands to analyze our currently mounted Btrfs volume:
 
 ```bash
 findmnt -no FSTYPE /mnt/luks_btrfs_volume 
@@ -303,17 +307,21 @@ Here are some useful options for the `btrfs subvolume list` command:
 * `-s`: list only snapshots
 * `-r`: list readonly subvolumes (including snapshots)
 
-As we did not yet create any subvolumes the `btrfs subvolume list` above will return an empty list.
+Since we have not created any subvolumes yet, the `btrfs subvolume list` above will return an empty list.
 
 In Btrfs, every snapshot is a subvolume, but not every subvolume is a snapshot.
 Essentially, snapshots and subvolumes both appear as subdirectories in a Btrfs filesystem, but they differ in how they come into existence and how they reference data:
 
-* A regular subvolume is created explicitly (e.g., with btrfs subvolume create).and is initially empty. You can copy or move files into it. It acts independently from other subvolumes (though it still shares the underlying storage pool with them).
-* A snapshot subvolume is created as a point-in-time copy of another subvolume (e.g., with btrfs subvolume snapshot). It references the same data blocks as its source, so at the moment of creation, a snapshot is "instant" and doesn't initially consume additional space (beyond some metadata). Any modifications to the snapshot or its source subvolume thereafter use COW (copy-on-write) behavior, so they will diverge in the actual data blocks being used.
+* A regular subvolume is created explicitly (e.g., with btrfs subvolume create) and is initially empty.
+  You can copy or move files into it. It acts independently from other subvolumes (though it still shares the underlying storage pool with them).
+* A snapshot subvolume is created as a point-in-time copy of another subvolume (e.g., with btrfs subvolume snapshot).
+  It references the same data blocks as its source, so at the moment of creation, a snapshot is "instant" and doesn't initially consume additional space (beyond some metadata).
+  Because of Btrfs's copy-on-write (COW) behavior, changes to either the source or the snapshot afterward will gradually consume additional space.
 
-If you see subvolumes named with a leading `@`, it's just a user- or distro-chosen method to keep things neat and identifiable.
+If you see subvolumes named with a leading `@`, it's just a user- or distro-chosen method to keep things neat.
 Under the hood, Btrfs doesn't care about the name.
 Several Linux distributions adopted this pattern so that it's easy to distinguish actual subvolumes from ordinary directories.
+
 
 ```bash
 cd /mnt/luks_btrfs_volume/
@@ -329,38 +337,49 @@ mkdir /opt/docker_services
 mkdir /opt/offsite_backup_storage
 ```
 
-We will later make use of Btrfs snapshots to generate consistent snapshots of the data to be backed up. Just so that you already have seen it once, it will look as follows:
+We will later use Btrfs snapshots to generate consistent snapshots of the data to be backed up. Just so you've seen it once, it looks like this:
 ```bash
 btrfs subvolume snapshot -r /mnt/luks_btrfs_volume/@offsite_backup_storage /mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap
 ```
-This will create a read-only snapshot of the `@offsite_backup_storage` Btrfs subvolume so that then the backup tool can work on it without needing to worry about files changing during the backup processing runtime.
+This command creates a read-only snapshot of the `@offsite_backup_storage` subvolume.
+The backup tool can then work on the snapshot without worrying about files changing during backup.
 
-Once the backup tool has finished we will then rename the snapshot to include the backup timestamp, so that locally on the machine, you can easily and quickly revert to previous data versions if you needed to:
+Once the backup is finished, we rename the snapshot to include a timestamp so we can easily revert to previous data versions if needed:
 ```bash
 mv /mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap /mnt/luks_btrfs_volume/@offsite_backup_storage_snapshot-2025-03-01-0400
 ```
 
-Btrfs subvolumes and snapshots have many useful features and I encourage you to read more about them, e.g. by following those links:
+Btrfs subvolumes and snapshots have many useful features. I encourage you to read more about them, for example:
 * [Working with Btrfs - Subvolumes](https://fedoramagazine.org/working-with-btrfs-subvolumes/)
 * [Working with Btrfs - Snapshots](https://fedoramagazine.org/working-with-btrfs-snapshots/)
 
-## Pull file system dependencies when starting the docker.service
+## Systemd Setup: Coordinating Docker with Your File System Dependencies
 
-To recapitulate what we want to achieve: after a reboot of the system the encrypted volume located at `/opt/luks-btrfs-volume.img` stays encrypted, because it requires human interaction to acquire the password for decryption.
-After the reboot of the system you will issue the command `systemctl start docker.service` and this will rely on systemd dependencies to ensure that when the `docker.service` starts that all of its file system dependencies are met, too.
-This means that when we do a `stystemctl start docker.service` then it will pull in the following file system dependencies in that order:
+To recap our goal: after a reboot, the encrypted volume at `/opt/luks-btrfs-volume.img` remains locked until we enter the password.
+Once the system is up, running `systemctl start docker.service` should trigger a chain of systemd dependencies to ensure that:
+- The encrypted volume `/mnt/luks_btrfs_volume` is decrypted and mounted.
+- The subdirectories under `/mnt/luks_btrfs_volume` are mounted at `/opt/offsite_backup_storage` and `/opt/docker_services`.
+- Finally, Docker itself starts once its file system dependencies are satisfied.
+
+
+When we do a `systemctl start docker.service`, it will pull in these file system dependencies in the following order:
 - `/mnt/luks_btrfs_volume`
 - `/opt/offsite_backup_storage`
 - `/opt/docker_services`
 
-In order for that to work we add the following lines to our `/etc/fstab`:
+To achieve this, we add the following lines to `/etc/fstab`:
 ```txt
 /dev/mapper/luks_btrfs_volume   /mnt/luks_btrfs_volume  btrfs   noauto,x-systemd.automount,relatime,compress=zstd:3,defaults    0       0
 /mnt/luks_btrfs_volume/@offsite_backup_storage/storage           /opt/offsite_backup_storage none  bind,noauto,x-systemd.automount,x-systemd.requires=/mnt/luks_btrfs_volume,x-systemd.after=/mnt/luks_btrfs_volume            0  0
 /mnt/luks_btrfs_volume/@offsite_backup_storage/docker_services   /opt/docker_services        none  bind,noauto,x-systemd.automount,x-systemd.requires=/opt/offsite_backup_storage,x-systemd.after=/opt/offsite_backup_storage  0  0
 ```
 
-After that you need to perform a `systemctl daemon-reload` and after that you will be able to see the auto-generated `.mount` and `.automount` unit files:
+After editing `/etc/fstab`, run:
+```bash
+systemctl daemon-reload
+```
+
+You can now see the auto-generated `.mount` and `.automount` unit files:
 ```bash
 systemctl show -p FragmentPath systemd-cryptsetup@luks_btrfs_volume.service
 # FragmentPath=/run/systemd/generator/systemd-cryptsetup@luks_btrfs_volume.service
@@ -376,56 +395,55 @@ systemctl show -p FragmentPath opt-docker_services.mount
 systemctl status opt-docker_services.mount
 ```
 
-It is important to understand that only because we've set-up this `systemd` dependency structure does not make the normal `mount` command adhere to it.
-
-When you use `mount` to mount `/opt/docker_services`, only `/opt/docker_services` gets mounted, but not `/opt/offsite_backup_storage`:
+It's important to note that the normal `mount` command does not respect this `systemd` dependency structure. For example:
 ```bash
 mount /opt/docker_services
 mount | grep '/opt/'
 # /dev/mapper/luks_btrfs_volume on /opt/docker_services type btrfs (rw,relatime,compress=zstd:3,ssd,space_cache=v2,subvolid=257,subvol=/@offsite_backup_storage,x-systemd.automount,x-systemd.requires=/opt/offsite_backup_storage,x-systemd.after=/opt/offsite_backup_storage)
 ```
-As you can see there is no line referencing `/opt/offsite_backup_storage`.
+There is no line referencing `/opt/offsite_backup_storage` here, because mount only mounted `/opt/docker_services`.
 
-If you want this dependency structure to be taken into account, you have to use `systemd` mechanisms like `systemctl start opt-docker_services.mount`.
-When you go through starting the `.mount` systemd unit (`systemctl start opt-docker_services.mount`) it works as expected:
+If you want the dependency structure to be honored, you must use `systemd` mechanisms like `systemctl start opt-docker_services.mount`.
 ```bash
 systemctl start opt-docker_services.mount
 mount | grep '/opt/'
 # /dev/mapper/luks_btrfs_volume on /opt/offsite_backup_storage type btrfs (rw,relatime,compress=zstd:3,ssd,space_cache=v2,subvolid=257,subvol=/@offsite_backup_storage,x-systemd.automount,x-systemd.requires=/mnt/luks_btrfs_volume,x-systemd.after=/mnt/luks_btrfs_volume)
 # /dev/mapper/luks_btrfs_volume on /opt/docker_services type btrfs (rw,relatime,compress=zstd:3,ssd,space_cache=v2,subvolid=257,subvol=/@offsite_backup_storage,x-systemd.automount,x-systemd.requires=/opt/offsite_backup_storage,x-systemd.after=/opt/offsite_backup_storage)
 ```
-Both mount points are mounted as wanted.
+Now both mount points are active.
 
-> As a side remark, I was thinking that `systemd-mount` might be a simple wrapper around `mount` to enable such behaviour, but this does not seem the case. Calling `systemd-mount /opt/docker_services` triggers an error. It's purpose seems to be completely different.
+> As a side remark, I initially thought `systemd-mount` might wrap the mount command to enable such behavior, but that's not actually its purpose.
+> Calling `systemd-mount /opt/docker_services` triggers an error; it's used differently from the standard mount command.
 
-Finally we have to adapt the `docker.service`. It's unit file lives at `/usr/lib/systemd/system/docker.service`, but we do not want to edit it, as this file is managed by the apt package management system.
-Instead we will rely on `systemd`'s capabilities to work with so called overrides. I prefer `emacs` as my console editor. Feel free to set the `EDITOR` variable to whichever editor you prefer.
 
+Finally, we need to adapt the `docker.service` file.
+The original unit file is at `/usr/lib/systemd/system/docker.service`, but we don't want to modify it directly because it's owned by the apt package manager.
+Instead, we use a drop-in override. Feel free to set the `EDITOR` variable to whichever editor you prefer.
 ```bash
 export EDITOR='emacs -nw'
 systemctl edit docker
 ```
 
-Once the editor opens you will see the lines:
+When the editor opens, you'll see:
 ```bash
 ### Editing /etc/systemd/system/docker.service.d/override.conf
 ### Anything between here and the comment below will become the contents of the drop-in file
 ```
 
-There you can copy and paste the following:
+Add the following:
 ```txt
 [Unit]
 RequiresMountsFor=/opt/docker_services
 After=opt-docker_services.mount
 ```
 
-Once you save and exit the editor you'll get the following message:
+Save and exit. You should see:
 ```bash
 # Successfully installed edited file '/etc/systemd/system/docker.service.d/override.conf'.
 ```
 
-If everything works now we should be able to stop the `opt-offsite_backup_storage.mount` unit and this in turn should stop the `opt-docker_services.mount` and this in turn shold stop the `docker.service` unit.
-
+Now let's test.
+If we stop `opt-offsite_backup_storage.mount`, it should also stop `opt-docker_services.mount`, and that in turn should stop the `docker.service` unit:
 ```bash
 systemctl stop opt-offsite_backup_storage.mount
 systemctl status docker
@@ -447,7 +465,7 @@ pgrep -lf docker
 # ...
 ```
 
-It seems to work as expected. Not it is time for a reboot :)
+It works as expected. Now it is time for a reboot :)
 ```bash
 shutdown -r now
 # ... wait for the reboot and reconnect via ssh ...
@@ -481,23 +499,21 @@ df -h | grep '/opt/'
 # /dev/mapper/luks_btrfs_volume  100G  5,9M   98G   1% /opt/offsite_backup_storage
 ```
 
-All looks fine and works as expected. The only surprise is that with `df -h` only `/opt/offsite_backup_storage` is visible, but not `/opt/docker_services`. But when you create files in 
-`/mnt/luks_btrfs_volume/@offsite_backup_storage/storage` or `/mnt/luks_btrfs_volume/@offsite_backup_storage/docker_services` you will see the modifications in `/opt/offsite_backup_storage`  and `/opt/docker_services` as expected.
+Everything looks good. Note that the only surprise here is that `df -h` shows only `/opt/offsite_backup_storage`, but not `/opt/docker_services`.
+However, any files created under `/mnt/luks_btrfs_volume/@offsite_backup_storage/docker_services` or `/mnt/luks_btrfs_volume/@offsite_backup_storage/storage`
+will appear under `/opt/docker_services` and `/opt/offsite_backup_storage` respectively, as expected.
+
 
 ### Pull vs. Push
 
-Originally, I was thinking of implementing half pull and half push meaning that mounting of `/mnt/luks_btrfs_volume` should have triggered in pull style the decryption of the encrypted volume and
-in push style the mounting of `/opt/offsite_backup_storage`  and `/opt/docker_services` followed by the start of the `docker.service`.
-I would have found it, as a human, more natural to focus on the unlocking of the encrypted volume and then expect that all the rest starts working.
+Initially, I considered a "half pull, half push" approach, where mounting `/mnt/luks_btrfs_volume` would automatically trigger the unlocking of the encrypted volume (pull) and then push-mount `/opt/offsite_backup_storage`, `/opt/docker_services`, and finally start `docker.service`.
+I wanted `/mnt/luks_btrfs_volume` to be the pivotal point and not `docker.service`.
+But in systemd, a "push" approach doesn't really exist. Instead, systemd builds a dependency graph where units declare "I need something else" (`Requires=`), and that is only acted upon if the unit itself is requested.
 
-It seems that "push" doesn't really exist in `systemd`. `systemd` is built around a graph of dependencies, where dependencies usually say "I need / want that other unit."
-It does not spontaneously start a child unit just because the child has a `Requires=` on the parent.
-The child's `Requires=` is only honored once something else tries to start the child.
-
-Hence if you want automatic chaining, you must express it from the parent's side (either a `[Unit] Wants=` in the parent or a `[Install] WantedBy=` that symlinks into the parent).
-
+Hence, if you want automatic chaining, you must express it from the parent's side (either a `[Unit] Wants=` in the parent or a `[Install] WantedBy=` in the child that symlinks into the parent).
 That is the short of it: in systemd-land, "when A is up, also start B" is always done by having A say "Wants= B."
 The child unit's "Requires= A" is just to ensure the correct ordering if somebody starts the child first, but does not cause child to start once the parent has come up.
+
 
 
 
@@ -520,3 +536,4 @@ The child unit's "Requires= A" is just to ensure the correct ordering if somebod
     * [REST Server](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#rest-server)
     * [Other Services via rclone](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#other-services-via-rclone)
 * [repository connect rclone](https://kopia.io/docs/reference/command-line/common/repository-connect-rclone/)
+
