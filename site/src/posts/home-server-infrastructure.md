@@ -42,7 +42,7 @@ This way, Docker won't start until the encrypted volume is mounted.
 One of the best parts about Docker is that you can organize all service files in one place.
 A common folder structure might look like this:
 ```txt
-/opt/docker-services
+/opt/docker_services
 └── service
     ├── config
     │   ├── container-service-one
@@ -226,7 +226,7 @@ Next, add a line to `/etc/fstab` to reference the mapped device. LUKS devices ap
 The following commands verify that the fstab generator works correctly.
 ```bash
 systemctl daemon-reload
-show -p FragmentPath mnt-luks_btrfs_volume.automount
+systemctl show -p FragmentPath mnt-luks_btrfs_volume.automount
 # FragmentPath=/run/systemd/generator/mnt-luks_btrfs_volume.automount
 systemctl list-unit-files --type=automount
 # UNIT FILE                         STATE     PRESET
@@ -283,19 +283,118 @@ systemd-tty-ask-password-agent
 At this point, your sparse file-based encrypted volume and the `btrfs` filesystem on it should be functioning properly.
 We can now move on to the next step.
 
-### Btrfs File Structure
+## Btrfs File Structure
+
+As a next step we'll set-up the Btrfs file structure. First let's perform a few analysis commands on our current mounted Btrfs volume:
 
 ```bash
 findmnt -no FSTYPE /mnt/luks_btrfs_volume 
 # btrfs
 cd /mnt/luks_btrfs_volume/
-btrfs subvolume list -t -s -o .
+btrfs subvolume list -t -o .
 findmnt -vno SOURCE /mnt/luks_btrfs_volume
 # /dev/mapper/luks_btrfs_volume
 ```
 
-With Btrfs, only subvolumes (not arbitrary directories) can be mounted as if they were separate filesystems using the -o subvol= option.
-If you want to “mount” a normal directory somewhere else, you would use a bind mount (a generic Linux feature), not the Btrfs subvolume mechanism.
+Here are some useful options for the `btrfs subvolume list` command:
+* `-o`: print only subvolumes below specified path
+* `-t`: print the result as a table
+* `-s`: list only snapshots
+* `-r`: list readonly subvolumes (including snapshots)
+
+As we did not yet create any subvolumes the `btrfs subvolume list` above will return an empty list.
+
+In Btrfs, every snapshot is a subvolume, but not every subvolume is a snapshot.
+Essentially, snapshots and subvolumes both appear as subdirectories in a Btrfs filesystem, but they differ in how they come into existence and how they reference data:
+
+* A regular subvolume is created explicitly (e.g., with btrfs subvolume create).and is initially empty. You can copy or move files into it. It acts independently from other subvolumes (though it still shares the underlying storage pool with them).
+* A snapshot subvolume is created as a point-in-time copy of another subvolume (e.g., with btrfs subvolume snapshot). It references the same data blocks as its source, so at the moment of creation, a snapshot is "instant" and doesn't initially consume additional space (beyond some metadata). Any modifications to the snapshot or its source subvolume thereafter use COW (copy-on-write) behavior, so they will diverge in the actual data blocks being used.
+
+If you see subvolumes named with a leading `@`, it's just a user- or distro-chosen method to keep things neat and identifiable.
+Under the hood, Btrfs doesn't care about the name.
+Several Linux distributions adopted this pattern so that it's easy to distinguish actual subvolumes from ordinary directories.
+
+```bash
+cd /mnt/luks_btrfs_volume/
+btrfs subvolume create /mnt/luks_btrfs_volume/@offsite_backup_storage
+btrfs subvolume list -t -o .
+mkdir /mnt/luks_btrfs_volume/@offsite_backup_storage/docker_services
+mkdir /mnt/luks_btrfs_volume/@offsite_backup_storage/storage
+tree @offsite_backup_storage
+# /mnt/luks_btrfs_volume/@offsite_backup_storage
+# ├── docker_services
+# └── storage
+mkdir /opt/docker_services
+mkdir /opt/offsite_backup_storage
+```
+
+We will later make use of Btrfs snapshots to generate consistent snapshots of the data to be backed up. Just so that you already have seen it once, it will look as follows:
+```bash
+btrfs subvolume snapshot -r /mnt/luks_btrfs_volume/@offsite_backup_storage /mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap
+```
+This will create a read-only snapshot of the `@offsite_backup_storage` Btrfs subvolume so that then the backup tool can work on it without needing to worry about files changing during the backup processing runtime.
+
+Once the backup tool has finished we will then rename the snapshot to include the backup timestamp, so that locally on the machine, you can easily and quickly revert to previous data versions if you needed to:
+```bash
+mv /mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap /mnt/luks_btrfs_volume/@offsite_backup_storage_snapshot-2025-03-01-0400
+```
+
+Btrfs subvolumes and snapshots have many useful features and I encourage you to read more about them, e.g. by following those links:
+* [Working with Btrfs - Subvolumes](https://fedoramagazine.org/working-with-btrfs-subvolumes/)
+* [Working with Btrfs - Snapshots](https://fedoramagazine.org/working-with-btrfs-snapshots/)
+
+## Systemd push style mounting of directories and starting the docker.service
+
+To recapitulate what we want to achieve: When we mount `/mnt/luks_btrfs_volume` then it should trigger in sequence the mounting of `/opt/offsite_backup_storage` and `/opt/docker_services` and only then start the `docker.service` unit.
+We will implement a "push" flow by defining explicit systemd dependencies among the mount units and the `docker.service` so that starting or activating `/mnt/luks_btrfs_volume` leads systemd to mount the rest in the correct order.
+
+```bash
+systemctl show -p FragmentPath systemd-cryptsetup@luks_btrfs_volume.service
+# FragmentPath=/run/systemd/generator/systemd-cryptsetup@luks_btrfs_volume.service
+systemctl show -p FragmentPath mnt-luks_btrfs_volume.automount
+# FragmentPath=/run/systemd/generator/mnt-luks_btrfs_volume.automount
+systemctl show -p FragmentPath mnt-luks_btrfs_volume.mount
+# FragmentPath=/run/systemd/generator/mnt-luks_btrfs_volume.mount
+```
+
+`/etc/systemd/system/opt-docker_services.mount`:
+
+```txt
+[Unit]
+Description=Bind mount for /opt/docker_services
+Requires=mnt-luks_btrfs_volume.mount
+After=mnt-luks_btrfs_volume.mount
+
+[Mount]
+What=/mnt/luks_btrfs_volume/@offsite_backup_storage/docker_services
+Where=/opt/docker_services
+Type=none
+Options=bind
+# Options=noauto,x-systemd.automount,relatime,compress=zstd:3,defaults
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+systemctl daemon-reload
+systemctl enable opt-docker_services.mount
+systemctl list-units --type=mount --all
+systemctl status opt-docker_services.mount
+systemctl start opt-docker_services.mount
+findmnt -T /opt/docker_services 
+# TARGET               SOURCE                                                                  FSTYPE OPTIONS
+# /opt/docker_services /dev/mapper/luks_btrfs_volume[/@offsite_backup_storage/docker_services] btrfs  rw,relatime,compress=zstd:3,ssd,space_cache=v2,subvolid=257,subvol=/@offsite_backup_storage
+touch /opt/docker_services/test.txt
+tree /mnt/luks_btrfs_volume
+# /mnt/luks_btrfs_volume
+# └── @offsite_backup_storage
+#     ├── docker_services
+#     │   └── test.txt
+#     └── storage
+# ---
+systemctl start mnt-luks_btrfs_volume.mount
+```
 
 
 ## Additonal Resources
