@@ -1,12 +1,13 @@
 ---
 layout: "layouts/post-with-toc.njk"
-title: "Home Server Infrastructure: Secure, Unattended, and Easy to Manage"
-description: "The Practical Basics for Hobbyists."
+title: "Home Server Blueprint: Rock-Solid Home Server with Unattended Reboots, Secure Disk Encryption, and Cost-Effective Offsite Backups"
+description: "Safeguard Your Data by Combining Encrypted Storage, Btrfs Snapshots, and Kopia/Rclone Offsite Backup - All Guided by a Simple Makefile for Ultimate Peace of Mind"
 creationdate: 2025-02-28
-keywords: linux, debian, ubuntu, encryption at rest, unattended reboot, backup, restore
+keywords: home server, linux, debian, ubuntu, disk encryption, luks, btrfs snapshots, unattended reboot, backup and restore, rclone, kopia, onedrive, sharepoint, offsite backups, Makefile, docker
 date: 2025-02-28
 tags: ['post']
 ---
+
 
 ## Rationale
 
