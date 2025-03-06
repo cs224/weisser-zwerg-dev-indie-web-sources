@@ -271,7 +271,13 @@ Feel free to share your ideas in the comment section at the end of this blog pos
 
 ## Detailed Walkthrough
 
-### LUKS Encrypted `btrfs` File Volume
+### LUKS-Encrypted `btrfs` File Volume
+
+Let's begin by creating a LUKS-encrypted `btrfs` file volume.
+We'll start with a **sparse file**, which appears to have a large size but only consumes disk space as data is written.
+With `truncate -s 100G /opt/luks-btrfs-volume.img`, your file is set to a nominal size of 100GB, but it doesn't immediately occupy that much space on your physical disk.  
+
+
 
 Let's begin by creating a LUKS-encrypted `btrfs` file volume using the commands below.
 We'll start by making a sparse file, which appears to have a large size but won't actually consume that space until data is written:
@@ -282,62 +288,59 @@ du -h luks-btrfs-volume.img
 # 0       luks-btrfs-volume.img
 ll -h luks-btrfs-volume.img
 # 100G    luks-btrfs-volume.img
+
 cryptsetup --type luks2 -y -v luksFormat /opt/luks-btrfs-volume.img
 du -h luks-btrfs-volume.img 
 # 16M     luks-btrfs-volume.img
+
 cryptsetup -v open /opt/luks-btrfs-volume.img luks_btrfs_volume
 ll /dev/mapper/luks_btrfs_volume
 # /dev/mapper/luks_btrfs_volume -> ../dm-2
+
 mkfs.btrfs /dev/mapper/luks_btrfs_volume
 du -h luks-btrfs-volume.img 
 # 21M     luks-btrfs-volume.img
+
 mkdir -p /mnt/luks_btrfs_volume
 mount -t btrfs -o noatime,compress=zstd /dev/mapper/luks_btrfs_volume /mnt/luks_btrfs_volume
 df -h
 # Filesystem                     Size  Used Avail Use% Mounted on
 # /dev/mapper/luks_btrfs_volume  100G  5,8M   98G   1% /mnt/luks-btrfs-volume
+
+# The following command will generate lines that you can one-to-one copy into /etc/fstab:
 findmnt --noheadings --raw --evaluate --target /mnt/luks_btrfs_volume --output SOURCE,TARGET,FSTYPE,OPTIONS | awk '{print $1 "\t" $2 "\t" $3 "\t" $4 "\t0 0"}'
 # /dev/mapper/luks_btrfs_volume   /mnt/luks_btrfs_volume       btrfs   rw,noatime,compress=zstd:3,ssd,space_cache=v2,subvolid=5,subvol=/       0 0
 # /dev/mapper/luks_btrfs_volume   /mnt/luks_btrfs_volume       btrfs   rw,relatime,               ssd,space_cache=v2,subvolid=5,subvol=/       0 0
-# findmnt --mountpoint /mnt/luks_btrfs_volume --verbose --fstab             # this would only print the line that is already present in /etc/fstab
+# The following command would only print the line that is already present in /etc/fstab
+# findmnt --mountpoint /mnt/luks_btrfs_volume --verbose --fstab
+
 umount /mnt/luks_btrfs_volume
 cryptsetup close luks_btrfs_volume
 ```
 <p></p>
 
 > **Note**:
-> * If you're running a `cryptsetup` version ≥ 2.0, it will default to creating a LUKS2 container. On older systems, it might default to LUKS1. By adding `--type luks2`, you ensure no fallback to LUKS1.
-> * Use `cryptsetup luksDump /opt/luks-btrfs-volume.img` to verify you have `Version: 2`.
-> * The `-y` and `-v` flags make `cryptsetup` prompt you to confirm the passphrase and give progress updates.
-
-> You may see `luksOpen` instead of `open` with `cryptsetup`, like so:
-> ```bash
-> cryptsetup -v luksOpen /opt/luks-btrfs-volume.img luks_btrfs_volume
-> ```
-> `luksOpen` is an older subcommand specifically for LUKS devices, while `open` is more generic and can handle multiple formats. On modern systems, both commands typically work the same way for LUKS containers.
+> * If you're running `cryptsetup` version ≥ 2.0, it defaults to LUKS2. Older systems might fall back to LUKS1 unless you specify `--type luks2`.
+> * Use `cryptsetup luksDump /opt/luks-btrfs-volume.img` to verify your container uses `Version: 2`.
+> * The `-y` and `-v` flags prompt you to confirm your passphrase and display progress messages.
+> * You might see `luksOpen` instead of open, for example:
+>   ```bash
+>   cryptsetup -v luksOpen /opt/luks-btrfs-volume.img luks_btrfs_volume
+>   ```
+>   Both subcommands generally work the same on modern systems.
 
 > Using `-o noatime,compress=zstd` when mounting does the following:
-> * `noatime`: Prevents file access time from being updated (improves performance and reduces unnecessary writes).
-> * `compress=zstd`: Enables transparent compression with Zstandard, often saving space and sometimes improving performance.
->
-> Transparent compression happens at the filesystem level, so files appear uncompressed to the user.
-> Btrfs automatically decompresses only the file parts you access, then recompresses them when writing back to disk.
-> This provides storage efficiency without hardware upgrades or cloud storage.
->
-> In practice, many users keep compression enabled in Btrfs because Zstd is relatively fast and provides good compression ratios.<br>
-> One thing to note is that existing files won't be automatically recompressed; compression applies to new writes. You can:
-> * Wait and do nothing: Over time, as files get rewritten, they'll be stored compressed.
-> * Copy or move files to a different filesystem and back: More tedious but forces recompression.
-> * Use Btrfs defragmentation to initiate recompression.
->
-> For more details, check out [Working with Btrfs - Compression](https://fedoramagazine.org/working-with-btrfs-compression).
+> * `noatime`:  Disables file access-time updates, reducing unnecessary writes.
+> * `compress=zstd`:  Enables transparent compression with Zstandard. Files are automatically decompressed on read and recompressed on write. Over time, this can save space and potentially improve performance.
+>    Existing files won't be automatically recompressed; compression applies to new or rewritten data. You can force a recompression using Btrfs defragmentation or by copying files off and back onto the volume.
+>    For more details, check out [Working with Btrfs - Compression](https://fedoramagazine.org/working-with-btrfs-compression).
 
 > The comment lines after the `findmnt` command show how the options compare if you didn't use `-o noatime,compress=zstd`. Specifically:
 > * `noatime` vs. `relatime`: `noatime` never updates `atime`, while `relatime` updates it in a more conservative way once a day or if it's older than `mtime` or `ctime`.
 > * `ssd`: Tells Btrfs to optimize certain behavior for SSDs.
 > * `space_cache=v2`: A newer, more efficient method for Btrfs to track free space.
 
-Now your LUKS-encrypted `btrfs` file volume is ready for the next step.
+Once you confirm everything looks correct, your LUKS-encrypted Btrfs file volume is ready for the next step.
 
 #### Resize the Sparse File and Grow the `btrfs` Filesystem
 
@@ -347,31 +350,35 @@ If you ever need to increase the size of your sparse file and its filesystem, fo
 truncate -s +50G /opt/luks-btrfs-volume.img
 ```
 
-This command increases the file size by 50 GB without occupying that space on disk immediately.
-Actual disk usage only grows as data is written.
+This command enlarges the file size by 50 GB without immediately consuming additional disk space.
+Real disk usage will only grow as data is added.
+
 
 After enlarging the raw file, you need to resize the LUKS container. If it isn't already open, do so with:
 ```bash
 cryptsetup open /opt/luks-btrfs-volume.img luks_btrfs_volume
 ```
 
-Then run the following command to let LUKS recognize the extra space:
+Let LUKS recognize the newly available space:
 ```bash
 cryptsetup resize luks_btrfs_volume
 ```
 
-Next, grow the `btrfs` filesystem to fill all available space. If it's mounted at `/mnt/luks_btrfs_volume`, run:
+If the filesystem is mounted at `/mnt/luks_btrfs_volume`, extend it to use all available space:
 ```bash
 btrfs filesystem resize max /mnt/luks_btrfs_volume
 ```
 
-To confirm the resize, use:
+Check that the filesystem size has updated:
 ```bash
 btrfs filesystem df /mnt/luks_btrfs_volume
 df -h /mnt/luks_btrfs_volume
 ```
 
-If you need more information have a look at: [Resize a Btrfs Filesystem](https://linuxhint.com/resize_a_btrfs_filesystem/).
+> If you're dealing with partitions on a physical disk instead of a sparse file, you may need to adjust the partition size first using tools like parted before resizing the LUKS container and btrfs filesystem.
+
+
+For more in-depth information, see [Resize a Btrfs Filesystem](https://linuxhint.com/resize_a_btrfs_filesystem/).
 
 ### Configure `/etc/crypttab` and `/etc/fstab` for Manual Mounting
 
