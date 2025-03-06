@@ -202,6 +202,73 @@ When the system is back up, running `systemctl start docker.service` should trig
 By following the quickstart steps above, you have laid the groundwork for a secure, unattended home server with offsite backups.
 From here, you can confidently host the self-managed applications you need, knowing your data remains safe.
 
+## How to Use Your LUKS-Encrypted Btrfs Volume
+
+There are several ways to take advantage of your LUKS-encrypted Btrfs volume.
+Below are three popular approaches you can mix and match depending on your needs.
+
+### Store Your Dockerized Services Under `/opt/docker_services`
+
+One straightforward idea is to install your Docker services inside `/opt/docker_services`.
+Here's a possible directory structure:
+```txt
+/opt/docker_services
+└── service
+    ├── config
+    │   ├── container-service-one
+    │   └── container-service-two
+    ├── .env
+    └── docker-compose.yaml
+```
+
+This directory is bind-mounted to `/mnt/luks_btrfs_volume/@offsite_backup_storage/docker_services`, which resides on your LUKS-encrypted Btrfs volume.
+
+By doing it this way, your entire Docker service - including all configurations, `.env` files, and `docker-compose.yaml` - is:
+* Encrypted at rest: Protected by LUKS encryption.
+* Backed up daily: Benefiting from the offsite backup strategy.
+
+### Use `rsync` to Replicate Valuable Data
+
+Another method is to copy an existing directory with important data onto your Btrfs volume.
+You can use rsync (or a similar tool) to handle this:
+```bash
+rsync -av --links --progress --stats --exclude "*~" \
+  /some/source/directory/to/backup \
+  /mnt/luks_btrfs_volume/@offsite_backup_storage/storage/
+```
+Even if the source directory itself isn't encrypted, the copied data will be:
+* Encrypted on the Btrfs volume: Secured by LUKS.
+* Included in the daily backup: Ensuring offsite protection.
+
+Using `rsync` with `--links` preserves any symbolic links, and `--exclude "*~"` ignores temporary files, which can help keep your backup clean.
+
+### Partial Encryption Through Symlinks
+
+You may prefer to **keep most of your Docker setup outside** `/opt/docker_services`, but selectively encrypt only certain containers or data.
+In that case, you can place important data on the encrypted volume and create a symlink to it. For example:
+```txt
+/opt
+└── service
+    ├── config
+    │   ├── container-service-one
+    │   ├── container-service-two
+    │   └── container-service-three -> ../../offsite_backup_storage/service-config-container-service-three
+    ├── .env
+    └── docker-compose.yaml
+```
+In this example, only the data for container-service-three is stored on the LUKS-encrypted volume (`/opt/offsite_backup_storage` or `/mnt/luks_btrfs_volume/@offsite_backup_storage/storage`) - and is thus included in the daily backup.
+Other containers remain outside of the encrypted mount, which may be sufficient if only specific components hold sensitive or valuable data.
+
+Why back up data that doesn't need that level of protection?
+This approach lets you save on offsite storage while still safeguarding your most critical information.
+
+### Final Thoughts
+
+These are just a few ways you can leverage your LUKS-encrypted Btrfs volume.
+You might come up with additional use cases - if you do, I'd love to hear about them.
+Feel free to share your ideas in the comment section at the end of this blog post!
+
+
 ## Detailed Walkthrough
 
 ### LUKS Encrypted `btrfs` File Volume
