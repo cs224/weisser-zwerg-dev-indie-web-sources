@@ -14,7 +14,7 @@ tags: ['post']
 In this blog post, I will guide you through a Debian-based home server setup that runs 24/7 without human interaction.
 We'll tackle the challenge of achieving disk encryption at rest while allowing for unattended reboots.
 The approach uses a separate sparse file as an encrypted volume, combined with Systemd and Docker to ensure services only start after the encrypted drive is ready.
-With an organized folder structure under `/opt/{service}/config`, all valuable data stays safe.
+With an organized folder structure under `/opt/docker_services/{service}/config`, all valuable data stays safe.
 Finally, using Btrfs snapshots helps streamline backup and restore, making maintenance easier for hobbyists and enthusiasts alike.
 
 If you're unsure which hardware to choose for your home server, check out my earlier blog post: [Thin Clients as Home Servers: Dell Wyse 5060 and Fujitsu Futro S920: an Experience Report](../dell-wyse-fujitsu-futro).
@@ -36,22 +36,26 @@ Most of the time, a home server runs around the clock and is tucked away in a cu
 It's usually just connected to power and, if you're not using Wi-Fi, a single network cable.
 Because there's no keyboard or monitor, you typically interact with the server via SSH or a similar remote tool.
 
-This also means you likely want your home server to reboot without needing human input.
+This also means you likely want your home server to reboot without needing human input:
 You plug it into power and the network, press the power button, and after a short wait, it's ready for an SSH connection.
 
-However, you can't simply use typical disk encryption that requires typing a password during boot.
+However, you can't simply rely on standard disk encryption that asks for a password at boot.
 You still want to protect your data with encryption at rest, so how do you proceed?
 
 I recommend creating a separate sparse file as an encrypted volume, which you then mount manually.
+A "sparse file" is a file that initially takes up minimal space on your storage device and only grows as data is written to it. This is useful if you want an encrypted container on a disk partition without allocating the entire space upfront.
 
-There's a catch, though. The services running on your home server will need to write to this volume.
-That means you have to ensure these services only start once the file system is mounted.
+There's a catch, though: the services running on your home server must write to this encrypted volume.
+That means these services should start only after the file system is mounted.
 
 To achieve this, I suggest running all your services via Docker and using a Systemd-managed mount with `RequiresMountsFor` in the `docker.service`.
 This way, Docker won't start until the encrypted volume is mounted.
+`RequiresMountsFor` in Systemd is a directive that ensures a particular mount is available before starting the specified service.
+When used in the override file for `docker.service`, it tells Systemd to hold off on starting Docker until the listed mount points are ready.
 
-One of the best parts about Docker is that you can organize all service files in one place.
-A common folder structure might look like this:
+
+One of the best parts about Docker is that you can keep all service files organized in one place.
+A typical folder structure might look like this:
 ```txt
 /opt/docker_services
 └── service
@@ -63,51 +67,60 @@ A common folder structure might look like this:
 ```
 <p></p>
 
-If you ensure that all your `/opt/{service}/config` folders reside on your encrypted volume, you'll have peace of mind knowing your valuable data is protected at rest.
+If you ensure that all your `/opt/docker_services/{service}/config` folders reside on your encrypted volume, you'll have peace of mind knowing your valuable data is protected at rest.
 
 A logical next step is to handle backup and restore from this central data volume.
-Formatting it with Btrfs can be especially helpful because it allows you to create consistent snapshots, which you can then use for backups.
+Formatting it with Btrfs can be especially beneficial because it lets you create consistent snapshots, which you can then use for backups and for local restores.
+Btrfs snapshots are point-in-time images of a file system subvolume. They are very fast to create and can be used to quickly roll back or restore data without duplicating every file.
+
 
 ## Quickstart
 
-Building a home server that's both encrypted and unattended including off-site backup is somewhat tricky.
+Building a home server that's both encrypted and unattended - including offsite backups - can be somewhat tricky.
 Full-disk encryption requires manual passphrase entry at boot, which defeats automated restarts on a headless box (no keyboard or monitor attached).
-I've decided to create a GNU Makefile that will help you to set-up the overall structure.
-I will use this Makefile in this quickstart to get you started.
-If you would like to understand the inner workings of all the moving parts then I'll refer you to the [Detailed Walkthrough](#detailed-walkthrough) further down.
+I've decided to create a GNU Makefile to help you set up the overall structure.
+This Makefile will be used in the quickstart steps so you can get started right away.
+If you'd like a deeper understanding of every moving part, refer to the [Detailed Walkthrough](#detailed-walkthrough) further down.
 
-> If you only need a simpler set-up, e.g. without disk encrpytion or without Btrfs or ..., then just pick and chose aspects of the overall set-up.
-> The [Detailed Walkthrough](#detailed-walkthrough) will provide you with the necessary details so that you understand what and how to trim.
-> For a simpler set-up you will not want to use this Makefile approach, but just the bits and pieces as described in the [Detailed Walkthrough](#detailed-walkthrough).
 
-With the Makefile approach we will be:
+> If you only need a simpler setup, e.g., without disk encryption or without Btrfs, then just pick and choose aspects of the overall setup.
+> The [Detailed Walkthrough](#detailed-walkthrough) will provide the necessary details to understand and trim features you don't need.
+> For a simpler setup, you might prefer to skip the Makefile approach and just copy the relevant parts as described in the [Detailed Walkthrough](#detailed-walkthrough).
 
+With the Makefile approach, we will be:
 * Placing encrypted data in a separate sparse file on an existing partition.
 * Letting the system reboot as normal (the unencrypted root partition can boot on its own).
 * Delaying the start of crucial services (like Docker) until the encrypted volume is manually unlocked.
-* Automating the creation of Btrfs subvolumes, directories, `systemd` overrides, and a backup timer, ensuring your server is organized and consistent.
+* Automating the creation of Btrfs subvolumes, directories, systemd overrides, and a backup timer, ensuring your server is organized and consistent.
 
-In essence, the Makefile ensures that each step - from installing required packages to configuring `systemd` units - is done repeatably and idempotently (as much as possible).
-If something breaks mid-install, you can fix the error and run make all again, picking up where you left off.
+In essence, the Makefile ensures that each step - from installing required packages to configuring `systemd` units - is handled repeatably and (as much as possible) idempotently.
+If something breaks mid-install, you can fix the error and run `make all` again, continuing from where you left off.
+
 
 ### Prepare Your System
 
-Chose which system to use and download the files from the following [Gist](https://gist.github.com/cs224/34eebc2f9389404d7c0192d45cae7259).
+Choose which system to use and download the files from the following [Gist](https://gist.github.com/cs224/34eebc2f9389404d7c0192d45cae7259).
 
 ### Review the `.env` File
 
-The `.env` file holds configuration variables like disk volume size, passphrases, and backup times.
+The `.env` file holds configuration variables like disk volume size, passphrases, and backup schedules.
 Adjust these settings according to your preferences (e.g., a 100 GB encrypted volume, daily backups at 4 AM, etc.).
-Add or remove comment lines (#) to clarify your setup for future reference.
-The Makefile is very configurable. Have a look at the `CONFIGURABLE VARIABLES (can be overridden in .env or via environment)` section in that file to see what you can adapt.
-As this line says: you can also override the settings via environment variables.
+Feel free to add or remove comment lines (#) to clarify your setup for future reference.
+
+The Makefile allows many of its settings to be overridden.
+Check the `CONFIGURABLE VARIABLES (can be overridden in .env or via environment)` section in the Makefile to see everything you can adapt.
+If you prefer not to edit `.env`, you can instead pass variables through the environment:
+
+```bash
+IMG_SIZE="1G" make all
+```
 
 ### Run `make all`
 
 After editing `.env`, simply type:
 ```bash
 make all
-# or if you want to set some settings via environment variables like the IMG_SIZE in the following example:
+# or, for example:
 IMG_SIZE="1G" make all
 ```
 The Makefile will:
@@ -115,54 +128,50 @@ The Makefile will:
 * Install `cryptsetup`, `rclone`, and `kopia`.
 * Create and format the LUKS-encrypted Btrfs volume.
 * Set up subvolumes, directories, and `systemd` overrides so Docker only runs once the encrypted volume is unlocked.
-* Install a timer (btrfs-kopia-backup.timer) that takes Btrfs snapshots and backs them up with Kopia.
+* Install a timer (`btrfs-kopia-backup.timer`) that takes Btrfs snapshots and backs them up with Kopia.
 
 ### Create or Connect Kopia Repository
 
-I am using `rclone` as the [storage engine](https://kopia.io/docs/reference/command-line/common/repository-connect-rclone/) for Kopia.
-I'll explain in the appendix how I use a dedicated Document Library inside of a SharePoint Communication Site as my offsite backup storage location.
-Review the [Rclone](https://rclone.org/) documentation if you want to use any other offsite storage location.
-I suggest that you set this up on your local workstation machine.
-The resulting `rclone.conf` file will be located at `~/.config/rclone/rclone.conf`. The only thing that is important for our purposes here is that your configuration starts with `[rclone-backup-sharepoint-site]`:
+I use `rclone` as the [storage engine](https://kopia.io/docs/reference/command-line/common/repository-connect-rclone/) for Kopia.
+`rclone` supports a wide variety of cloud storage providers, including OneDrive, Google Drive, SharePoint, S3, and many more.
+In the appendix, I'll explain how to use a dedicated `Document Library` inside a `SharePoint Communication Site` as offsite backup storage.
+For other offsite locations, consult the [Rclone](https://rclone.org/) documentation.
+
+Set it up locally on your workstation machine first.
+
+
+The resulting `rclone.conf` file will be located at `~/.config/rclone/rclone.conf`.
+The only thing that is important for our purposes here is that your configuration starts with `[rclone-backup-sharepoint-site]`:
 ```bash
 cat ~/.config/rclone/rclone.conf
 # [rclone-backup-sharepoint-site]
 # ...
-```
-
-Check that this works locally on your workstation:
-```bash
-ll ~/.config/rclone/rclone.conf
 rclone about rclone-backup-sharepoint-site:
 ```
-If that works you're good to go.
+If that works, you're good to go.
 
-Next copy this configuration to your remote machine and put it in the right location followed by a test:
+Next, copy this configuration to your remote machine and put it in the right location followed by a test:
 ```bash
-ll ~/.config/rclone/rclone.conf
-rclone about rclone-backup-sharepoint-site:
 scp -r ~/.config/rclone user@remote.tld:~/
 ssh user@remote.tld
 sudo su
 mkdir -p /root/.config && cp -r ./rclone /root/.config
 rclone about rclone-backup-sharepoint-site:
 ```
-
-Once that works you can continue with either creating the Kopia repository connection or re-connecting to an existing Kopia repository connection like so:
+Once that works, create or connect to an existing Kopia repository:
 ```bash
 make kopia-repository-create
 # or
 make kopia-repository-connect
 ```
-
-Finally you have to apply some global Kopia policies:
+Finally, apply some global Kopia policies:
 ```bash
 make kopia-global-policy
 ```
 
 ### Verify
 
-The Makefile uses "stamp" files to track progress. If a step fails, fix the cause and re-run make all. Once the install completes successfully, you'll have:
+The Makefile uses "stamp" files to track progress. If a step fails, fix the issue and re-run make all. Once the install completes successfully, you'll have:
 * A sparse file for your encrypted volume (`/opt/luks-btrfs-volume.img`).
 * Systemd entries that require a manual passphrase input only when you want to start Docker (ensuring encryption at rest).
 * A scheduled backup process for your data via Btrfs snapshots.
@@ -170,28 +179,28 @@ The Makefile uses "stamp" files to track progress. If a step fails, fix the caus
 ### The Outcome
 
 After installation, your home server can:
-* Reboot freely without human interaction for kernel or power-cycle events. The root filesystem remains unencrypted, enabling a painless reboot.
-* Keep crucial data offline (in the encrypted file) until you manually unlock it. This means your Docker services (and their data) remain protected when the server is off or rebooting.
+* Reboot freely without human interaction (the root filesystem remains unencrypted, so it boots automatically).
+* Keep crucial data offline (in the encrypted file) until you manually unlock it. This ensures your Docker services (and their data) remain protected when the server is off.
 * Automate backups to an offsite location (via Kopia and Rclone) while efficiently managing snapshots (thanks to Btrfs).
 * Provide a clean folder structure under `/opt/docker_services` and `/opt/offsite_backup_storage` for easy backup organization.
 
 ### After a Reboot
 
-Once the system is up, running `systemctl start docker.service` should trigger a chain of systemd dependencies to ensure that:
+When the system is back up, running `systemctl start docker.service` should trigger a chain of Systemd dependencies to ensure that:
+
+
 - The encrypted volume `/mnt/luks_btrfs_volume` is decrypted and mounted.
 - The subdirectories under `/mnt/luks_btrfs_volume` are mounted at `/opt/offsite_backup_storage` and `/opt/docker_services`.
-- Finally, Docker itself starts once its file system dependencies are satisfied.
+- Docker finally starts once its filesystem dependencies are satisfied.
 
 ### What's Next?
 
-Application Setup: Deploy Docker containers - like [Gitea](../digital-civil-rights-gitea) - into `/opt/docker_services`. They'll remain protected inside the encrypted volume and benefit from automated daily off-site backups.
+* **Application Setup**: Deploy Docker containers - such as [Gitea](../digital-civil-rights-gitea) - into `/opt/docker_services`. They'll remain protected inside the encrypted volume and benefit from automated daily off-site backups.
+* **Backup and Recovery**: Practice restoring a Btrfs snapshot. Familiarize yourself with Kopia's restore commands.
+* **Uninstall**: If you ever want to remove or deactivate this setup, run `make deinstall`. This will stop the `btrfs-kopia-backup.timer` and remove the `/etc/systemd/system/docker.service.d/override.conf`.
 
-Backup and Recovery: Practice restoring a Btrfs snapshot. Familiarize yourself with Kopia's restore commands.
-
-Uninstall: If you ever want to uninstall/deactivate this set-up run `make deinstall`. This will deactivate the `btrfs-kopia-backup.timer` and remove the `/etc/systemd/system/docker.service.d/override.conf`.
-
-By following the quickstart steps above, you have laid the groundwork for a secure, unattended home server.
-From here, you can confidently host the self-managed applications you need, knowing your data remains locked away until you're ready to decrypt and run.
+By following the quickstart steps above, you have laid the groundwork for a secure, unattended home server with offsite backups.
+From here, you can confidently host the self-managed applications you need, knowing your data remains safe.
 
 ## Detailed Walkthrough
 
