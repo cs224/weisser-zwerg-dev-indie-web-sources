@@ -374,70 +374,85 @@ Check that the filesystem size has updated:
 btrfs filesystem df /mnt/luks_btrfs_volume
 df -h /mnt/luks_btrfs_volume
 ```
+<p></p>
 
 > If you're dealing with partitions on a physical disk instead of a sparse file, you may need to adjust the partition size first using tools like parted before resizing the LUKS container and btrfs filesystem.
 
 
 For more in-depth information, see [Resize a Btrfs Filesystem](https://linuxhint.com/resize_a_btrfs_filesystem/).
 
-### Configure `/etc/crypttab` and `/etc/fstab` for Manual Mounting
+### Configure `/etc/crypttab` and `/etc/fstab` for On-Demand Mounting
 
-If `cryptsetup` is not installed on your system, you can install it with:
+If `cryptsetup` isn't already installed, you can add it with:
 ```bash
 apt install cryptsetup
 ```
-We need to coordinate two `systemd` "generator" mechanisms so your LUKS-backed `btrfs` filesystem can be mounted on demand, using `mount /mnt/luks_btrfs_volume`:
-* crypttab generator: creates a `systemd-cryptsetup@luks_btrfs_volume.service` unit to open your LUKS device.
-* fstab generator: creates `mnt-luks_btrfs_volume.mount` and `mnt-luks_btrfs_volume.automount` units for your mount point.
+We need to coordinate two `systemd` generator mechanisms so that your LUKS-backed `btrfs` filesystem can be mounted on demand by simply running `mount /mnt/luks_btrfs_volume`:
 
-In both crypttab and fstab, be sure to specify `noauto`; otherwise, after a reboot, your system will hang waiting for a passphrase, which defeats our goal of unattended operation.
 
-> You may notice that we used hyphens for the image file name (`luks-btrfs-volume.img`) but underscores for the device mapper file and mount point (`luks_btrfs_volume`).
-> We do this because `systemd` automatically escapes minus (`-`) characters, which makes things look more complicated.<br>
+* **crypttab generator**: creates a `systemd-cryptsetup@luks_btrfs_volume.service` unit to open your LUKS device.
+* **fstab generator**: creates `mnt-luks_btrfs_volume.mount` and `mnt-luks_btrfs_volume.automount` units for your mount point.
+
+In both `/etc/crypttab` and `/etc/fstab`, make sure to specify `noauto`.
+Otherwise, your system could hang at boot waiting for a passphrase, which undermines unattended operation.
+
+
+> You might notice we use hyphens in the image file name (`luks-btrfs-volume.img`) but underscores in the device mapper file and mount point (`luks_btrfs_volume`).
+> This is to avoid confusion with how `systemd` automatically escapes hyphens (`-`) in unit file names.<br>
 > As an example `systemd-escape -p 'my-volume-name'` would show the result `my\x2dvolume\x2dname`.<br>
 > The reason for that behaviour is that `systemd` replaces slashes (`/`) with minus (`-`) when it auto generates `.mount` unit files.
 
 
-Let's start with `/etc/crypttab`.
-Systemd reads `/etc/crypttab` at boot (and at daemon-reload) to decide how to open encrypted devices.
-We'll configure it so it does not open automatically at boot - only when we explicitly request it.
+Let's start with adding an entry to `/etc/crypttab`.
 
-Add a line to `/etc/crypttab` such as (or create the file if it does not exist):
+Systemd reads `/etc/crypttab` during boot (and on daemon-reload) to decide how to open encrypted devices.
+We'll configure it so the device doesn't open at boot - only when explicitly requested.
+
+Create or edit `/etc/crypttab` and add a line like this:
 ```txt
 # <mapped_name>     <source>                                     <keyfile> <options>
 luks_btrfs_volume   /opt/luks-btrfs-volume.img                   none      luks,noauto,loop,timeout=120
 ```
-* `luks` tells systemd-cryptsetup it's a LUKS device.
-* `noauto` keeps it from automatically opening at boot.
-* `loop` if `/opt/luks-btrfs-volume.img` is a regular file, systemd-cryptsetup needs to create a loop device automatically. The loop option in crypttab is what instructs systemd to do so.
-* `timeout=120` means "prompt for 120 seconds" if passphrase is needed. That's a safety measure in case you ever remove `noauto` and reboot, so that the system will wait a maximum of 2 minutes until it actually continues to boot.
+* `luks`: tells `systemd-cryptsetup` it's a LUKS device.
+* `noauto`: keeps it from automatically opening at boot.
+* `loop`: if `/opt/luks-btrfs-volume.img` is a regular file, `systemd-cryptsetup` needs to create a loop device automatically. The loop option in `crypttab` is what instructs `systemd` to do so.
+* `timeout=120`: means "prompt for 120 seconds" if passphrase is needed. That's a safety measure in case you ever remove `noauto` and reboot, so that the system will wait a maximum of 2 minutes until it actually continues to boot.
 
-The following commands verify that the crypttab generator works correctly.
+
+Verify the generator behavior:
 ```bash
 systemctl daemon-reload
+
 systemctl show -p FragmentPath systemd-cryptsetup@luks_btrfs_volume.service
 # FragmentPath=/run/systemd/generator/systemd-cryptsetup@luks_btrfs_volume.service
+
 systemctl list-unit-files | grep cryptsetup
 # systemd-cryptsetup@luks_btrfs_volume.service                                  generated       -
+
 ll /run/systemd/generator/systemd-cryptsetup@luks_btrfs_volume.service 
 # '/run/systemd/generator/systemd-cryptsetup@luks_btrfs_volume.service'
+
 systemctl list-units --type=service --all | grep crypt
 # systemd-cryptsetup@luks_btrfs_volume.service          loaded    active   exited  Cryptography Setup for luks_btrfs_volume
+
 systemctl start systemd-cryptsetup@luks_btrfs_volume
-# type your password
+# Enter your passphrase when prompted.
+
 ll /dev/mapper/luks_btrfs_volume 
 # /dev/mapper/luks_btrfs_volume -> ../dm-2
+
 systemctl status systemd-cryptsetup@luks_btrfs_volume
 # ● systemd-cryptsetup@luks_btrfs_volume.service - Cryptography Setup for luks_btrfs_volume
 #      Loaded: loaded (/etc/crypttab; generated)
 #      Active: active (exited) since ...; 1min 22s ago
+
 systemctl stop systemd-cryptsetup@luks_btrfs_volume
 # or cryptsetup close luks_btrfs_volume
 ```
 
 Starting the service will map the encrypted volume to `/dev/mapper/luks_btrfs_volume`.
 
-Next, add a line to `/etc/fstab` to reference the mapped device. LUKS devices appear under `/dev/mapper/<name>`, so you can use: 
+Next, add an entry to `/etc/fstab` to reference the mapped device. LUKS devices appear under `/dev/mapper/<name>`, so you can use: 
 ```txt
 /dev/mapper/luks_btrfs_volume   /mnt/luks-btrfs-volume  btrfs   noauto,x-systemd.automount,relatime,compress=zstd:3,defaults     0       0
 ```
@@ -445,14 +460,17 @@ Next, add a line to `/etc/fstab` to reference the mapped device. LUKS devices ap
 * `noauto` = do not mount automatically at boot.
 * `x-systemd.automount` = triggers `systemd` to open the LUKS device (via `/etc/crypttab`) and then mount it when you run `mount /mnt/luks_btrfs_volume`.
 
-The following commands verify that the fstab generator works correctly.
+Check the fstab generator:
 ```bash
 systemctl daemon-reload
+
 systemctl show -p FragmentPath mnt-luks_btrfs_volume.automount
 # FragmentPath=/run/systemd/generator/mnt-luks_btrfs_volume.automount
+
 systemctl list-unit-files --type=automount
 # UNIT FILE                         STATE     PRESET
 # mnt-luks_btrfs_volume.automount   generated -     
+
 ll /run/systemd/generator/mnt-luks_btrfs_volume.automount
 ll /run/systemd/generator/mnt-luks_btrfs_volume.mount
 
@@ -465,7 +483,9 @@ systemctl list-units --type=automount --all
 # Legend: LOAD   → Reflects whether the unit definition was properly loaded.
 #         ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
 #         SUB    → The low-level unit activation state, values depend on unit type.
-
+```
+Now, mount it:
+```bash
 mount /mnt/luks_btrfs_volume
 # Broadcast message from root@xxx (...):
 #
@@ -475,6 +495,7 @@ mount /mnt/luks_btrfs_volume
 # -> XXX -> The process will block here. Do a Ctrl-C here to exit this and then use systemd-tty-ask-password-agent as instructed:
 systemd-tty-ask-password-agent
 # Now type your password.
+
 df -h
 # Filesystem                     Size  Used Avail Use% Mounted on
 # /dev/mapper/luks_btrfs_volume  100G  5,8M   98G   1% /mnt/luks-btrfs-volume
@@ -485,11 +506,12 @@ If everything looks good, you can reverse it by unmounting and stopping the serv
 umount /mnt/luks_btrfs_volume
 systemctl stop systemd-cryptsetup@luks_btrfs_volume
 # or cryptsetup close luks_btrfs_volume
+
 ll /dev/mapper/luks_btrfs_volume
 # ls: cannot access '/dev/mapper/luks_btrfs_volume': No such file or directory
 ```
 
-Now try a reboot. Once your system is up again, test the all-in-one approach:
+Now try a reboot. After a reboot, confirm everything is set up correctly:
 ```bash
 mount /mnt/luks-btrfs-volume
 # Broadcast message from root@xxx (...):
@@ -502,7 +524,7 @@ systemd-tty-ask-password-agent
 # Now type your password.
 ```
 
-At this point, your sparse file-based encrypted volume and the `btrfs` filesystem on it should be functioning properly.
+Once you successfully unlock and mount the volume, your file-backed, LUKS-encrypted `btrfs` filesystem should be fully operational.
 We can now move on to the next step.
 
 ## Btrfs File Structure
