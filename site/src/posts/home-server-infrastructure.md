@@ -89,15 +89,21 @@ With the Makefile approach we will be:
 In essence, the Makefile ensures that each step - from installing required packages to configuring `systemd` units - is done repeatably and idempotently (as much as possible).
 If something breaks mid-install, you can fix the error and run make all again, picking up where you left off.
 
-**Prepare Your System**: Chose which system to use and download the files from the following [Gist](https://gist.github.com/cs224/34eebc2f9389404d7c0192d45cae7259).
+### Prepare Your System
 
-**Review the `.env` File**: The `.env` file holds configuration variables like disk volume size, passphrases, and backup times.
+Chose which system to use and download the files from the following [Gist](https://gist.github.com/cs224/34eebc2f9389404d7c0192d45cae7259).
+
+### Review the `.env` File
+
+The `.env` file holds configuration variables like disk volume size, passphrases, and backup times.
 Adjust these settings according to your preferences (e.g., a 100 GB encrypted volume, daily backups at 4 AM, etc.).
 Add or remove comment lines (#) to clarify your setup for future reference.
 The Makefile is very configurable. Have a look at the `CONFIGURABLE VARIABLES (can be overridden in .env or via environment)` section in that file to see what you can adapt.
 As this line says: you can also override the settings via environment variables.
 
-**Run `make all`**: After editing `.env`, simply type:
+### Run `make all`
+
+After editing `.env`, simply type:
 ```bash
 make all
 # or if you want to set some settings via environment variables like the IMG_SIZE in the following example:
@@ -110,7 +116,9 @@ The Makefile will:
 * Set up subvolumes, directories, and `systemd` overrides so Docker only runs once the encrypted volume is unlocked.
 * Install a timer (btrfs-kopia-backup.timer) that takes Btrfs snapshots and backs them up with Kopia.
 
-**Create or Connect Kopia Repository**: I am using `rclone` as the [storage engine](https://kopia.io/docs/reference/command-line/common/repository-connect-rclone/) for Kopia.
+### Create or Connect Kopia Repository
+
+I am using `rclone` as the [storage engine](https://kopia.io/docs/reference/command-line/common/repository-connect-rclone/) for Kopia.
 I'll explain in the appendix how I use a dedicated Document Library inside of a SharePoint Communication Site as my offsite backup storage location.
 Review the [Rclone](https://rclone.org/) documentation if you want to use any other offsite storage location.
 I suggest that you set this up on your local workstation machine.
@@ -151,25 +159,29 @@ Finally you have to apply some global Kopia policies:
 make kopia-global-policy
 ```
 
-**Verify**: The Makefile uses "stamp" files to track progress. If a step fails, fix the cause and re-run make all. Once the install completes successfully, you'll have:
+### Verify
+
+The Makefile uses "stamp" files to track progress. If a step fails, fix the cause and re-run make all. Once the install completes successfully, you'll have:
 * A sparse file for your encrypted volume (`/opt/luks-btrfs-volume.img`).
 * Systemd entries that require a manual passphrase input only when you want to start Docker (ensuring encryption at rest).
 * A scheduled backup process for your data via Btrfs snapshots.
 
-**The Outcome**: After installation, your home server can:
+### The Outcome
 
+After installation, your home server can:
 * Reboot freely without human interaction for kernel or power-cycle events. The root filesystem remains unencrypted, enabling a painless reboot.
 * Keep crucial data offline (in the encrypted file) until you manually unlock it. This means your Docker services (and their data) remain protected when the server is off or rebooting.
 * Automate backups to an offsite location (via Kopia and Rclone) while efficiently managing snapshots (thanks to Btrfs).
 * Provide a clean folder structure under `/opt/docker_services` and `/opt/offsite_backup_storage` for easy backup organization.
 
-**After a Reboot**: Once the system is up, running `systemctl start docker.service` should trigger a chain of systemd dependencies to ensure that:
+### After a Reboot
+
+Once the system is up, running `systemctl start docker.service` should trigger a chain of systemd dependencies to ensure that:
 - The encrypted volume `/mnt/luks_btrfs_volume` is decrypted and mounted.
 - The subdirectories under `/mnt/luks_btrfs_volume` are mounted at `/opt/offsite_backup_storage` and `/opt/docker_services`.
 - Finally, Docker itself starts once its file system dependencies are satisfied.
 
-
-**What's Next?**
+### What's Next?
 
 Application Setup: Deploy Docker containers - like [Gitea](../digital-civil-rights-gitea) - into `/opt/docker_services`. They'll remain protected inside the encrypted volume and benefit from automated daily off-site backups.
 
@@ -179,10 +191,6 @@ Uninstall: If you ever want to uninstall/deactivate this set-up run `make deinst
 
 By following the quickstart steps above, you have laid the groundwork for a secure, unattended home server.
 From here, you can confidently host the self-managed applications you need, knowing your data remains locked away until you're ready to decrypt and run.
-
------------------------
-
-
 
 ## Detailed Walkthrough
 
