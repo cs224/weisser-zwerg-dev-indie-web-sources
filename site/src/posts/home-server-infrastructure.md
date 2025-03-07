@@ -148,7 +148,7 @@ The Makefile will:
 
 I use `rclone` as the [storage engine](https://kopia.io/docs/reference/command-line/common/repository-connect-rclone/) for Kopia.
 `rclone` supports a wide variety of cloud storage providers, including OneDrive, Google Drive, SharePoint, S3, and many more.
-In the appendix, I'll explain how to use a dedicated `Document Library` inside a `SharePoint Communication Site` as offsite backup storage.
+In the [appendix](#dedicated-sharepoint-team-site-as-offsite-backup-storage), I'll explain how to use a `Document Library` inside a dedicated `SharePoint Team Site` as offsite backup storage.
 For other offsite locations, consult the [Rclone](https://rclone.org/) documentation.
 
 Set it up locally on your workstation machine first.
@@ -1447,7 +1447,7 @@ I hope this introduction to Incus and the provided base profiles gives you a hea
 Feel free to share your questions or feedback in the comments section below.
 
 
-### Dedicated `Document Library` inside a `SharePoint Communication Site` as Offsite Backup Storage
+### Dedicated `SharePoint Team Site` as Offsite Backup Storage
 
 I run a small business and already subscribe to Microsoft 365 Business (previously known as Office 365 for Business).
 This plan includes OneDrive for Business with 1 TB of personal cloud storage per licensed user, along with a large SharePoint Online storage pool for the entire organization.
@@ -1478,7 +1478,7 @@ The key advantage is it doesn't require buying another license for each server.
 
 I'd like to configure an **app registration per home server** with access to a dedicated sub-location for offsite backups. This ensures that `rclone` on each home server can only upload and list files in its own isolated area, and cannot view or modify any other data in the organization.
 
-My plan is to create a SharePoint **Communication Site** per home server, specifically for offsite backups of that home server.
+My plan is to create a SharePoint **Team Site** per home server, specifically for offsite backups of that home server.
 I'll then adjust the permissions so that `rclone` on that home server can only reach the site's document library, providing a tightly controlled and simple offsite backup target.
 
 By following these steps, each home server can have its own designated backup site or library within my existing Microsoft 365 subscription.
@@ -1497,7 +1497,7 @@ Once authorized, `rclone` will see only that single folder and won't be able to 
 > If you want to learn more, try searching for keywords like `rclone`, `app folder`, and `Files.ReadWrite.AppFolder`.
 > You can also see the official [`rclone` documentation on OneDrive](https://rclone.org/onedrive/#getting-your-own-client-id-and-key) for step-by-step guidance on setting up your own Client ID and key.
 
-#### Microsoft 365 Business and SharePoint Communication Site
+#### Microsoft 365 Business and SharePoint Team Site
 
 Below is a detailed walkthrough on creating and using a dedicated SharePoint Document Library with minimal permissions - configured via an Azure AD App Registration ("service principal") - so you can upload files through `rclone` on Linux without purchasing an additional Microsoft 365 license for a separate user.
 
