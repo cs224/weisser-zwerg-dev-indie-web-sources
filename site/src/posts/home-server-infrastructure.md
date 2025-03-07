@@ -100,6 +100,21 @@ If something breaks mid-install, you can fix the error and run `make all` again,
 
 Choose which system to use and download the files from the following [Gist](https://gist.github.com/cs224/34eebc2f9389404d7c0192d45cae7259).
 
+<small>
+
+> If you haven't used them before, GitHub Gists are mini Git repositories.
+> This means you can clone them just like any other Git repository. Here's how:
+> ```bash
+> git clone https://gist.github.com/cs224/34eebc2f9389404d7c0192d45cae7259.git .
+> ```
+> When you add a trailing dot ( `.` ) to the `git clone` command, Git places the cloned files directly into your current directory instead of creating a new folder.
+> In most cases, you can work with Gists just as you would with any normal Git repo - branching, committing, and pushing changes back to the Gist are all supported.
+
+</small>
+
+If you're unsure, you can begin with a local system container or a virtual machine managed by Incus.
+For guidance on this, check the appendix: [Incus/LXD as an Alternative to Vagrant for DevOps Testing](#incus%2Flxd-as-an-alternative-to-vagrant-for-devops-testing).
+
 ### Review the `.env` File
 
 The `.env` file holds configuration variables like disk volume size, passphrases, and backup schedules.
@@ -1108,10 +1123,532 @@ This snippet will locate and delete any BTRFS snapshots older than 14 days. Adju
 
 ## Appendix
 
-### Dedicated `Document Library` inside a `SharePoint Communication Site` as Offsite Backup storage
+### Incus/LXD as an Alternative to Vagrant for DevOps Testing
 
-... coming soon ...
+LXD/Incus is a manager for system containers, application containers, and virtual machines. This means you can create and operate all three using a single, consistent commandline (CLI) interface.
 
-### Incus/LXD as alternative to Vagrant for DevOps Testing
+#### Introduction and History
 
-... coming soon ...
+Incus is a fork of the [LXD](https://canonical.com/lxd) project, which I briefly introduced in my 2019 blog post [Local discourse: vagrant, ansible, lxd, docker, discourse-embedding](local-discourse-on-vagrant/#additional-requirement%3A-docker-in-lxd).
+
+A major governance shift in mid-to-late 2023 led to [Canonical](https://canonical.com) taking direct control of the LXD project and [moving it out of the Linux Containers (LXC) umbrella](https://linuxcontainers.org/lxd/).
+In response, the original maintainers from [LinuxContainers.org](https://linuxcontainers.org/)  created [Incus](https://linuxcontainers.org/incus/) - a community-driven fork designed to be a drop-in replacement for LXD.
+
+Historically, LXD was hosted under the [LinuxContainers.org](https://linuxcontainers.org/) community at `github.com/lxc/lxd`.
+However, after Canonical's takeover, the project was relocated to `github.com/canonical/lxd`.
+Canonical has committed to continuing LXD's development, with a strong focus on its integration with [Ubuntu](https://ubuntu.com) and the [Snap](https://en.wikipedia.org/wiki/Snap_(software)) ecosystem.
+
+With Incus, the original maintainers aim to preserve community governance while keeping compatibility with LXD's API (for now).
+If you're trying to choose between LXD and Incus, both remain quite similar at this stage.
+However, as development continues, their features and roadmaps may gradually diverge.
+
+[Vagrant](https://www.vagrantup.com/) makes it easy to create and configure lightweight, reproducible, and portable development environments.
+In late 2023, [HashiCorp](https://www.hashicorp.com/) announced it would move several of its open-source projects (including Vagrant) from the Mozilla Public License ([MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/)) to the Business Source License ([BSL](https://en.wikipedia.org/wiki/Business_Source_License)).
+This license is sometimes referred to as "source-available" rather than fully open source.
+While everyday usage - like local development or personal testing - remains mostly unaffected, there may be new restrictions on how you use and distribute Vagrant if you're operating in commercial or "competitive" contexts.
+
+And the final term to introduce for this section is `cloud-init`. Cloud-init is an open-source tool that automatically configures and customizes cloud instances on their first boot ([provisioning](https://en.wikipedia.org/wiki/Provisioning_(technology)#Server_provisioning)).
+It can handle tasks such as setting up SSH keys, creating user accounts, and installing packages - without requiring manual intervention.
+Official documentation and resources for `cloud-init` are available at [cloud-init.io](https://cloud-init.io) and [cloudinit.readthedocs.io](https://cloudinit.readthedocs.io).
+The source code and issue tracking primarily reside on [Launchpad](https://launchpad.net/cloud-init), with a [GitHub](https://github.com/canonical/cloud-init) mirror for convenience.
+
+Incus and `cloud-init` form a powerful duo to replace Vagrant for creating and configuring lightweight, reproducible, and portable development environments.
+Incus provides the container and VM management, while `cloud-init` automates initial setup and configuration.
+This combination is an excellent alternative for DevOps testing and beyond.
+
+#### Installation and Setup
+
+The [How to install Incus](https://linuxcontainers.org/incus/docs/main/installing/#installing) documentation is straightforward.
+On Ubuntu 24.04 LTS and later, you can install Incus directly via a native package.
+On such systems, just running `apt install incus` will get Incus installed.
+To run virtual machines, also run `apt install qemu-system`.
+If migrating from LXD, also run `apt install incus-tools` to get the `lxd-to-incus` command.
+
+After installing Incus, make sure you have an `incus-admin` group on your system.
+Users in this group can interact with Incus. See [Manage access to Incus](https://linuxcontainers.org/incus/docs/main/installing/#installing-manage-access) for instructions.
+
+Before you can create an Incus instance, you must configure and initialize Incus.
+Please refer to [How to initialize Incus](https://linuxcontainers.org/incus/docs/main/howto/initialize) for a detailed description.
+To create a minimal setup with default options, you can skip the configuration steps by adding the `--minimal` flag to the incus admin init command:
+```bash
+incus admin init --minimal
+```
+
+In short, you could install everything at once with:
+```bash
+apt update && apt install incus qemu-system incus-tools
+sudo adduser YOUR-USERNAME incus-admin
+# Because group membership is normally only applied at login, you might need to either re-open your user session or
+# use the newgrp incus-admin command in the shell you're using to talk to Incus.
+newgrp incus-admin
+
+incus admin init --minimal 
+```
+<p></p>
+
+> Because group membership is normally only applied at login, you might need to either re-open your user session or
+> use the `newgrp incus-admin` command in the shell you're using to talk to Incus until your next system reboot.
+
+**Optional but Recommended**:
+If you want to refer to Incus instances by hostname instead of looking up IP addresses, you can integrate the Incus network with your system's DNS.
+First, set `dns.mode` to `managed` and define a `dns.domain`. In this example, we'll use `incus` as `dns.domain`:
+```bash
+# Find the Incus network interface name (usually `incusbr0`)
+incus network list
+
+# Configure `dns.mode` and `dns.domain`
+incus network get incusbr0 dns.mode
+incus network set incusbr0 dns.mode managed
+
+incus network get incusbr0 dns.domain
+incus network set incusbr0 dns.domain incus
+```
+
+Next, configure system DNS integration. Retrieve the IPv4 address of the Incus network and add it to your system's DNS settings:
+```bash
+# Check the Incus network IPv4 address (example: 10.111.4.1/24)
+incus network get incusbr0 ipv4.address
+# 10.111.4.1/24
+
+mkdir -p /etc/systemd/resolved.conf.d
+
+# Create a config file for systemd-resolved
+INCUS_NETWORK="10.111.4.1" bash -c "echo -e '[Resolve]\nDNS=$INCUS_NETWORK\nDomains=~incus' > /etc/systemd/resolved.conf.d/incus.conf"
+
+# Restart systemd-resolved to apply changes
+systemctl restart systemd-resolved
+
+# Verify your resolv.conf link
+ls -l /etc/resolv.conf
+```
+You can now use hostnames (e.g., `instance-name.incus`) to reach your Incus instances.
+
+And that's it! You're ready to go.
+
+#### Cloud-Init, Incus Profiles and Images
+
+Incus profiles store sets of configuration options, including instance parameters, devices, and device settings.
+
+You can apply multiple profiles to a single instance.
+They're applied in the order you specify them, so if the same key appears in more than one profile, the last one takes precedence.
+However, instance-specific configuration always overrides anything inherited from profiles.
+
+> Profiles work for both containers and virtual machines. They may contain options or devices intended for one type or the other.
+> If a profile includes something not relevant to the instance type, Incus simply ignores it without throwing an error.
+
+If you don't specify any profiles when launching a new instance, Incus applies the `default` profile automatically.
+This default defines a network interface and a root disk and cannot be renamed or removed.
+
+For more details, check the [How to use profiles](https://linuxcontainers.org/incus/docs/main/profiles) section in the Incus documentation.
+
+Profiles are also where `cloud-init` comes into play.
+You set your provisioning details in the `config.user.user-data` section of a profile.
+
+Below is a minimal example that I call `devops-profile`.
+It's incomplete (notice the abbreviated `ssh_authorized_keys` section), so it's not directly usable, but it gives you an idea of how a basic profile looks.
+```yaml 
+config:
+  boot.autostart: "false"
+  # Enable nested containers (needed for Docker-in-LXD).
+  security.nesting: "true"
+
+  user.user-data: |
+    #cloud-config
+    output:
+      all: '| tee -a /var/log/cloud-init-output.log'
+    apt_update: true
+    apt_upgrade: true
+    packages:
+      - openssh-server
+      - ca-certificates
+      - curl
+      - ...
+
+    users:
+      - name: ubuntu
+        groups: sudo
+        shell: /bin/bash
+        sudo: ALL=(ALL) NOPASSWD:ALL
+        ssh_authorized_keys:
+          - ssh-rsa ...
+
+description: "Profile for devops container with cloud-init (script-generated)"
+devices: {}
+name: devops-profile
+```
+<p></p>
+
+> For complete instructions on creating and using this profile,
+> please see the section [Templating the `devops-profile` and the `recovery-test-profile`](#templating-the-devops-profile-and-the-recovery-test-profile) below.
+> You can also consult the associated [Gist](https://gist.github.com/cs224/e120e094fc2114d84eb43618262c328c) for all the details.
+
+By default, `cloud-init` sends its logs to a file rather than displaying them on your container's console.
+In my example, the logs are being piped using `tee` into `/var/log/cloud-init-output.log`, which means they won't automatically appear on the container's display.
+
+You can start a system container using the `ubuntu/24.04` image and review its provisioning logs with the following commands:
+```bash 
+incus launch images:ubuntu/24.04/cloud incus-devops-test -p default -p devops-profile
+incus config show -e incus-devops-test
+incus exec incus-devops-test -- tail -f /var/log/cloud-init-output.log
+```
+
+At the Incus [default image server](https://images.linuxcontainers.org/), you can browse the available base images.
+These images are offered in both `cloud` and `default` variants.
+You should always choose the `cloud` variant (note the `/cloud` at the end of `images:ubuntu/24.04/cloud`) because it includes the infrastructure needed to provision your instance using `cloud-init`.
+
+To see a complete list of available images from the command line, use the command:
+```bash
+incus image list images:
+```
+Each image may have several aliases.
+To view these aliases use the `-c L` (where the upper-case `L` is significant) column option:
+```bash
+incus image list -c Lfpdatsu images:ubuntu/noble/amd64
+```
+
+##### `--ephemeral` Throwaway Container Workflow
+
+Just as a quick note, `incus` supports the `--ephemeral` option when launching containers, which behaves like Docker's `--rm` flag.
+In other words, once you stop the container, it is automatically removed.
+This feature can be helpful if you just need a temporary, "throwaway" system where you don't plan on keeping any data or doing lengthy setup steps.
+However, for system containers that need provisioning, `--ephemeral` might be less practical because of the extra time it takes to fully configure everything. 
+
+Ephemeral containers are typically used for tasks like quick testing or one-off commands.
+Because they do not persist data after stopping, they are not ideal for most server workloads.
+They are, however, extremely useful for scenarios where you want a clean environment every time you launch the container.  
+
+When it comes to a more robust "throwaway" container workflow, I prefer the following command, which is admittedly quite elaborate.
+It checks if a container named `incus-devops-test` exists, and if so, stops and deletes it.
+It then creates a new container with that same name, applies the `devops-profile`, and uses a `while` loop to wait until `/var/log/cloud-init-output.log` appears.
+As soon as it's available, it streams the log so you can watch the installation process in real time:
+```bash
+incus list --format csv -c n | grep -q '^incus-devops-test$' && { incus stop incus-devops-test --force || true; incus delete incus-devops-test --force; }; incus launch images:ubuntu/24.04/cloud incus-devops-test -p default -p devops-profile && incus exec incus-devops-test -- sh -c 'while [ ! -f /var/log/cloud-init-output.log ]; do sleep 1; done; tail -f /var/log/cloud-init-output.log'
+```
+If you find yourself using this pattern often, you might want to set it up as an `alias` in your `~/.bashrc` file for quick access:
+```bash 
+alias incus-fresh-devops-test-container='incus list --format csv -c n | grep -q "^incus-devops-test$" && { incus stop incus-devops-test --force || true; incus delete incus-devops-test --force; }; incus launch images:ubuntu/24.04/cloud incus-devops-test -p default -p devops-profile && incus exec incus-devops-test -- sh -c "while [ ! -f /var/log/cloud-init-output.log ]; do sleep 1; done; tail -f /var/log/cloud-init-output.log"'
+```
+
+#### Container vs. VM
+
+It's as straightforward as adding the `--vm` flag to spin up a virtual machine instead of a lightweight container - nothing else changes:
+```bash 
+incus launch images:ubuntu/24.04/cloud incus-devops-test -p default -p devops-profile --vm
+incus config show -e incus-devops-test
+incus exec incus-devops-test -- tail -f /var/log/cloud-init-output.log
+```
+
+The main reason I sometimes prefer VMs in my DevOps testing is that they simplify privilege and access control.
+Containers often require more intricate adjustments to AppArmor, cgroups, and device mappings to grant the necessary permissions.
+
+For instance, when testing the [Makefile approach](#quickstart) described in this post, I attempted to configure a container for a complete Makefile install test.
+After multiple attempts, I encountered too many privilege-related issues and decided to give up on container based testing.
+
+To give you an idea, here is the "diff" I tried applying to the `devops-profile` - adding privileged mode, kernel modules, and raw.lxc options - before stopping:
+```bash 
+config:
+  security.privileged: "true"
+  linux.kernel_modules: ip_tables,overlay,dm_mod,loop
+  raw.lxc: |-
+    lxc.apparmor.profile = unconfined
+    # This line allows *all* device types (a) for all major:minor (*:*) with rwm access:
+    lxc.cgroup.devices.allow = a *:* rwm
+    lxc.mount.auto=proc:rw sys:rw cgroup:rw
+    lxc.cap.drop =
+  
+devices:
+  dm-control:
+    major: "10"
+    minor: "236"
+    path: /dev/mapper/control
+    type: unix-char
+  loop-control:
+    major: "10"
+    minor: "237"
+    path: /dev/loop-control
+    type: unix-char    
+```
+<p></p>
+
+> Just as a side note: with [Mike Farah](https://github.com/mikefarah)'s [yq](https://github.com/mikefarah/yq), you can apply this sort of YAML diff to a base YAML file like so:
+> ```bash
+> yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' incus-cloud-init.yaml incus-cloud-init.diff.yaml > incus-cloud-init_.yaml
+> ```
+
+Once I switched to the `--vm` option, the full end-to-end tests worked flawlessly.
+
+You then copy your local `rclone` configuration - which you've already confirmed to be functional on your local workstation - over to the VM:
+```bash
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -r ~/.config/rclone ubuntu@incus-devops-test.incus:~/
+```
+<p></p>
+
+<small>
+
+> **Why use `-o UserKnownHostsFile=/dev/null` and `-o StrictHostKeyChecking=no`?**<br>
+> These options tell SSH to skip storing and checking host keys.
+> This is often convenient in automated or ephemeral test environments, where you do not require strict host verification.
+> However, it's less secure if you're working on a production system or connecting to unfamiliar hosts.
+>
+> For quick access, you can also define two aliases in your shell's configuration (e.g., ~/.bashrc):
+> ```bash
+> alias sshincus='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+> alias scpincus='scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+> ```
+> This way, you can simply type `sshincus <host>` or `scpincus <src> <dest>`.
+
+</small>
+
+After that, SSH into your `incus-devops-test` instance, clone the Gist, switch to `root`, move the `rclone` configuration into place, and run the `make all` process:
+```bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@incus-devops-test.incus
+git clone https://gist.github.com/cs224/34eebc2f9389404d7c0192d45cae7259.git makefile-install-files
+sudo su
+mkdir -p /root/.config && cp -r /home/ubuntu/rclone /root/.config
+# Test the rclone connection:
+# rclone about rclone-backup-sharepoint-site:
+cd makefile-install-files/
+IMG_SIZE="1G" make all
+```
+
+At this point, you can also test the idempotency of the `make all` process by undoing some of the previous steps, then running `make all` again:
+```bash
+systemctl stop systemd-cryptsetup@luks_btrfs_volume
+cryptsetup close /dev/mapper/luks_btrfs_volume
+make clean
+IMG_SIZE="1G" make all
+```
+
+#### Restore Tests
+
+Any backup plan is only as good as its ability to be restored on a completely separate system.
+Regularly testing your backups ensures you can recover from potential disasters with confidence.
+I've created a second profile called `recovery-test-profile` that includes `kopia`, `rclone`, and `docker`.
+You can use this profile to confirm that the backups your home server generates can indeed be restored on a different environment.
+
+#### Templating the `devops-profile` and the `recovery-test-profile`
+
+As there is one step that requires inserting your `~/.ssh/id_rsa.pub` public key into the `cloud-init` setup, I created two shell scripts and two templates to automate this:
+
+- `incus-profile-install.sh` and `incus-cloud-init.yaml.in`  
+- `incus-recovery-profile-install.sh` and `incus-recovery-cloud-init.yaml.in`
+
+You can find these files in the following [Gist](https://gist.github.com/cs224/e120e094fc2114d84eb43618262c328c).
+
+To create the Incus profiles, simply run the scripts in a directory where their input templates are available:
+```bash
+bash incus-profile-install.sh
+bash incus-recovery-profile-install.sh
+```
+
+#### Conclusion
+
+I hope this introduction to Incus and the provided base profiles gives you a head start in making your DevOps and backup/restore tests more effective.
+Feel free to share your questions or feedback in the comments section below.
+
+
+### Dedicated `Document Library` inside a `SharePoint Communication Site` as Offsite Backup Storage
+
+I run a small business and already subscribe to Microsoft 365 Business (previously known as Office 365 for Business).
+This plan includes OneDrive for Business with 1 TB of personal cloud storage per licensed user, along with a large SharePoint Online storage pool for the entire organization.
+In total, that's more than enough space for my needs, and I'd like to leverage it as an offsite backup location for my home server(s).
+
+However, I want to make sure that `rclone` - the tool handling file access to the remote cloud storage - has only the permissions it truly needs.
+Specifically, I'd like to restrict `rclone` to a single dedicated place (such as a SharePoint site or folder).
+If my home server were ever compromised, it would only be able to affect that small slice of data rather than the entire organization.
+
+> **Microsoft 365 storage breakdown**  
+> - Each licensed user typically gets 1 TB of OneDrive for Business storage.  
+> - Your SharePoint Online tenant also comes with a shared storage allocation that starts at 1 TB, plus an extra 10 GB for each licensed user.  
+>  
+> Because I have multiple users, this easily adds up to several terabytes. I'm already paying for it, so why not use it for secure backups?
+
+Why not just create a separate user account? One idea is to have a special "service account" user just for backups.
+In many Microsoft 365 environments, though, you often need an extra license for each active user account that uses SharePoint or OneDrive storage.
+Since I already have enough licensed users, I'd prefer to avoid paying for another license if possible.
+
+> Another drawback: even if I had a single "service account", I'd still need to share it across all servers I want to back up, or pay for multiple service accounts.
+> Neither option is ideal for security nor cost.
+
+
+**App-Only or Azure AD App Registration**<br>
+You can set up SharePoint access without adding a new user by registering your application in Azure Active Directory (Azure AD).
+This "App-Only" approach grants SharePoint permissions to an application (in this case, `rclone`) without tying it to a specific user account.
+The key advantage is it doesn't require buying another license for each server.  
+
+I'd like to configure an **app registration per home server** with access to a dedicated sub-location for offsite backups. This ensures that `rclone` on each home server can only upload and list files in its own isolated area, and cannot view or modify any other data in the organization.
+
+My plan is to create a SharePoint **Communication Site** per home server, specifically for offsite backups of that home server.
+I'll then adjust the permissions so that `rclone` on that home server can only reach the site's document library, providing a tightly controlled and simple offsite backup target.
+
+By following these steps, each home server can have its own designated backup site or library within my existing Microsoft 365 subscription.
+The best part? I'm not paying extra, because the standard Microsoft 365 licenses already include enough space.
+This way, I get an offsite backup location that's both cost-effective and secure.
+
+#### Personal Microsoft Account (OneDrive Personal)
+
+If you use OneDrive Personal instead of OneDrive for Business, you can authorize `rclone` with a scope that only grants access to a special "App Folder".
+This folder is private to the application and won't appear in the rest of your OneDrive.
+Once authorized, `rclone` will see only that single folder and won't be able to view or change any other files.
+
+**How it Works**: By setting the `Files.ReadWrite.AppFolder` permission in OneDrive Personal, you instruct `rclone` to operate strictly within an App Folder. This approach protects your other OneDrive data and offers a simple, self-contained backup target.
+
+> **Note:** I don't currently use OneDrive Personal myself, so I haven't tested this setup.
+> If you want to learn more, try searching for keywords like `rclone`, `app folder`, and `Files.ReadWrite.AppFolder`.
+> You can also see the official [`rclone` documentation on OneDrive](https://rclone.org/onedrive/#getting-your-own-client-id-and-key) for step-by-step guidance on setting up your own Client ID and key.
+
+#### Microsoft 365 Business and SharePoint Communication Site
+
+Below is a detailed walkthrough on creating and using a dedicated SharePoint Document Library with minimal permissions - configured via an Azure AD App Registration ("service principal") - so you can upload files through `rclone` on Linux without purchasing an additional Microsoft 365 license for a separate user.
+
+> **Minimal Permissions**: Using `Sites.Selected` permissions means the application has access only to your dedicated backup site/library, preventing potential security risks if a server is compromised.
+
+Our ultimate goal is a working `rclone` configuration. We want to end up with the following structure in our `~/.config/rclone/rclone.conf` file:
+```ini
+[rclone-backup-sharepoint-site]
+type = onedrive
+client_secret = ...client_secret...
+tenant = ...tenant...
+auth_type = client_credentials
+drive_type = business
+client_id = ...client_id...
+client_credentials = true
+drive_id = ...drive_id...
+token = {}
+```
+When you first run an rclone command (e.g., `rclone about rclone-backup-sharepoint-site:`), rclone will automatically populate the token section because we're using `auth_type = client_credentials`.
+* `client_id` = Application (client) ID
+* `tenant_id` = Directory (tenant) ID
+* `client_secret` = The secret value you generate later
+* `drive_id` = Might not be strictly necessary (`rclone` should be able to auto-detect), but filling it in ensures consistency
+
+
+**Set Up the SharePoint Site and Document Library**: You'll need a dedicated SharePoint site to store your backups.
+This can be a new site or an existing site, but ideally you create a site specifically for backups.
+
+1. Log in to the Microsoft 365 [admin center](https://admin.microsoft.com/) with an admin account.
+1. Go to the SharePoint admin center (expand the "…" on the left pane and select SharePoint). This will typically be at `https://<tenant-name>-admin.sharepoint.com`.
+1. Under Websites, select Active Websites, then click Create (the “+” icon) and choose Team site (or Communication site, if you prefer).
+1. Provide a site name, e.g., "RCloneBackupSite<machinename>".
+  1. You can specify a different owner if desired. I chose a different owner of the new Team site, not the admin account.
+1. Note the site's URL, e.g.: `https://<tenant-name>.sharepoint.com/sites/RCloneBackupSite<machinename>`
+1. Create a dedicated Document Library (optional if you don't want to use the default "Documents" library).
+1. **In your new site** on the "Start" page, towards the left top on the menu bar, select New, and then choose Document library.
+1. Give it a name, e.g. "RcloneBackups".
+
+Your eventual backup destination might look like: `https://<tenant-name>.sharepoint.com/sites/RCloneBackupSite<machinename>/RcloneBackups`.
+
+**Register an Azure AD Application (Service Principal)**:
+Rather than creating a licensed Microsoft 365 user account, we'll use an Azure AD "App Registration" to enable app-only SharePoint access.
+
+1. Go to the [Azure Portal](https://portal.azure.com/), and sign in with an Azure AD admin account.
+1. In the left navigation, select Microsoft Entra ID (formerly Azure Active Directory).
+1. On the "Start" page of Microsoft Entry ID, towards the left top on the menu bar, select New, and then choose App registration.
+1. Give your app a Name (e.g. "rclone-backup-app-<machinename>").
+1. Under Supported account types, choose Accounts in this organizational directory only (i.e. single-tenant) unless you need multi-tenant.
+1. Redirect URI can be left empty since we'll be using client credentials.
+1. Click Register.
+
+**Configure Permissions for SharePoint**:
+1. In your new app's Overview page, select API permissions from the left menu.
+1. Click Add a permission → Microsoft Graph.
+1. Choose Application permissions (not Delegated).
+1. Select the permission level: `Sites.Selected`. This is the recommended approach when you want to specifically limit the app's ability to certain sites.
+1. Click Add permissions.
+1. Now, an admin must grant Admin consent. Above the table showing the permissions and to the right of "Add permissions" click "Grant admin consent for [tenant name]".
+1. You should now see your permission with status Granted for [tenant].
+
+Important: Using `Sites.Selected` means the app has no access to any SharePoint sites unless you explicitly grant it. This is exactly what we want for minimal access. We'll grant it access only to the one site.
+
+**Generate a Client Secret and Note IDs**:
+1. In the app's Certificates & secrets section, click New client secret.
+1. Provide a description, select an expiration period, and click Add.
+1. Copy the Value of the new secret (you'll only see it once). Store it securely - this is your `client_secret`.
+1. Go back to Overview and note the: "Application (client) ID" and "Directory (tenant) ID". See above. We'll need these for rclone:<br>
+`client_id` = Application (client) ID<br>
+`tenant_id` = Directory (tenant) ID<br>
+`client_secret` = the secret value you just copied<br>
+
+**Grant Site-Specific Permissions to the Azure AD App**: This is the most tricky part.
+Because we used `Sites.Selected`, the app currently has no access to any SharePoint site. We must explicitly grant it to our new site.
+If you're on Windows, you could use the SharePoint Admin PowerShell module (might be simpler for many admins).
+Here, we'll use Microsoft Graph calls so you can do it from any OS (including Linux).
+
+The main challenge was that many access rights had to be approved by either the SharePoint site owner or the Admin user.
+I opened two browser windows - one for the Admin and one for the SharePoint owner.
+Most tasks were done by the SharePoint owner, but some actions required Admin confirmation.
+
+Additionally, I needed to log out and log back in after certain changes so the Graph Explorer web UI would recognize the new access rights.
+I don't recall every detail, so treat the steps below as a rough guideline rather than exact instructions.
+
+If a `GET` request returns an error or empty response, it indicates an access rights issue that needs to be resolved first!
+
+**Using Microsoft [Graph Explorer](https://developer.microsoft.com/en-us/graph/graph-explorer)**: 
+
+1. Visit the [Graph Explorer](https://developer.microsoft.com/en-us/graph/graph-explorer) and sign in with appropriate permissions.
+   I used two browser windows, one for the Admin and one for the SharePoint Owner account.
+
+1. Find the site ID: Make a `GET` request to: `https://graph.microsoft.com/v1.0/sites?search=RCloneBackupSite<machinename>`. Look for your site's `id` in the JSON response, something like:
+`tenant.sharepoint.com,01234567-89ab-4def-0123-456789abcdef,01234567-89ab-4def-0123-456789abcdef`.
+1. Check permissions endpoint: `GET` request: `https://graph.microsoft.com/v1.0/sites/<site-id>/permissions`. Make sure you get a response and no access error.
+
+1. Grant permission: Change Graph Explorer to a `POST` request at the same `/permissions` endpoint. Use a JSON body like this:
+   ```json
+   {
+    "roles": [ "write" ],
+    "grantedToIdentities": [
+      {
+        "application": {
+          "id": "<YOUR_APP_CLIENT_ID>",
+          "displayName": "<YOUR_APP_DISPLAY_NAME>"
+        }
+      }
+    ]
+   }
+   ```
+   `id` is your App (client) ID from the Azure AD registration. `displayName` is informational and can be ignored.
+   If successful, you'll get a `201 Created` response, along with a JSON body showing the new permission object.
+1. You can verify by doing another `GET` request: `https://graph.microsoft.com/v1.0/sites/<site-id>/permissions`.
+
+Your Azure AD app now has `Write` access only to that one site, fulfilling the `Sites.Selected` minimal-access design.
+If you need the `drive_id` for `RcloneBackups`, run: `GET https://graph.microsoft.com/v1.0/sites/<site-id>/drives`.
+Look for the `driveType: "documentLibrary"` object where the `name` matches `RcloneBackups`.
+
+**Configure rclone on Linux**: `rclone` offers various methods to set up OneDrive/SharePoint.
+I suggest that you avoid running `rclone config` as this does not seem to be made for the `client_credentials` flow. This caused a lot of trouble.
+For this minimal-permission approach, manual configuration of `~/.config/rclone/rclone.conf` can be simpler:
+```ini
+[rclone-backup-sharepoint-site]
+type = onedrive
+client_secret = ...client_secret...
+tenant = ...tenant...
+auth_type = client_credentials
+drive_type = business
+client_id = ...client_id...
+client_credentials = true
+drive_id = ...drive_id...
+token = {}
+```
+* `client_id` = Application (client) ID
+* `tenant_id` = Directory (tenant) ID
+* `client_secret` = the secret value you will generate (see below).
+* `drive_id` may not strictly be necessary and may be filled automatically.
+
+After saving the file, test with:
+```bash
+rclone about rclone-backup-sharepoint-site:
+```
+
+> The `token` can initially be left empty and will be filled automatically by `rclone` when you trigger your first `rclone` operation like `rclone about rclone-backup-sharepoint-site:` as we use `auth_type = client_credentials`.
+
+
+#### Conclusion
+
+Congratulations! You now have:
+
+* A dedicated SharePoint site (with or without a dedicated Document Library).
+* An Azure AD "App Registration" that has `Sites.Selected` with `Write` permission only on that single site.
+* An rclone config on Linux that uses these client credentials in app-only mode.
+
+You can run `rclone sync` or `rclone copy` in scripts or cron jobs to securely upload data without tying backups to a full Microsoft 365 user license.
+This tightly scoped permission design ensures that even if your home server is compromised, the attacker can't access anything beyond the designated backup site.
