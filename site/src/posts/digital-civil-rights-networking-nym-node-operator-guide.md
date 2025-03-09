@@ -1175,6 +1175,163 @@ systemctl start nym-update.timer
 journalctl -u nym-update.service -f -n 100
 ```
 
+### Backup and Archiving
+
+This section is a simplified version of the more detailed process described in [Home Server Blueprint: Rock-Solid Home Server with Unattended Reboots, Secure Disk Encryption, and Cost-Effective Offsite Backups](../home-server-infrastructure).
+If you need comprehensive instructions, please refer to that guide.
+
+
+#### Installing Kopia and Rclone
+
+For our offsite backup, we'll use `kopia` and `rclone`.
+[Kopia](https://kopia.io) manages efficient snapshot-based backups (deduplicated, encrypted, and versioned), while [Rclone](https://rclone.org) synchronizes data with various cloud storage providers.
+- Kopia: Offers deduplication, encryption, and incremental backups. Great for maintaining both local and offsite snapshots.  
+- Rclone: A versatile tool that supports many cloud providers (Google Drive, Dropbox, SharePoint, Amazon S3, etc.). It can also handle bandwidth throttling and encryption on the fly.  
+
+
+First, install [Rclone](https://rclone.org):
+```bash
+curl https://rclone.org/install.sh | sudo bash
+```
+I named my offsite storage `rclone-backup-sharepoint-site:` in this example.
+
+Before proceeding on your server, first set up and test your Rclone configuration locally and verify:
+```bash
+rclone about rclone-backup-sharepoint-site:
+```
+Once it works on your local workstation, copy your verified configuration to your `nym-node` server:
+```bash
+scp ~/.config/rclone/rclone.conf avoro-root:/root/.config/rclone/rclone.conf
+```
+Finally, log in to your `nym-node` server and verify the offsite storage there:
+```bash
+rclone about rclone-backup-sharepoint-site:
+```
+
+Next, install [Kopia](https://kopia.io):
+```bash
+curl -s https://kopia.io/signing-key | gpg --dearmor -o /etc/apt/keyrings/kopia-keyring.gpg
+echo "deb [signed-by=/etc/apt/keyrings/kopia-keyring.gpg] http://packages.kopia.io/apt/ stable main" | tee /etc/apt/sources.list.d/kopia.list
+apt update && apt install kopia
+```
+Then, set up your Kopia repository to use the Rclone-based remote connection:
+```bash
+HOSTNAME=`hostname` KOPIA_REPOSITORY_SECRET="supersecret" bash -c 'kopia repository create rclone --password "${KOPIA_REPOSITORY_SECRET}" --remote-path=rclone-backup-sharepoint-site:"${HOSTNAME}" --description="My Offsite BTRFS Snapshots for ${HOSTNAME}" --content-cache-size-mb=512 --metadata-cache-size-mb=512'
+```
+Re-connect to your new Kopia repository to ensure you know the password:
+```bash
+kopia repository connect rclone --remote-path=rclone-backup-sharepoint-site:"${HOSTNAME}"
+```
+Finally, set a few global policies:
+```bash
+kopia policy set --global --max-parallel-snapshots=1 --max-parallel-file-reads=1
+kopia policy set --global --keep-latest=7 --keep-hourly=0 --keep-daily=14 --keep-weekly=4 --keep-monthly=12 --keep-annual=3
+kopia policy set --global --compression=pgzip
+kopia policy get --global
+kopia repository status
+```
+For local backups, we'll use a Git repository to track historical configurations without having to retrieve them from offsite:
+```bash
+mkdir /root/nym-node-backup
+cd /root/nym-node-backup
+git init
+```
+
+Congratulations, your setup work is now complete.
+
+#### Backup and Upgrade
+
+It's helpful to integrate your backup and archive steps into your regular upgrade process.
+For example, whenever you upgrade your node, use that opportunity to perform both archiving and backup tasks.
+
+Let's assume you're using the [Automatic Upgrades](#automatic-upgrades) script.
+A new `nym-node` binary might be downloaded as `/root/nym-node-v2025.4-dorina-patched`.
+
+Stop the current `nym-node` service:
+```bash
+systemctl stop nym-node.service
+```
+Perform a backup:
+```bash
+readlink -f /root/nym-node > /root/nym-node-backup/nym-node.current_target.txt
+rsync -av --links --info=progress2 --stats --exclude "*~" /root/.nym /root/nym-node-backup/dotnym
+rsync -av /etc/systemd/system/nym-node.service /root/nym-node-backup/
+sqlite3 /root/.nym/nym-nodes/default-nym-node/data/clients.sqlite ".backup /root/nym-node-backup/clients_backup.sqlite" ".exit"
+```
+Test the new binary: Look up your command-line settings in the `nym-node.service` file's `ExecStart=` statement. Then start the new binary manually:
+```bash
+chmod u+x /root/nym-node-v2025.4-dorina-patched
+/root/nym-node-v2025.4-dorina-patched run --mode exit-gateway --public-ips "94.143.231.195" --hostname "wznymnode.webhop.me" --http-bind-address 0.0.0.0:8080 --mixnet-bind-address 0.0.0.0:1789 --verloc-bind-address 0.0.0.0:1790 --location DE --wireguard-enabled true --expose-system-hardware false --expose-system-info false --accept-operator-terms-and-conditions
+```
+If everything looks good, press `Ctrl + C` to stop the process.
+
+Update the symlink:
+```bash
+rm /root/nym-node
+ln -s /root/nym-node-v2025.4-dorina-patched /root/nym-node
+```
+Start the service:
+```bash
+systemctl start nym-node.service
+# watch the logs:
+journalctl -u nym-node -f -n 100
+# verify the node's info endpoint:
+curl -X 'GET' 'http://94.143.231.195:8080/api/v1/build-information' -H 'accept: application/json' | jq
+```
+
+Congratulations, you've backed up your previous configuration and successfully upgraded your `nym-node`.
+
+#### Archiving
+
+Now we'll take care of archiving.
+The `kopia-ls` and `git-ls` commands mentioned below are handy Bash aliases you can define in your `~/.bashrc` (see [Useful `.bashrc` Aliases](#useful-.bashrc-aliases)).
+
+Now we're taking care of achriving. The `kopia-ls` and `git-ls` commands are bash aliases that you can define in your `.bashrc` file (see below).
+```bash
+git -C /root/nym-node-backup add -A && git -C /root/nym-node-backup -c user.name="Anonymous" -c user.email="anon@example.com" commit -m "Backup commit at $(date +%Y-%m-%d-%H%M)"
+git-ls
+kopia snapshot create --parallel=1 /root/nym-node-backup
+kopia repository status
+kopia-ls
+DATESTAMP="$(date +%Y-%m-%d-%H%M)" && git -C /root/nym-node-backup bundle create /root/nym-node-backup-$DATESTAMP.bundle --all && git -C /root/nym-node-backup bundle verify /root/nym-node-backup-$DATESTAMP.bundle
+```
+
+At this point, you have multiple ways to revert to previous configurations:
+1. Locally via your Git repository
+1. Offsite via Kopia and Rclone
+1. Locally via Git bundles
+
+#### Useful `.bashrc` Aliases
+
+If you like, you can add the following aliases to your `~/.bashrc`:
+```bash
+alias nym-dl='f(){ local url="$1"; local tag="$(echo "$url" | sed -E "s|.*/nym-binaries-([^/]+)/nym-node|\1|")"; curl -fSL --silent "$url" -o "nym-node-$tag" && chmod +x "nym-node-$tag"; }; f'
+alias nym-ls='curl --silent "https://api.github.com/repos/nymtech/nym/releases" | jq -r "(\"prerelease,draft,updated_at,url\"), (.[] | . as \$release | .assets[] | select(.name == \"nym-node\") | [\$release.prerelease,\$release.draft,.updated_at,.browser_download_url] |\
+ @csv)"'
+
+alias kopia-ls="kopia snapshot list --json | jq -r '.[] | \"\(.startTime[:19])Z \(.endTime[:19])Z  \(.source.path )  \(.rootEntry.obj )  \((.stats.totalSize / 1048576 | floor))MB  files:\(.stats.fileCount )  dirs:\(.stats.dirCount )\"'"
+
+alias git-ls='( cd /root/nym-node-backup && git log --pretty=format:%H | while read c; do date=$(git show --no-patch --format="%cd" --date=format:"%Y-%m-%d-%H%M" "$c"); subj=$(git show --no-patch --format="%s" "$c"); target=$(git show "$c:nym-node.current_target.txt" 2>/dev/null | tr "\n" " "); [ -z "$target" ] && target="N/A"; echo "$date $c $subj $target"; done )'
+```
+* `nym-ls` lists Nym binaries available on GitHub.
+* `nym-dl` (with the link from `nym-ls`) will download the binary to `/root/`. This is especially helpful if you're not using the [Automatic Upgrades](#automatic-upgrades) script.
+* `kopia-ls` shows an overview of your offsite backup history.
+* `git-ls` shows a local Git history of changes you’ve committed in `/root/nym-node-backup`.
+
+#### Kopia Maintenance
+
+Here are some Kopia maintenance commands you should consider running occasionally:
+```bash
+# Quick maintenance (compact small indexes, etc.)
+kopia maintenance run
+# Pruning/Retention: Kopia also has internal "maintenance" or "prune" commands for removing old data from the repository:
+kopia snapshot prune --delete
+# Full maintenance (rebuild indexes, more thorough compaction, etc.): It's a good idea to schedule a periodic run of:
+kopia maintenance run --full
+```
+
+With these backup, upgrade, and archiving steps in place, you'll have a robust strategy for protecting and restoring your Nym node configurations.
+
 ## Delegating
 
 Earlier, I mentioned that if you prefer not to run your own `nym-node`, you can still contribute to the network by delegating your Nym tokens - such as to my node.
