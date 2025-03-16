@@ -78,6 +78,22 @@ I won't go in-depth about the general usage of PGP/GPG. If you need more backgro
 * [GPG Cheat Sheet](https://gock.net/blog/2020/gpg-cheat-sheet)
 * [OpenPGP Best Practices](https://riseup.net/en/security/message-security/openpgp/best-practices)
 * [PGP FAN](https://articles.59.ca/doku.php?id=pgpfan:index)
+* [WKD](https://wiki.gnupg.org/WKD)
+    * [GnuPG: Set up Web Key Directory (WKD).](https://www.kuketz-blog.de/gnupg-web-key-directory-wkd-einrichten)
+    * Use WKD to download key and verify software packages like tor-browser:
+    ```bash
+    gpg --no-default-keyring --keyring ./tor-signing-ring.gpg --auto-key-locate nodefault,wkd --locate-keys torbrowser@torproject.org
+    gpg --no-default-keyring --keyring tor-signing-ring.gpg --homedir ./ --list-keys
+    gpg -v --no-default-keyring --keyring tor-signing-ring.gpg --homedir ./ --trust-model always --verify tor-browser-linux-x86_64-13.0.12.tar.xz.asc
+    ```
+    * Or for [weisser-zwerg.dev](/.well-known/openpgpkey/hu/jsij89suen4p9cb3n3j97i5migbdxfn1)
+    ```bash
+    curl -s https://weisser-zwerg.dev/.well-known/openpgpkey/hu/jsij89suen4p9cb3n3j97i5migbdxfn1 | gpg --show-keys
+    gpg  --no-default-keyring --keyring ./weisser-zwerg-keyring.gpg --auto-key-locate nodefault,wkd --locate-keys cs224@weisser-zwerg.dev
+    gpg  --no-default-keyring --keyring ./weisser-zwerg-keyring.gpg --homedir ./ --list-keys
+    # --- or via the github api ---
+    curl -s https://api.github.com/users/cs224/gpg_keys | jq -r '.[0].raw_key' | gpg --show-keys
+    ```
 
 I also won't demonstrate how to set up a hardware key like the [YubiKey 5](https://www.yubico.com/products/yubikey-5-overview/) for OpenPGP usage.
 For a detailed walkthrough, check out Charles Hoskinson's video: [Security Foundations: How to Secure Your Wallet Recovery Phrase for Cryptocurrency Wallets](https://youtu.be/fqrAzBAi64c?t=3438).
@@ -439,6 +455,67 @@ On the remote server, you can now use your Trezor-backed PGP key:
 ```bash
 gpg --decrypt test-secret.txt.gpg > test-secret.1.txt
 ```
+
+#### VENV Set-Up
+
+If you prefer working with Python virtual environments instead of Docker containers, you can still use one Trezor device for multiple PGP identities.
+I use the [UV](https://github.com/astral-sh/uv) Python package manager here, but feel free to use [conda](https://www.anaconda.com/docs/getting-started/miniconda/main), the built-in [venv](https://docs.python.org/3/library/venv.html), or any other tool for managing Python environments.  
+
+First install the `uv` package manager
+```bash
+# Install the UV python package manager:
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+Then choose a location for your virtual environment.
+Choose a convenient directory where you'd like to create the environment.
+For example, `~/.local/venv` might be a possible choice.
+
+Then create and activate the virtual environment.
+```bash
+cd ~/.local/venv
+uv venv trezor-venv --python 3.12 --seed
+source trezor-venv/bin/activate
+python --version
+```
+
+Next, clone the trezor-agent repository from GitHub. You can do this in `~/.local/venv` or another directory of your choice. Then install the Python components:
+```bash
+# Install the trezor-agent directly from its GitHub repository
+git clone https://github.com/romanz/trezor-agent
+uv pip install -e trezor-agent
+uv pip install -e trezor-agent/agents/trezor
+```
+
+I suggest that you add an alias to your `~/.bashrc` (or equivalent shell configuration file):
+```bash
+alias trezor-venv="source ~/.local/venv/trezor-venv/bin/activate && export GNUPGHOME=~/.gnupg/trezor_identity_a"
+```
+
+This alias both activates your new Python environment and sets the `GNUPGHOME` environment variable.
+Using a separate `GNUPGHOME` ensures you keep Trezor-related GPG files isolated from your default GnuPG setup.
+
+Then, whenever you need to work with your Trezor-based PGP identity, simply run:
+```bash
+trezor-venv
+```
+
+Once the environment is active, you can create a new Trezor-based GPG identity:
+```bash
+trezor-gpg init "Trevor Wikey" -v --time=0
+
+gpg --list-keys
+gpg --export-ownertrust > ownertrust.txt
+# Adapt ownertrust.txt for your key (level 6 is ultimate)
+gpg --import-ownertrust ownertrust.txt
+```
+
+Try out encryption, decryption, signing, and verification with your Trezor-based key:
+```bash
+date | gpg --encrypt -r "trevor" | gpg --decrypt 2>/dev/null
+echo 123 | gpg --sign | gpg --verify
+```
+
+Everything else works the same way as with Docker containers. Your Unix socket that you will need to forward via SSH is located at `$GNUPGHOME/S.gpg-agent`.
 
 You're now ready to use your Trezor-backed PGP key(s) on the remote server, ensuring your private key stays safely on your local device!
 
