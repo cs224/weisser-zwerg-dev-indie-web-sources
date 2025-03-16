@@ -12,7 +12,7 @@ tags: ['post']
 ## Rationale
 
 This post is part of the Digital Civil Rights and Privacy series.
-In a world where privacy and control over your data are increasingly important, this guide will show you how to set up your own private substitute for GitHub using Gitea, paired with Traefik as a reverse proxy.
+In a world where privacy and control over your data are increasingly important, this guide will show you how to set up your own private substitute for [GitHub](https://github.com) using [Gitea](https://about.gitea.com), paired with Traefik as a reverse proxy.
 By self-hosting your repositories, you ensure your code stays private, secure, and entirely under your control.
 
 ### Prerequisites: Networking and Network Topology Overview
@@ -288,3 +288,111 @@ By taking these steps, you've not only created a private and secure space for yo
 
 Now that you're up and running, think about all the possibilities - hosting your personal projects, collaborating with trusted contributors, or even creating a private repository for sensitive work.
 You're in full control of your data, free from third-party dependencies.
+
+## Appendix
+
+### Git Remote Gcrypt
+
+While [git-remote-gcrypt](https://github.com/spwhitton/git-remote-gcrypt) has nothing to do with [Gitea](https://about.gitea.com), it can be a useful addition for secure Git hosting.
+
+`git-remote-gcrypt` lets you maintain PGP-encrypted Git remotes.
+This means only the local machine, where you work with the repository, can see the unencrypted files. All data on the remote server stays encrypted.
+Internally, `git-remote-gcrypt` uses GnuPG to encrypt all objects in the repository, so the remote server never sees the repository in plain text.
+
+
+For efficiency, `git-remote-gcrypt` is best used with [rsync](https://rsync.samba.org).
+Although other options exist, we won't cover them here.
+`rsync` connects to the remote server over SSH, so you do need SSH access on that server.
+
+As an example, I keep my private "paperless office" in a Git repository and use `git-remote-gcrypt` to synchronize it to my home server (the same server running Gitea).
+
+The first step is to install `git-remote-gcrypt`:
+```bash
+apt install git-remote-gcrypt
+```
+
+I will use a hardware GPG key backed by a Trezor as described in [PGP via Roman Zayde’s Trezor-agent](../openpgp-card-hardware-keys-remotely/#venv-set-up).
+That post also explains how to set up the `trezor-venv` alias we use to configure the system for a Trezor-backed GPG key.
+
+I place these `git-remote-gcrypt` remotes under `/opt/offsite_backup_storage/git-remote-gcrypt` so they're included in my daily offsite backups, as described in [Home Server Blueprint: Rock-Solid Home Server with Unattended Reboots, Secure Disk Encryption, and Cost-Effective Offsite Backups](../home-server-infrastructure).
+
+Let's assume you are already inside the paperless-office Git repository that you want to push via `git-remote-gcrypt` to your home server. First, configure the new remote:
+```bash
+trezor-venv
+cd paperless-office
+git remote add cryptremote gcrypt::rsync://homeserver-as-root/opt/offsite_backup_storage/git-remote-gcrypt/paperless-office
+```
+
+Next, make a few adaptations to some git config values, as explained in the [README.rst](https://github.com/spwhitton/git-remote-gcrypt/blob/master/README.rst) of `git-remote-gcrypt`:
+```bash
+KEY_ID="$(gpgconf --list-options gpg | awk -F: '/^default-key:/ {gsub(/"/,"",$NF); print $NF}')" && git config gcrypt.participants $KEY_ID && git config remote.cryptremote.gcrypt-signingkey $KEY_ID && git config gcrypt.publish-participants true && git config gcrypt.require-explicit-force-push true
+cat .git/config
+```
+Finally, you can push to the remote:
+```bash
+git push --progress -v --force cryptremote --all --tags
+```
+And fetch from it:
+```bash
+git fetch --progress -v cryptremote
+```
+A `git clone` would look like this:
+```bash
+git clone gcrypt::rsync://homeserver-as-root/opt/offsite_backup_storage/git-remote-gcrypt/paperless-office
+```
+
+#### Syncing from a Git Bundle
+
+Sometimes I keep a Git repository entirely on a local computer but occasionally make a `git bundle` backup:
+```bash
+cd paperless-office
+git bundle create YYYY-mm-dd-paperless-office.bundle --all
+```
+If you decide later that you also want to replicate that same repo to a `git-remote-gcrypt` location, you can do the following:
+
+First, clone the bundle locally:
+```bash
+git clone YYYY-mm-dd-paperless-office.bundle YYYY-mm-dd-paperless-office
+```
+
+Then proceed as we did above:
+```bash
+cd YYYY-mm-dd-paperless-office
+git remote add cryptremote gcrypt::rsync://homeserver-as-root/opt/offsite_backup_storage/git-remote-gcrypt/paperless-office
+
+KEY_ID="$(gpgconf --list-options gpg | awk -F: '/^default-key:/ {gsub(/"/,"",$NF); print $NF}')" && git config gcrypt.participants $KEY_ID && git config remote.cryptremote.gcrypt-signingkey $KEY_ID && git config gcrypt.publish-participants true && git config gcrypt.require-explicit-force-push true
+cat .git/config
+
+git push --progress -v --force cryptremote --all --tags
+```
+
+Then you clone from your remote `git-remote-gcrypt` to its "persistent" name without the `YYYY-mm-dd-` and `.bundle`:
+```bash
+cd ..
+git clone gcrypt::rsync://homeserver-as-root/opt/offsite_backup_storage/git-remote-gcrypt/paperless-office
+```
+
+After this clone, your remote will be called `origin` rather than `cryptremote`, but that's fine.
+```bash
+git remote -v
+```
+
+From now on, you can handle every incremental `.bundle` file as follows:
+```bash
+cd paperless-office
+git fetch ../YYYY-mm-dd-paperless-office.bundle refs/heads/*:refs/heads/*
+git checkout master
+# FETCH_HEAD is a temporary reference Git creates whenever you fetch from a remote (or bundle).
+# Git stores the tip commit(s) you fetched in a file named .git/FETCH_HEAD
+git tag YYYY-mm-dd-paperless-office.bundle FETCH_HEAD
+git merge FETCH_HEAD
+git log --graph --oneline --decorate # Review the merge result by running 
+git push --progress -v --force origin --all --tags
+# Or: git push --progress -v --force origin --mirror
+```
+
+Using `git-remote-gcrypt` with rsync and SSH provides an efficient and secure way to store and back up your Git repositories.
+It helps ensure your data remains encrypted at all times when it's on a remote server, while still allowing you to work with unencrypted data locally.
+
+This method is especially useful for confidential or personal projects where you need full control over your repository's security.
+
