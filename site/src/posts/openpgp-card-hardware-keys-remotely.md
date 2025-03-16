@@ -517,6 +517,11 @@ echo 123 | gpg --sign | gpg --verify
 
 Everything else works the same way as with Docker containers. Your Unix socket that you will need to forward via SSH is located at `$GNUPGHOME/S.gpg-agent`.
 
+> Just as an optional idea you might also want to configure `default-recipient` and `encrypt-to` for your key:
+> ```bash
+> KEY_ID="$(gpgconf --list-options gpg | awk -F: '/^default-key:/ {gsub(/"/,"",$NF); print $NF}')" ; GPGHOMEDIR="$(gpgconf --list-dirs homedir)" ; GPGCONF="$GPGHOMEDIR/gpg.conf" ; mkdir -p "$GPGHOMEDIR" ; echo -e "\n# Use this key by default for encryption\ndefault-recipient $KEY_ID\n\n# Also always encrypt to this key\nencrypt-to $KEY_ID" >> "$GPGCONF"
+> ```
+
 You're now ready to use your Trezor-backed PGP key(s) on the remote server, ensuring your private key stays safely on your local device!
 
 ## Appendix
