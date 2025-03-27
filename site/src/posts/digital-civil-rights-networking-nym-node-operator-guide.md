@@ -896,6 +896,11 @@ In addition, I'd like the pages in the [Spectre Explorer](https://explorer.nym.s
       <td><a href="https://harbourmaster.nymtech.net/gateway/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ" target="_blank">E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ</a></td>
       <td><a href="https://harbourmaster.nymtech.net/gateway/2BuMSfMW3zpeAjKXyKLhmY4QW1DXurrtSPEJ6CjX3SEh" target="_blank">2BuMSfMW3zpeAjKXyKLhmY4QW1DXurrtSPEJ6CjX3SEh</a></td>
     </tr>
+    <tr>
+      <td><b><a href="https://forum.nym.com/t/nym-grant-proposal-nymesis/1010" target="_blank">Nymesis</a></b></td> <!-- <a href="https://nymesis.vercel.app" target="_blank"> -->
+      <td><a href="https://nymesis.vercel.app/?q=E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ" target="_blank">E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ</a></td>
+      <td><a href="https://nymesis.vercel.app/?q=2BuMSfMW3zpeAjKXyKLhmY4QW1DXurrtSPEJ6CjX3SEh" target="_blank">2BuMSfMW3zpeAjKXyKLhmY4QW1DXurrtSPEJ6CjX3SEh</a></td>
+    </tr>
   </tbody>
 </table>
 
