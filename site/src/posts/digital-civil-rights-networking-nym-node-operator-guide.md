@@ -189,6 +189,8 @@ The first step in setting up your `nym-node` is to initialize it. This process s
 > Keep in mind that `--wireguard-enabled true` only works in `--mode exit-gateway`. This is because WireGuard mode (also known as dVPN or `2-hop` mode) does not differentiate between entry and exit nodes.
 > If you want to participate in the WireGuard-based `2-hop` dVPN, your node must be configured as an exit-gateway.
 
+> If you are planning to run with `--wireguard-enabled true` you should consider to follow the [Wireguard Exit Policy Configuration](https://nym.com/docs/operators/nodes/nym-node/configuration#wireguard-exit-policy-configuration) in the documentation.
+
 This will create the following directory `.nym/nym-nodes/default-nym-node`. Within this directory, you'll find subdirectories and files needed for configuration and operation.
 
 I made changes to the `config.toml` file located at `.nym/nym-nodes/default-nym-node/config/config.toml`.
@@ -900,6 +902,11 @@ In addition, I'd like the pages in the [Spectre Explorer](https://explorer.nym.s
       <td><b><a href="https://forum.nym.com/t/nym-grant-proposal-nymesis/1010" target="_blank">Nymesis</a></b></td> <!-- <a href="https://nymesis.vercel.app" target="_blank"> -->
       <td><a href="https://nymesis.vercel.app/?q=E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ" target="_blank">E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ</a></td>
       <td><a href="https://nymesis.vercel.app/?q=2BuMSfMW3zpeAjKXyKLhmY4QW1DXurrtSPEJ6CjX3SEh" target="_blank">2BuMSfMW3zpeAjKXyKLhmY4QW1DXurrtSPEJ6CjX3SEh</a></td>
+    </tr>
+    <tr>
+      <td><b><a href="https://github.com/nymtech/nym/pull/5548" target="_blank">Nym Explorer V2</a></b></td> 
+      <td><a href="https://nym.com/explorer/nym-node/2196" target="_blank">E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ</a></td>
+      <td><a href="https://nym.com/explorer/nym-node/1892" target="_blank">2BuMSfMW3zpeAjKXyKLhmY4QW1DXurrtSPEJ6CjX3SEh</a></td>
     </tr>
   </tbody>
 </table>
