@@ -465,7 +465,12 @@ It means being able to speak your mind, create art, practice your faith, or enga
 This freedom is essential in a society where ideas can be debated openly, and individuals are not forced to conform out of fear.
 Protecting freedom of expression ensures that people from all backgrounds can participate in public life without being excluded or disadvantaged for what they believe.
 
-One straightforward way to protect freedom of expression—without fearing that you will be silenced or penalized - is to allow anonymous interaction in the digital world.
+One straightforward way to protect freedom of expression - without fearing that you will be silenced or penalized - is to allow anonymous interaction in the digital world.
+
+> Anonymous voting is a typical minority right to guarantee that people can cast their votes freely and as such is a fundamental mechanism that helps preserve the integrity of the democratic process.
+> By allowing individuals to cast their ballots without revealing their identities, it safeguards their ability to make choices based on personal convictions rather than external pressures or fears of reprisal.
+> In this way, anonymous voting serves as an essential minority right, reinforcing democracy's core principle that every individual's opinion holds weight and must be respected.
+
 Of course, this anonymity would have to work within legal frameworks (for instance, ensuring taxes are paid and preventing violations of others' rights).
 However, [Zero-Knowledge Proofs (ZKPs)](https://livebook.manning.com/book/real-world-cryptography/chapter-15/90) could enable both anonymity and support for other legal goals.
 
