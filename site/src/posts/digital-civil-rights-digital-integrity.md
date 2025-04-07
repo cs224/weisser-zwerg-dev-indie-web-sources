@@ -3,7 +3,7 @@ layout: "layouts/post-with-toc.njk"
 title: "Digital Civil Rights and Privacy: Embracing Digital Integrity"
 description: "Digital Integrity (Recht auf digitale Unversehrtheit) is a more comprehensive approach to what life in the digital age entails."
 creationdate: 2025-03-30
-keywords: digital civil rights, privacy, digital integrity
+keywords: digital civil rights, privacy, digital integrity, digital bill of rights
 date: 2025-03-30
 tags: ['post']
 ---
@@ -491,6 +491,38 @@ For example, you can show you're over 18 without sharing your birthday or other 
 This aligns well with the idea of digital integrity: you remain in control of what information you disclose, effectively balancing freedom of expression with accountability.
 When anonymity is necessary - such as whistleblowing or participating in political debates - these technologies allow you to share what's legally required while keeping your identity safe.
 
+#### Level Playing Fields
+
+We need a regulatory requirement for **structural neutrality** in our digital bill of rights. This requirement applies to the places where we try to make sense of the world - whether online or offline.
+
+Structural neutrality parallels the philosophical principle of [universality](https://en.wikipedia.org/wiki/Universality_(philosophy)).
+It ensures that, for all similarly situated individuals - regardless of culture, race, sex, religion, nationality, sexual orientation, gender identity, or any other distinguishing feature - the "rules of the game" remain the same.
+This principle is why the Roman goddess Justitia is depicted with a blindfold, symbolizing that justice should be applied impartially, without regard to wealth, power, or any other status.
+
+The "places in which we try to make sense of the world" can be thought of as **marketplaces of ideas**, such as universities, research institutions, and social media platforms.
+These are the environments in which we discuss, debate, and explore different perspectives.
+
+Algorithms, however, must not be designed to systematically target or punish certain people or ideas. Otherwise, we end up in a loop like this:
+- You're a bad person because you are spreading misinformation.
+- How do we know it's misinformation?
+- Because it violates the scientific consensus[^scientificconsensus].
+- How do we know what the scientific consensus really is?
+- Because all these scientists are saying the same thing.
+- Yes, but you've just told me you target anyone who strays from that consensus. So I have no way of knowing what the consensus would look like otherwise!
+
+If we punish people just for disagreeing, we create an echo chamber.
+We never truly discover if there's a different perspective or a new insight that could enrich our understanding.
+
+The basic point is that level playing fields are the sine qua non of the modern world.
+There's a reason this principle is so foundational and it's about the best we're ever going to do: letting competition unfold on a level playing field works in science, politics, and markets.
+It works across everything.
+It's the best way to let people figure out what's true, in a system that isn't biased from the start.
+
+> In the realm of computer science, "algorithmic fairness" explores how automated decision-making can inadvertently create or reinforce biases.
+> Ensuring structural neutrality means designing algorithms so that all users - and their ideas - are handled equally, without hidden or discriminatory filters.
+
+In summary that is why we need a regulatory requirement for **structural neutrality** in our digital bill of rights, particularly for the algorithms governing our marketplaces of ideas.
+
 ## Conclusion
 
 As our lives and identities increasingly extend into the digital realm, the concept of **digital integrity** becomes more important than ever.
@@ -694,6 +726,31 @@ We label these entities "the same" because their unbroken chain of space-time co
 
 Hence, time-spatial continuity - the consistent linking of an entity's present state (= specific, complex physical configuration) to its past - forms the bedrock of identity, both in the physical world and in our increasingly digital environments.
 
+### Digital Identity and Identity Management
+
+As I mentioned in the [Naming and References](#naming-and-references) section, whenever we deal with entities with identity (specific, complex configurations), we need a clear way to identify them.
+That's why we use references - think of them as long strings of characters that uniquely pinpoint these configurations.
+
+In the digital world, we typically rely on [surrogate keys](https://en.wikipedia.org/wiki/Surrogate_key) to represent human users within computer or software systems.
+Whenever someone wants to log in or gain access, they must prove they are who they claim to be.
+This process is known as authentication, and one of the most common ways to handle it securely is through multi-factor authentication (MFA).
+
+Such factors can be:
+
+- Something you **know**: for example, a secret password that only you know.  
+- Something you **have**: like a physical device or hardware token.  
+- Something you **are**: biometric traits such as your fingerprint.
+
+<a href="/img/digital-civil-rights-digital-integrity-identity.svg" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-identity.svg" alt="Digital Identity" style="max-height: 200px"></a>
+
+I've often blogged about my favorite hardware for proving digital identity: the [Trezor Model T](https://trezor.io/trezor-model-t).
+This device combines two factors in one unit and allows you to go [passwordless](https://en.wikipedia.org/wiki/Passwordless_authentication).
+You simply unlock it on its screen, and then it uses [FIDO2](https://en.wikipedia.org/wiki/FIDO_Alliance#FIDO2)/[WebAuthn](https://en.wikipedia.org/wiki/WebAuthn) to verify your identity.  
+
+> FIDO2 and WebAuthn are modern authentication standards designed to reduce the reliance on weak or reused passwords and enhance overall account security.
+
+With this approach, you can establish a truly self-sovereign and decentralized way of identifying yourself online, without relying on centralized services like [social login](https://en.wikipedia.org/wiki/Social_login) or other [single sign-on](https://en.wikipedia.org/wiki/Single_sign-on) platforms.
+
 
 ## Footnotes
 
@@ -701,3 +758,4 @@ Hence, time-spatial continuity - the consistent linking of an entity's present s
 [^entityphysicalconfiguration]: We will see that an **entity** is a synonym for a (complex) physical configuration difficult or even impossible to replicate.
 [^valueofvalues]: See: [The Value of Values with Rich Hickey](https://www.youtube.com/watch?v=-6BsiVyC1kM): Rich Hickey's concept of a "value" in functional programming emphasizes immutability and timelessness, which contrasts with the idea of an ever-changing entity that persists through time.
 [^narrativeorpsychologicalcontinuity]: What Matters Is the Organism: If you suffer memory loss, you don't become someone else. You remain you because of the unbroken chain of your body's existence as a single, living entity.
+[^scientificconsensus]: It's not that the scientific consensus is a good concept in the first place. But if you use it as a proxy for truth, you have to let competition unfold on a level playing field so that new ideas can be tested without prejudice. Relying on consensus will throw us back to pre-modern times, when truth was decided by rhetoric and majority opinion. The scientific revolution - led by figures like Galileo Galilei and Isaac Newton - placed the experiment at the heart of determining truth. Einstein's relativity theory was validated not because he was a persuasive speaker, but because experiments showed it fit observable reality better than previous models.
