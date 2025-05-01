@@ -74,6 +74,9 @@ For those interested in renting bare-metal hardware, [MacStadium, Inc](https://w
 
 Apple isn't the only one leveraging shared memory between the CPU and GPU anymore. This architecture means you can run large LLM models locally - and not on macOS, but on Linux!
 
+**\[Addendum 2025-04-30\]**: Another system to consider is [NVIDIA DGX Spark](https://www.nvidia.com/en-us/products/workstations/dgx-spark): A Grace Blackwell AI supercomputer on your desk. It is also based on 128 GB of Coherent Unified System Memory.
+It is advertised to be able to run AI models up to 200 billion parameters and when connecting two NVIDIA DGX Spark systems together to work with AI models up to 405 billion parameters.
+
 ### NVIDIA GPUs
 
 To get started with running large language models locally, understanding your GPU's capabilities is crucial. Visit NVIDIA’s [GPU Compute Capability](https://developer.nvidia.com/cuda-gpus#compute) page to learn more about their current lineup and specifications.
