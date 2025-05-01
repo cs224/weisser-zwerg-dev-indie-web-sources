@@ -54,12 +54,12 @@ In this section, I want to deliver on my promise of a systematic approach that h
 I'll use a few illustrations to emphasize key points. You may or may not be familiar with [Barbapapa](https://en.wikipedia.org/wiki/Barbapapa), a 1970s children's book whose title character (and "species") can morph and reshape itself, and even split into multiple copies (similar to [mitosis](https://en.wikipedia.org/wiki/Mitosis) (cell-division) in biology).
 
 <a href="/img/digital-civil-rights-digital-integrity-barbapapa.jpg" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa.jpg" alt="Barbapapa" style="max-height: 100px"></a>
-<a href="/img/digital-civil-rights-digital-integrity-barbapapa-ii.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-ii.png" alt="Barbapapa II" style="max-height: 100px"></a>
+<a href="/img/digital-civil-rights-digital-integrity-barbapapa-ii.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-ii.png" alt="Barbapapa II" style="max-height: 100px"></a>[^barbapapa]
 
 Barbapapa's shape-shifting powers are a useful metaphor for how our "digital selves" can extend and transform in the online world.  
 Now, let's look at the following illustration:
 
-<a href="/img/digital-civil-rights-digital-integrity-barbapapa-halo.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-halo.png" alt="Barbapapa Halo" style="max-height: 100px"></a>
+<a href="/img/digital-civil-rights-digital-integrity-barbapapa-halo.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-halo.png" alt="Barbapapa Halo" style="max-height: 100px"></a>[^barbapapa]
 <p></p>
 
 Imagine the large, central Barbapapa represents **you** as a person - a distinct, complex physical entity (a specific, complex physical configuration bundled together with your physical processes (biological cells, brain activity, ...)).
@@ -125,16 +125,16 @@ Modern operating systems are extremely opaque and complex, making it hard to kno
 I urge you to pay the same careful attention to where your digital "extensions" live as you would if your children had to live under a stranger's roof.
 
 Look at the following illustration. It portrays how our "digital selves" fan out across various online services - figuratively living under strangers' roofs.  
-<a href="/img/digital-civil-rights-digital-integrity-barbapapa-houses.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-houses.png" alt="Barbapapa in Houses" style="max-height: 200px"></a>
+<a href="/img/digital-civil-rights-digital-integrity-barbapapa-houses.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-houses.png" alt="Barbapapa in Houses" style="max-height: 200px"></a>[^barbapapa]
 
 Many of these "homeowners" may be decent and well-intentioned:  
-<a href="/img/digital-civil-rights-digital-integrity-barbapapa-houses-happy.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-houses-happy.png" alt="Barbapapa in Happy Home" style="max-height: 200px"></a>
+<a href="/img/digital-civil-rights-digital-integrity-barbapapa-houses-happy.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-houses-happy.png" alt="Barbapapa in Happy Home" style="max-height: 200px"></a>[^barbapapa]
 
 But some could be malicious actors. If you could feel their cold, creeping, and calculated evil-spirited atmosphere and their hostility were obvious, you'd quickly move on.  
-<a href="/img/digital-civil-rights-digital-integrity-barbapapa-houses-evil.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-houses-evil.png" alt="Barbapapa in Evil Home" style="max-height: 200px"></a>
+<a href="/img/digital-civil-rights-digital-integrity-barbapapa-houses-evil.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-houses-evil.png" alt="Barbapapa in Evil Home" style="max-height: 200px"></a>[^barbapapa]
 
 However, true bad actors are usually skilled at deception. They often conceal their intentions behind a friendly facade so that you and your digital "extensions" stay under the impression that everything is safe:  
-<a href="/img/digital-civil-rights-digital-integrity-barbapapa-houses-evil-very.jpg" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-houses-evil-very.jpg" alt="Barbapapa in very Evil Home" style="max-height: 200px"></a>
+<a href="/img/digital-civil-rights-digital-integrity-barbapapa-houses-evil-very.jpg" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-houses-evil-very.jpg" alt="Barbapapa in very Evil Home" style="max-height: 200px"></a>[^barbapapa]
 
 In these deceptive environments, you can't simply "pull back the curtain" because those systems are fully controlled by hostile forces - meticulously designed to hide their true nature from you.
 
@@ -391,7 +391,7 @@ When you can truly switch off connections, confirm device behaviors, and handle 
 
 The core idea behind the "inviolability" or "sanctity" of the home is that your home is a protected private space. This principle should also apply to the "homes" of your digital extensions. Here are two illustrations that visualize this concept:  
 <a href="/img/digital-civil-rights-digital-integrity-barbapapa-houses.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-houses.png" alt="Barbapapa in Houses" style="max-height: 200px"></a>
-<a href="/img/digital-civil-rights-digital-integrity-barbapapa-houses-happy.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-houses-happy.png" alt="Barbapapa in Happy Home" style="max-height: 200px"></a>
+<a href="/img/digital-civil-rights-digital-integrity-barbapapa-houses-happy.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-houses-happy.png" alt="Barbapapa in Happy Home" style="max-height: 200px"></a>[^barbapapa]
 
 Drawing on the English common law principle that "a man's home is his castle", we can extend its logic to digital spaces. In practice:
 - No Entry Without a Warrant
@@ -534,12 +534,12 @@ As our lives and identities increasingly extend into the digital realm, the conc
 We have seen how identity emerges from specific, complex configurations bundled together with computational processes ("Turing machine heads"), and how those processes tether us to time-spatial continuity.
 Applying this understanding to the online world creates an analogy between our physical selves and our digital extensions of our selves from social media accounts to workplace collaboration tools.
 
-<a href="/img/digital-civil-rights-digital-integrity-barbapapa-halo.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-halo.png" alt="Barbapapa Halo" style="max-height: 100px"></a>
+<a href="/img/digital-civil-rights-digital-integrity-barbapapa-halo.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-halo.png" alt="Barbapapa Halo" style="max-height: 100px"></a>[^barbapapa]
 
 Through this analogy we see why our digital extensions deserve the same autonomy and protection we expect for our physical selves.
 
 It's also critical to recognize that many of our digital identities "live under a stranger's roof".  
-<a href="/img/digital-civil-rights-digital-integrity-barbapapa-houses.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-houses.png" alt="Barbapapa in Houses" style="max-height: 100px"></a><br>
+<a href="/img/digital-civil-rights-digital-integrity-barbapapa-houses.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-houses.png" alt="Barbapapa in Houses" style="max-height: 100px"></a>[^barbapapa]<br>
 In other words, our vital online accounts often reside on servers owned by companies or individuals with their own agendas.
 Most people are unaware of just how much control these outside parties have.
 As with entrusting your children to live under a stranger's roof, we should pay close attention to where our digital identities really "live".
@@ -764,3 +764,4 @@ With this approach, you can establish a truly self-sovereign and decentralized w
 [^valueofvalues]: See: [The Value of Values with Rich Hickey](https://www.youtube.com/watch?v=-6BsiVyC1kM): Rich Hickey's concept of a "value" in functional programming emphasizes immutability and timelessness, which contrasts with the idea of an ever-changing entity that persists through time.
 [^narrativeorpsychologicalcontinuity]: What Matters Is the Organism: If you suffer memory loss, you don't become someone else. You remain you because of the unbroken chain of your body's existence as a single, living entity.
 [^scientificconsensus]: It's not that the scientific consensus is a good concept in the first place. But if you use it as a proxy for truth, you have to let competition unfold on a level playing field so that new ideas can be tested without prejudice. Relying on consensus will throw us back to pre-modern times, when truth was decided by rhetoric and majority opinion. The scientific revolution - led by figures like Galileo Galilei and Isaac Newton - placed the experiment at the heart of determining truth. Einstein's relativity theory was validated not because he was a persuasive speaker, but because experiments showed it fit observable reality better than previous models.
+[^barbapapa]: Barbapapa © Alice Taylor & Thomas Taylor. All rights reserved. Used with permission. For more information, visit [www.barbapapa.com](https://www.barbapapa.com/the-barbapa-family-en/).
