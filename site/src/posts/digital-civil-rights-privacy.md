@@ -372,6 +372,7 @@ And finally, here is a brief, incomplete list of organizations and individuals w
 * [Digitalcourage e. V.](https://digitalcourage.de)
 * [Kuketz IT-Security](https://www.kuketz-blog.de)
 * [Privacy Handbuch](https://www.privacy-handbuch.de)
+* [Privacy Guides](https://www.privacyguides.org/en)
 * [UNREDACTED](https://unredacted.org)
 * [Reclaim The Net](https://reclaimthenet.org)
 

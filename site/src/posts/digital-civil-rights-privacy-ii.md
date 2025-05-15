@@ -37,6 +37,8 @@ Check out the following articles to understand how dominant operating system pro
 * [App Intents API: This is how Siri will read the screen content in the future](https://www.heise.de/news/App-Intents-API-So-soll-Siri-kuenftig-den-Bildschirminhalt-lesen-10007289.html): From iOS 18.2, Apple is preparing for the new "Onscreen Awareness" of the AI ​​assistance system. In the future, Siri will know what users see in order to help them.
 * [How iPhone child-safety photo scanning works — and why privacy advocates are worried](https://www.washingtonpost.com/technology/2021/08/19/apple-iphone-child-safety-features)
 * [Why the iPhone 16 Should Scare You Shitless!](https://www.youtube.com/watch?v=_c8UrgGG3NA)
+* [This Is What a Digital Coup Looks Like | Carole Cadwalladr | TED](https://www.youtube.com/watch?v=TZOoT8AbkNE)
+    * [Cadwalladr](https://en.wikipedia.org/wiki/Carole_Cadwalladr) she was a finalist for the 2019 Pulitzer Prize for her role in exposing the Facebook–Cambridge Analytica.
 
 Even if Microsoft and/or Apple were to offer you the choice to opt-in or opt-out of these features, operating systems are so complex that it's nearly impossible for users to verify whether they keep their promises.
 Moreover, (foreign) governments might compel them to enable certain features secretly without user knowledge or recourse.
