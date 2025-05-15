@@ -56,7 +56,7 @@ I'll use a few illustrations to emphasize key points. You may or may not be fami
 <a href="/img/digital-civil-rights-digital-integrity-barbapapa.jpg" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa.jpg" alt="Barbapapa" style="max-height: 100px"></a>
 <a href="/img/digital-civil-rights-digital-integrity-barbapapa-ii.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-ii.png" alt="Barbapapa II" style="max-height: 100px"></a>[^barbapapa]
 
-Barbapapa's shape-shifting powers are a useful metaphor for how our "digital selves" can extend and transform in the online world.  
+Barbapapa's shape-shifting powers are a useful metaphor for how our "digital selves"[^andyclarkmindexpanding] can extend and transform in the online world.  
 Now, let's look at the following illustration:
 
 <a href="/img/digital-civil-rights-digital-integrity-barbapapa-halo.png" target="about:blank"><img src="/img/digital-civil-rights-digital-integrity-barbapapa-halo.png" alt="Barbapapa Halo" style="max-height: 100px"></a>[^barbapapa]
@@ -765,3 +765,4 @@ With this approach, you can establish a truly self-sovereign and decentralized w
 [^narrativeorpsychologicalcontinuity]: What Matters Is the Organism: If you suffer memory loss, you don't become someone else. You remain you because of the unbroken chain of your body's existence as a single, living entity.
 [^scientificconsensus]: It's not that the scientific consensus is a good concept in the first place. But if you use it as a proxy for truth, you have to let competition unfold on a level playing field so that new ideas can be tested without prejudice. Relying on consensus will throw us back to pre-modern times, when truth was decided by rhetoric and majority opinion. The scientific revolution - led by figures like Galileo Galilei and Isaac Newton - placed the experiment at the heart of determining truth. Einstein's relativity theory was validated not because he was a persuasive speaker, but because experiments showed it fit observable reality better than previous models.
 [^barbapapa]: Barbapapa © Alice Taylor & Thomas Taylor. All rights reserved. Used with permission. For more information, visit [www.barbapapa.com](https://www.barbapapa.com/the-barbapa-family-en/).
+[^andyclarkmindexpanding]: See also [The Mind-Expanding Ideas of Andy Clark](https://www.newyorker.com/magazine/2018/04/02/the-mind-expanding-ideas-of-andy-clark).
