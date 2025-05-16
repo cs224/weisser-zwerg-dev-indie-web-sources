@@ -1306,6 +1306,11 @@ kopia snapshot create --parallel=1 /root/nym-node-backup
 kopia repository status
 kopia-ls
 DATESTAMP="$(date +%Y-%m-%d-%H%M)" && git -C /root/nym-node-backup bundle create /root/nym-node-backup-$DATESTAMP.bundle --all && git -C /root/nym-node-backup bundle verify /root/nym-node-backup-$DATESTAMP.bundle
+# Check the commits HEAD~0, HEAD~1, HEAD~2, ...
+# Which files changed:
+git -C /root/nym-node-backup show --pretty="" --name-only HEAD~0
+# What changed in those files:
+git -C /root/nym-node-backup show HEAD~0
 ```
 
 At this point, you have multiple ways to revert to previous configurations:
@@ -1377,5 +1382,5 @@ You can find support at the following platforms:
 
 ## Footnotes
 
-[^duckdns]: Originally, I used [Duck DNS](https://www.duckdns.org), but it encountered several downtimes and service degradations.
+[^duckdns]: Originally, I used [Duck DNS](https://www.duckdns.org), but it encountered several downtimes and service degradations. In the meantime I have changed from [No-IP](https://www.noip.com/) to [Free DNS](https://freedns.afraid.org/) because of the annoying manual renewal process at No-IP.
 [^vpsprovideradditions]: I only discovered after writing this section that the Amnezia [How to run your VPN](https://amnezia.org/en/starter-guide) page lists some Virtual Private Server (VPS) providers. I've already included a few in the [Amnezia WireGuard for Censorship Resistance](../digital-civil-rights-networking-i/#amnezia-wireguard-for-censorship-resistance) section. Also have a look at [Running a Tor Exit node/Mysterium Node in Linode. (24629) | Linode Questions](https://www.linode.com/community/questions/24629/running-a-tor-exit-nodemysterium-node-in-linode) and [Lars-Sören Steck: Euer Lars vom netcup-Team: Betreiben eines (Non-exit) Tor-Nodes](https://forum.netcup.de/administration-of-a-server-vserver/vserver-server-kvm-server/15701-betreiben-eines-non-exit-tor-nodes/). And a comment from the [Node Operators Legal Forum](https://matrix.to/#/!YfoUFsJjsXbWmijbPG:nymtech.chat?via=nymtech.chat&via=matrix.org&via=matrix.su4ka.icu): Might also be time to revive the [Universal Privacy Alliance](https://privacyalliance.com/) where one of the initial intentions was to support privacy providers with any legal issues.
