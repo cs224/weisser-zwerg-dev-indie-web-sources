@@ -26,6 +26,7 @@ However, you can find helpful resources and support at the following platforms:
 * [Nym on Discord](https://discord.com/invite/nym): Join the conversation and connect with other users and developers in real time.
 * [operators:nymtech.chat](https://matrix.to/#/#operators:nymtech.chat)
 * Nym on [GitHub](https://github.com/nymtech/): Explore the code, report issues, and contribute to the project.
+* [Governator](https://governator.nym.com/proposal/prop-007db012-bafe-485d-9e20-e4511b98c8e8)
 
 ## Proof of Stake (PoS) and Proof of Work (PoW)
 
