@@ -1267,7 +1267,7 @@ systemctl stop nym-node.service
 Perform a backup:
 ```bash
 readlink -f /root/nym-node > /root/nym-node-backup/nym-node.current_target.txt
-rsync -av --links --info=progress2 --stats --exclude "*~" /root/.nym /root/nym-node-backup/dotnym
+rsync -av --links --info=progress2 --stats --exclude "*~" --exclude "*.bloom" /root/.nym /root/nym-node-backup/dotnym
 rsync -av /etc/systemd/system/nym-node.service /root/nym-node-backup/
 sqlite3 /root/.nym/nym-nodes/default-nym-node/data/clients.sqlite ".backup /root/nym-node-backup/clients_backup.sqlite" ".exit"
 ```
