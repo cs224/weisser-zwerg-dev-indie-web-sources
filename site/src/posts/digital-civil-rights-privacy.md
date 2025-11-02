@@ -368,14 +368,41 @@ We will also discuss key services that can be consumed privately without uninten
 
 And finally, here is a brief, incomplete list of organizations and individuals working to safeguard your digital civil rights and privacy:
 
+<!-- 
 * [European Digital Rights (EDRi)](https://edri.org)
 * [Digitalcourage e. V.](https://digitalcourage.de)
+-->
 * [Kuketz IT-Security](https://www.kuketz-blog.de)
 * [Privacy Handbuch](https://www.privacy-handbuch.de)
 * [Privacy Guides](https://www.privacyguides.org/en)
 * [UNREDACTED](https://unredacted.org)
 * [Reclaim The Net](https://reclaimthenet.org)
 
+#### Update 2025‑11‑02
+
+In September I noticed that several organisations I had previously listed had signed an open letter - [Letter on defending digital sovereignty](https://static1.squarespace.com/static/5e449c8c3ef68d752f3e70dc/t/68b709bebca26e5bfd9099ca/1756826046431/Letter+on+defending+digital+sovereignty+%281%29.pdf)[^freedomforfacts] -
+in support of the Digital Services Act (DSA).
+
+My own view of the DSA is far more critical, and this position is clearly articulated by the KRiStA *(Netzwerk Kritische Richter und Staatsanwälte n.e.V.)* in their piece, [Der Digital Services Act (DSA)](https://netzwerkkrista.de/2024/01/16/meinungsfreiheit-ein-auslaufmodell).
+The main points of their critique are summarised below:
+
+| KRiStA's Criticism | Why it matters |
+|--------------------|----------------|
+| Deletions of even non‑illegal entries will be possible | Limits the ability to correct inaccurate data |
+| Disregard for the constitutional principle of legal certainty &nbsp;&nbsp; | Undermines the rule‑of‑law foundation |
+| Proactive steps to manage and restrict information | Encourages pre‑emptive censorship |
+| Communication‑surveillance bureaucracy | Adds an opaque layer of oversight |
+
+<br>
+
+After reaching out to the organisations on the list that I currently fund, I received courteous replies.
+However, their message essentially boiled down to: "*We need to accept this 'bad' measure in order to fight another bad thing.*"
+
+I spent roughly six weeks reflecting on the issue, and I have concluded that the "one bad thing must be accepted to combat another" argument is untenable.
+Consequently, I will:
+
+1. Stop providing financial support to these organisations, and  
+2. Remove their names from the list above.
 
 ## Footnotes
 
@@ -393,3 +420,4 @@ And finally, here is a brief, incomplete list of organizations and individuals w
 [^sophos]: As an example of why trusting service providers promises in legal documents is not sufficient have a look at the [Sophos](https://www.heise.de/meinung/Analyse-und-Kommentar-Sophos-und-der-gebrochene-Schwur-10010073.html) case, where they spied on their own customers. Here is [Fefes Blog](https://blog.fefe.de/?ts=99ce1acd) on this issue.
 [^sophos]: As an example of why trusting service providers' promises in legal documents is not sufficient, have a look at the [Sophos](https://www.heise.de/meinung/Analyse-und-Kommentar-Sophos-und-der-gebrochene-Schwur-10010073.html) case, where they spied on their own customers. Here is [Fefe's blog](https://blog.fefe.de/?ts=99ce1acd) on this issue.
 [^robbraxmannewcontrol]: Rob Braxman Tech: [A New Control Tool to Disrupt Freedom and Free Speech - YouTube](https://www.youtube.com/watch?v=MmO2Lxz_Uu8): Debanking
+[^freedomforfacts]: Petition: <https://actionnetwork.org/forms/freedomforfacts>
