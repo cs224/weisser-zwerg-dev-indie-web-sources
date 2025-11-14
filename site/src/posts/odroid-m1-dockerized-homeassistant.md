@@ -268,7 +268,9 @@ B](https://www.raspberrypi.com/products/raspberry-pi-3-model-b/) in one location
 
 On the devices where `WireGuard` is running you will need a private key and the associated public keys. To generate those keys you can use the following command:
 
-    > for i in {1..3}; do prvk=$(wg genkey); echo "$i - priv: $prvk pub: $(echo $prvk | wg pubkey)"; done
+```bash
+> for i in {1..3}; do prvk=$(wg genkey); echo "$i - priv: $prvk pub: $(echo $prvk | wg pubkey)"; done
+```
 
 The output will look like this (just a sample output; **don't use!**):
 
