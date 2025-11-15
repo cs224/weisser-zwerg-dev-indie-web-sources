@@ -115,6 +115,29 @@ Choose which system to use and download the files from the following [Gist](http
 If you're unsure, you can begin with a local system container or a virtual machine managed by Incus.
 For guidance on this, check the appendix: [Incus/LXD as an Alternative to Vagrant for DevOps Testing](#incus%2Flxd-as-an-alternative-to-vagrant-for-devops-testing).
 
+Next install the following packages:
+
+```bash
+apt install -y ca-certificates make curl gnupg systemd-cryptsetup systemd-resolved
+```
+
+And docker:
+
+```bash
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/$(. /etc/os-release && echo "$ID")/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+chmod a+r /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$(. /etc/os-release && echo "$ID") $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+apt update
+apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+systemctl status docker
+docker run hello-world
+# disable docker service as we will start it manually later:
+# > systemctl start docker.service
+systemctl disable docker.service
+systemctl disable docker.socket
+```
+
 ### Review the `.env` File
 
 The `.env` file holds configuration variables like disk volume size, passphrases, and backup schedules.
