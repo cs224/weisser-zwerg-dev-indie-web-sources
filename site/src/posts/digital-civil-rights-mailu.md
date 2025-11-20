@@ -28,7 +28,7 @@ Here are some helpful additional resources:
 * [Traefik as reverse proxy (different host)](https://mailu.io/master/reverse.html#traefik-as-reverse-proxy-different-host)
 * [How to Setup a Mail Server on Debian Using Mailu and Start Sending Emails Today](https://webshanks.com/setup-a-mail-server-on-debian-using-mailu/)
 * [Building, deploying and securing your own mail server with Docker](https://sorriaux.software/blog/building-deploy-own-mail-server-docker)
-* [Self-hosted mail server: What you need today](https://www.heise.de/ratgeber/Mailserver-in-Eigenregie-Was-Sie-heute-brauchen-9329490.html) (c’t / heise+, Oct 20, 2023).  
+* [Self-hosted mail server: What you need today](https://www.heise.de/ratgeber/Mailserver-in-Eigenregie-Was-Sie-heute-brauchen-9329490.html) (c't / heise+, Oct 20, 2023).  
   It explains the current bar for deliverability (DNS, auth, TLS, reputation) and why running your own server is getting tougher.
 * [Home Server Blueprint: Rock-Solid Home Server with Unattended Reboots, Secure Disk Encryption, and Cost-Effective Offsite Backups](../home-server-infrastructure)
 
@@ -128,7 +128,7 @@ My configuration follows the storage design from [Home Server Blueprint: Rock-So
 I want my e-mail data encrypted at rest but *excluded* from nightly off-site backups, so I use the path `/mnt/luks_btrfs_volume/@local_only_storage/mailu`.
 If you prefer your mail to be included in backups, use `/opt/offsite_backup_storage/mailu` instead.
 
-As mentioned earlier, you’ll publish *MX records* pointing to your Mailu hostnames (e.g., `mail.example.com`), while the *e-mail addresses* can live at the root domain (e.g., `user@example.com`).
+As mentioned earlier, you'll publish *MX records* pointing to your Mailu hostnames (e.g., `mail.example.com`), while the *e-mail addresses* can live at the root domain (e.g., `user@example.com`).
 I personally keep addresses under the Mailu hostname (e.g., `user@mail.example.com`) to keep things explicit.
 
 > Autodiscovery tip: Many clients expect `autoconfig.<email-domain>` (Thunderbird) and `autodiscover.<email-domain>` (Outlook).
@@ -778,7 +778,7 @@ case "${1:-}" in
     # Accept replies from wg0 to the Mailu subnet *before* Docker's DOCKER/bridge hairpin drop.
     ipt -C DOCKER-USER -i "$WG_IF" -d "$MAILU_NET" -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || ipt -I DOCKER-USER 1 -i "$WG_IF" -d "$MAILU_NET" -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-    # Raw-table exception: let SMTP replies from wg0 reach containers (must run *before* Docker’s raw drops)
+    # Raw-table exception: let SMTP replies from wg0 reach containers (must run *before* Docker's raw drops)
     iptr -C PREROUTING -i "$WG_IF" -d "$MAILU_NET" -p tcp --sport 25 -j ACCEPT 2>/dev/null || iptr -I PREROUTING 1 -i "$WG_IF" -d "$MAILU_NET" -p tcp --sport 25 -j ACCEPT
 
 
@@ -1126,6 +1126,533 @@ You now have:
 - A setup that is private by design: the VPS only forwards encrypted traffic, while your data stays at home.
 
 Running your own mail server is not "set and forget", but with this architecture you have a strong, privacy-respecting base that you fully own.
+
+## Appendix
+
+### E-Mail Encryption (S/MIME, Autocrypt-PGP, WKD-PGP)
+
+With the Mailu setup you built in this guide, you are already in a good position for privacy, especially if you run Mailu only for yourself at home and mainly communicate with other people who do the same.
+As long as your devices stay uncompromised, your messages are only accessible to you and your communication partners, with only limited metadata visible.
+From the outside world, only the connections between mail transfer agents (MTA-to-MTA) are visible.
+From that perspective, end-to-end encryption might look optional.
+
+> In normal e-mail, some metadata is always visible to the servers that relay your messages: sender, recipient, subject line, dates, and the servers that handled the message.
+> The body may be protected in transit with TLS, but it is usually stored in clear text on each mail server unless you add end-to-end encryption.
+
+So when does encryption add real benefits? It helps a lot when you communicate with people who use mail services run by other people or organizations (for example, big webmail providers or company servers).
+It is also useful if you worry that your home server could be compromised in the future.
+In these situations, end-to-end e-mail encryption makes sure that the message content (not the metadata) can only be decrypted on the endpoints (desktop PCs or mobile devices) when the recipient actually reads it.
+
+Also, if you want to open up your Mailu installation on your home server for family and friends, encryption is a good idea.
+It means that, even as the server administrator, you technically cannot read the content of their e-mails, even if you wanted to.
+
+All the work we do in this chapter of the appendix will also prepare us for the next chapter, where we will talk about [Delta Chat](https://delta.chat/en), a decentralized and secure messenger app that uses e-mail and encryption as its backend.
+With the recently released [Delta Chat Version 2](https://delta.chat/en/2025-08-04-encryption-v2), chats are end-to-end encrypted, always and by default.
+But more about that in the next chapter.
+
+For your full understanding of the limitations of e-mail encryption more broadly here are a few good online write-ups that discuss the subject-line and other metadata limitations:
+
+* [Email Security](https://www.privacyguides.org/en/basics/email-security/) on Privacy Guides: explains that metadata (including Subject) remains visible even when the body is encrypted.
+* [Email Encryption Options: SMTP TLS vs PGP vs S/MIME vs Portal Pickup](https://luxsci.com/blog/email-encryption-showdown-smtp-tls-vs-pgp-vs-smime-vs-portal-pickup.html) on LuxSci blog: states clearly that PGP does not encrypt headers (sender, recipient, subject) and outlines implications.
+* [15 reasons not to start using PGP](https://secushare.org/PGP) on SecuShare: enumerates many practical limitations of PGP/e-mail and includes the subject-line / header metadata issue. 
+
+#### E-Mail Encryption Options
+
+Currently, three main techniques are used for end-to-end e-mail encryption: S/MIME, Autocrypt-PGP, and WKD-PGP.
+
+S/MIME's big advantage over Autocrypt/WKD-PGP is how identity and trust are handled and how well it integrates with "normal" mail clients (especially corporate Outlook / Apple Mail setups).
+For a single private user, that can be useful if you talk a lot with people in more formal or enterprise environments.
+Otherwise, Autocrypt/WKD is usually simpler and at least as private for everyday use.
+
+* **S/MIME**: Uses X.509 certificates issued by a certificate authority (CA). Trust is hierarchical: your mail client trusts certain CAs in its root store, and a CA vouches that this public key belongs to this e-mail address (and maybe name/organisation).
+* **Autocrypt**: A convenience layer on top of OpenPGP. Your mail client automatically attaches your OpenPGP public key in a header and learns your peers' keys from their headers. It intentionally does almost no key verification (opportunistic security), focusing on making encryption "just happen" between normal users.
+* **WKD (Web Key Directory)**: A way to publish and fetch OpenPGP keys via HTTPS from the domain of the e-mail address (e.g. `https://openpgpkey.example.com/...`). The domain effectively vouches for the key, which makes key discovery more reliable and less phishing-prone than random keyservers.
+
+> Conceptually, S/MIME and PGP solve the same problem (encrypt and sign e-mail), but they live in different ecosystems.
+> S/MIME is widely used in companies with central IT that can provision certificates.
+> PGP-based solutions are more common in the open-source and privacy communities and make it easier for individuals to generate and manage their own keys.
+
+> WKD-PGP is also how [Proton Mail](https://en.wikipedia.org/wiki/Proton_Mail) handles e-mail encryption.
+> Proton leans into OpenPGP for standardisation and interoperability with other PGP users and tools.
+> Proton optimises for "use battle-tested OpenPGP so we can work with the rest of the ecosystem," accepting PGP's subject-line limitation (for now).
+> Proton also developed its own OpenPGP [certificate authority (CA)](https://proton.me/blog/why-we-created-protonca) to improve trust in keys.
+
+> Another privacy-focused e-mail service that often comes up in conversations is [Tuta](https://en.wikipedia.org/wiki/Tuta_(email)) (formerly Tutanota).
+> Tuta's encryption is more "closed" but very metadata-protecting and moving to post-quantum cryptography.
+> They explicitly do not use PGP or S/MIME, citing lack of subject encryption, poor algorithm agility, no Perfect Forward Secrecy (PFS), and the [EFAIL](https://en.wikipedia.org/wiki/EFAIL) history, among other reasons.
+> In PGP e-mail encryption, the message body and attachments are end-to-end encrypted, but e-mail subject lines are not.
+> Proton, for example, protects subject lines on Proton's servers (zero-access), but these are not end-to-end encrypted when crossing the normal e-mail network.
+> This is a limitation of PGP's current e-mail format, not something specific to Proton.
+
+##### S/MIME
+
+Unfortunately, the set of trusted certificate authorities (CAs) that issue free, long-lived S/MIME certificates is very small.
+
+As of sources around 2022 - 2025:
+
+* Actalis (Italy) offers one free mailbox-validated S/MIME certificate per account for private use (valid for one year).
+* Wikipedia still lists several "free for private use" S/MIME offers (Actalis, WISeKey, short trials from GlobalSign, Secorio, etc.), but many of these are short-lived (1 - 3 months) or positioned as trials rather than stable, long-term options.
+
+> If your employer or university runs its own public key infrastructure (PKI), you might get an S/MIME certificate from them, but that usually ties your identity to that organisation and is meant for work or study, not for a private, long-term mailbox on your own domain.
+
+There is also a common catch with (most) free S/MIME offerings, including Actalis: the CA generates your key pair on the server and then sends you a PKCS#12 (`.p12` / `.pfx`) file to import. That means the CA has had your private key at least once, even if they promise to discard it.
+
+> Some commercial S/MIME products allow you to generate your own key pair locally and send only a certificate signing request (CSR), which is better for privacy, but this is rare in the free personal segment.
+
+Because of these limitations (few free options, short validity, and server-generated keys), I will not go deeper into S/MIME in this guide and will instead focus on OpenPGP-based options that give you full control over your own keys.
+
+
+##### Autocrypt
+
+Autocrypt is designed to make OpenPGP encryption "just work" between normal e-mail users, even if they never think about keys.
+To keep things simple, it deliberately does not try to detect man-in-the-middle (MITM) attacks or spoofing: the key in the header can be silently replaced by an active attacker who sends spoofed mail, and users are not warned when keys change.
+
+This design choice trades strong identity verification for easy everyday encryption.
+Autocrypt assumes that most attackers cannot reliably intercept and modify all your messages, and that for many users "some encryption most of the time" is still a big improvement over "no encryption at all".
+
+Autocrypt is mainly supported by privacy-oriented e-mail clients such as K-9 Mail, Thunderbird (with built-in OpenPGP), and KMail.
+Support is improving, but it is still not as widely deployed as S/MIME in large corporate environments.
+
+Autocrypt also tries to be "automatic", but the trust story is very different.
+S/MIME's trust is rooted in the CA store the client already uses and understands; Autocrypt's is closer to TOFU (Trust on First Use): "I saw a key in a header once, so I'll just trust it from now on."
+
+In practice, this means Autocrypt is great for people who mostly care that their everyday mail to friends and family is encrypted with minimal setup.
+It is less ideal if you need strong guarantees that you are always talking to the *right* cryptographic identity (for example, in high-risk or professional threat models).
+
+To verify that Autocrypt is configured correctly in your e-mail client use the "view headers" feature of your e-mail client.
+This gives you the raw headers so you can inspect them. According to the [Autocrypt Level 1 specification](https://docs.autocrypt.org/autocrypt-spec-1.1.0.pdf), the header has these fields:
+```txt
+Autocrypt: addr=you@example.com;
+           prefer-encrypt=mutual|nopreference;
+           keydata=<BASE64 of full public key>
+```
+
+
+##### Web Key Directory (WKD)
+
+Web Key Directory (WKD) is a way to publish and fetch OpenPGP keys via HTTPS from the domain of the e-mail address (for example: `https://openpgpkey.example.com/...`).
+The domain effectively vouches for the key, which makes key discovery more reliable and less phishing-prone than using random keyservers.
+
+If you use OpenPGP/GnuPG for e-mail security, consider publishing your public key with [Web Key Directory](https://www.webkeydirectory.com/set-up-wkd).
+It is usually much easier than it looks at first. If you followed this guide, you are already sending e-mail from your own domain (for example: `user@example.com`) and you have a publicly reachable virtual private server (VPS) running Traefik as a reverse proxy.
+That is already enough to make WKD-PGP work.
+
+You only need to publish your public key at a specific URL location on your VPS, so that WKD-aware tools can find it. Traefik will simply serve these files over HTTPS like any other static content.
+
+> WKD has two publishing modes ("direct" and "advanced"), but both boil down to placing your OpenPGP keys under a `/.well-known/openpgpkey/` path on a host such as `openpgpkey.example.com` or your main domain.
+> Tools like GnuPG can generate the correct file layout and hashes for you, so you usually do not have to care about the exact URL structure.
+
+When a sender uses a supporting mail client and adds an e-mail address to a message, the client will automatically check whether WKD is set up for the receiver's domain.
+If a public key is found, it is fetched and imported into the keyring, allowing secure communication without the user having to search keyservers or exchange keys manually.
+
+
+
+#### Tooling: GnuPG, Kleopatra Certificate Manager, and KMail
+
+The workhorse for OpenPGP encryption is [The GNU Privacy Guard](https://www.gnupg.org/), or **GnuPG** (`gpg`) for short.
+It is a powerful command-line tool that implements the OpenPGP standard.
+
+But PGP is quite involved and comes with many command-line switches that are hard to remember.
+I personally prefer to use the [Kleopatra](https://apps.kde.org/kleopatra/) certificate manager on the desktop.
+**Kleopatra** is an open-source certificate manager and graphical front-end for cryptographic services, mainly designed to handle OpenPGP and S/MIME (X.509) certificates.
+Under the hood, Kleopatra is "just" a GUI for GnuPG, so you can freely mix use of the command line and the graphical interface.
+
+> On Windows, Kleopatra is typically installed as part of [Gpg4win](https://en.wikipedia.org/wiki/Gpg4win).
+> On most Linux distributions, it is available as a normal package (often called `kleopatra`) and integrates nicely with the KDE desktop.
+> Either way, the keys you create are stored in the same GnuPG keyring that `gpg` uses.
+
+To create a PGP key for your e-mail account in Kleopatra, go to  
+`File > New OpenPGP Key Pair...`. Enter your name and the e-mail address you want to use, then follow the wizard. You should protect your private key with a strong password (passphrase).
+After creating the key, export and safely store a **revocation certificate** and a **backup** of your private key. A revocation certificate lets you mark the key as invalid if you ever lose control of it or forget the passphrase.
+
+> I use [KeePassXC](https://keepassxc.org) as a password manager and as a backup store for my secrets. KeePassXC is just an encrypted container (KDBX). KeePassXC should be a backup/transport vault, not a replacement for GnuPG's own keyring. Whether this is a "good idea" depends on your threat model:
+> - You already trust KeePassXC with everything else (online banking passwords, etc.).
+> - You use a strong master password, maybe a keyfile, and sane KDBX settings.
+>
+> **Pros of this approach:**
+> - You get a central, encrypted backup of your GPG key, protected twice: by the key's own passphrase and by the KeePassXC database encryption (KDBX uses AES/ChaCha20 + Argon2; with a good master password/keyfile this is strong).
+> - It is very convenient for restoring keys after reinstalling, setting up new machines, and avoiding permanent key loss (a surprisingly common problem).
+>
+> The pattern is:
+>
+> - Store your GPG passphrase as a KeePassXC entry.
+> - Attach files to that entry (ASCII-armored public and secret key export, revocation certificate, ownertrust backup).
+> 
+> You can use Kleopatra to export the public key (right-click on the key → `Export...`) and the secret key (right-click on the key → `Backup Secret Keys`).  
+> For command-line users, something like this works:
+> 
+> ```bash
+> # list all your keys
+> gpg --list-keys
+> 
+> # public key (ASCII armored):
+> gpg --export --armor 'you@example.com' > you-public.asc
+> 
+> # secret key (ASCII armored):
+> gpg --export-secret-keys --armor 'you@example.com' > you-secret.asc
+> 
+> # optional: trust settings
+> gpg --export-ownertrust > ownertrust.txt
+> 
+> # strongly recommended: revocation certificate
+> gpg --output revoke-you.asc --gen-revoke 'you@example.com'
+> ```
+
+**KMail** is the KDE e-mail client.
+Autocrypt support was added in [KDE Gear 21.04](https://kde.org/announcements/gear/21.04/), and KMail also implements WKD (Web Key Directory).
+KMail delegates all Autocrypt-PGP and WKD-PGP related operations to the underlying GnuPG, so you get the same cryptographic engine everywhere.
+
+To enable encryption in KMail:
+
+1. Open `Settings > Configure KMail… > Security > Encryption`.  
+   Simply turn on all the OpenPGP-related options-checkboxes (Autocrypt and WKD). For all other values, the defaults are fine; you mostly just need to enable the features.
+
+2. Then go to `Settings > Configure KMail… > Accounts`.  
+   Select the account you want to use with encryption, click `Modify…`, then go to the `Cryptography` tab.
+
+3. Choose the PGP key that matches your e-mail address.  
+   Enable "Use same key for encryption and signing" so that KMail uses that key for both actions.
+
+4. In the Autocrypt section, check all the checkboxes for this account.  
+   And in the "Overwrite defaults" section, also check all the checkboxes in that section.
+
+That's it: KMail will now use your GnuPG key for Autocrypt-PGP and WKD-PGP, and will try to encrypt mail automatically whenever it can find a key for your contacts.
+
+> **Make sure WKD lookups are used (GnuPG side)**: KMail doesn't speak WKD directly; it asks GnuPG to locate keys by e-mail address, and GnuPG's `auto-key-locate` mechanism decides *how* (local keyring, WKD, keyservers, etc.). Any MUA that uses `--locate-keys` benefits from WKD this way.
+>
+> On most modern GnuPG installations, WKD is already part of the default `auto-key-locate` chain. If you want to be explicit:
+> 1. Open `~/.gnupg/gpg.conf` in a text editor.
+> 2. Add or adjust a line like:
+> ```text
+> auto-key-locate local,wkd,keyserver
+> ```
+> * `local` - check existing keys in your keyring.
+> * `wkd` - query recipients' domains via Web Key Directory.
+> * `keyserver` - fall back to configured keyserver(s).
+
+
+
+#### Setting up OpenPGP Web Key Directory
+
+The following steps should be performed on your virtual private server (VPS) where Traefik is running.
+I assume that the dockerized Traefik lives in `/opt/traefik` and that you run all commands from that directory.
+
+I will set up the so-called [advanced](https://www.webkeydirectory.com/set-up-wkd) WKD layout, which is only slightly more complex than the "direct" method.
+The advanced method is good for multi-domain and "WKD as a service" use cases.
+That matters if you want to serve several e-mail domains with the same VPS/Traefik/home server/Mailu infrastructure.
+In that case, all domains can be served by the same backend, while each e-mail domain still has its own WKD URL pattern.
+
+For each of your mail domains you need a DNS `A` record (and optionally `AAAA` for IPv6; `CNAME` can also work) similar to `openpgpkey.mail.example.com` pointing to your VPS IP address.
+
+The target directory structure will look like:
+
+```txt
+./wkd/
+  nginx.conf
+  public/
+    .well-known/
+      openpgpkey/
+        mail.example.com/
+          policy
+          hu/<32-char-hash-for-user>   # binary key (gpg --export)
+        example.com/
+          policy
+          hu/<32-char-hash-for-user>   # binary key (gpg --export)
+        abc.xyz/
+          policy
+          hu/<32-char-hash-for-user>   # binary key (gpg --export)
+```
+
+We start with the setup for the `mail.example.com` domain:
+
+```bash
+mkdir -p ./wkd/public/.well-known/openpgpkey/mail.example.com/hu
+touch ./wkd/public/.well-known/openpgpkey/mail.example.com/policy
+```
+
+The `policy` file can be empty.
+
+The `<32-char-hash-for-user>` and the binary key can be generated via:
+
+```bash
+gpg-wks-client --print-wkd-hash user@mail.example.com
+# or
+gpg --with-wkd-hash -k user@mail.example.com
+
+# Use the hash that you see on screen as the file name of the binary public key:
+gpg --export --export-options export-minimal \
+    -o /opt/traefik/wkd/public/.well-known/openpgpkey/mail.example.com/hu/<32-char-hash-for-user> \
+    user@mail.example.com
+```
+
+Next, create a `docker-compose-wkd-for-mailu-domains.yml` file in the `/opt/traefik` directory:
+
+```yml
+services:
+  wkd_nginx:
+    image: nginx:1.29.3
+    container_name: wkd_nginx
+    restart: unless-stopped
+    networks:
+      - main
+    volumes:
+      # WKD static files:
+      - ./wkd/public:/usr/share/nginx/html:ro
+      # nginx vhost / WKD-specific config
+      - ./wkd/nginx.conf:/etc/nginx/conf.d/wkd.conf:ro
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=main
+
+      # Route WKD HTTPS traffic from Traefik to this container
+      - traefik.http.routers.wkd.entrypoints=web-secure
+      - traefik.http.routers.wkd.rule=Host(`openpgpkey.mail.example.com`)
+      - traefik.http.routers.wkd.tls=true
+
+      # Use the Cloudflare dns-01 resolver
+      - traefik.http.routers.wkd.tls.certresolver=cf-dns
+
+      # Service (nginx listens on 80 in the container)
+      - traefik.http.services.wkd.loadbalancer.server.port=80
+
+networks:
+  main:
+    external:
+      name: traefik_default
+```
+
+And an `nginx.conf` file at `./wkd/nginx.conf`:
+
+```txt
+server {
+    listen 80 default_server;
+    server_name _;
+
+    # WKD files live under:
+    #   /usr/share/nginx/html/.well-known/openpgpkey/mail.example.com/...
+    root /usr/share/nginx/html;
+
+    # Serve WKD content for advanced method
+    #
+    # For user@mail.example.com the client will fetch:
+    #   https://openpgpkey.mail.example.com/.well-known/openpgpkey/mail.example.com/hu/<hash>?l=user
+    #
+    # Files you need on disk:
+    #   .well-known/openpgpkey/mail.example.com/policy           (can be empty)
+    #   .well-known/openpgpkey/mail.example.com/hu/<hash>        (binary public key)
+    #
+    location /.well-known/openpgpkey/ {
+        # Serve as binary blob (recommended for WKD)
+        default_type  application/octet-stream;
+
+        # Allow cross-origin fetches
+        add_header    Access-Control-Allow-Origin * always;
+
+        # Don't auto-index directories
+        autoindex     off;
+
+        # Make sure only existing files are served
+        try_files     $uri =404;
+    }
+}
+```
+
+Once that is done, start this Compose file:
+
+```bash
+docker compose -f docker-compose-wkd-for-mailu-domains.yml up -d
+```
+
+**Verify your setup**
+
+First, check that DNS for `openpgpkey.mail.example.com` points to your VPS:
+
+```bash
+# The second parameter is the authoritative DNS server; for my setup it is a Cloudflare DNS server
+nslookup openpgpkey.mail.example.com sandra.ns.cloudflare.com
+# or
+dig @sandra.ns.cloudflare.com openpgpkey.mail.example.com A +short
+
+# If the following does not show a result, some DNS server in the path may not have updated its cache yet
+nslookup openpgpkey.mail.example.com
+# or
+resolvectl query openpgpkey.mail.example.com
+```
+
+> If the DNS names have not propagated yet to your local resolver, you can temporarily point your network interface to a public DNS server:
+>
+> ```bash
+> # Find the network interface name
+> ip link
+> # or
+> nmcli device status
+>
+> # Set the DNS (example using Cloudflare DNS)
+> resolvectl dns <ifname> 1.1.1.1
+>
+> # You can undo this setting with
+> resolvectl revert <ifname>
+> # or by using NetworkManager to disconnect and reconnect the interface
+> ```
+
+Next, check that the TLS certificate was correctly issued via Traefik and the Let's Encrypt ACME protocol:
+
+```bash
+openssl s_client -connect openpgpkey.mail.example.com:443 -servername openpgpkey.mail.example.com -crlf -quiet
+```
+
+Then check on raw HTTPS level that the key file can be fetched:
+
+```bash
+curl -I "https://openpgpkey.mail.example.com/.well-known/openpgpkey/mail.example.com/hu/<hash>?l=user"
+```
+
+Once all the above is working correctly, the actual WKD "magic" should work as expected:
+
+```bash
+# Only check that the key is present (do not import into your keyring)
+gpg -vv --auto-key-locate clear,nodefault,wkd --locate-external-keys user@mail.example.com
+
+# Import the key into your keyring using WKD
+gpg --auto-key-locate local,wkd --locate-keys user@mail.example.com
+# or, if you also want to fall back to keyservers:
+# gpg --auto-key-locate local,wkd,keyserver --locate-keys user@mail.example.com
+```
+
+Once keys are imported via the WKD method, you can see `origin=wkd` with:
+
+```bash
+gpg --list-keys --with-key-origin
+```
+
+> You can also configure Kleopatra to show the `Origin` column, so you can visually confirm that a key came from WKD.
+
+
+#### Interoperability with Proton Mail
+
+Sending and receiving encrypted e-mails between your Mailu instance (with WKD-PGP) and Proton Mail should work out of the box.
+Both sides speak WKD-PGP and can fetch the other side's public key automatically, so they can mutually encrypt e-mails without manual key exchange.
+
+The one extra thing you can do on both sides is to make sure that the relevant keys are treated as **trusted keys**.
+
+##### Trusting Keys from Proton
+
+On your Mailu side, I suggest you import the key from the [ProtonCA](https://proton.me/blog/why-we-created-protonca).
+Proton developed its own OpenPGP certificate authority (CA), ProtonCA, and began signing encryption keys to guarantee that they belong to a specific Proton account.
+
+ProtonCA exists because Proton is uniquely positioned to act as a CA for its own users:
+they control the e-mail domain and can easily confirm that a specific key belongs to a particular Proton e-mail address.
+While Proton users themselves may not notice a big change, this makes life much easier for people using PGP to send end-to-end encrypted e-mails to Proton users.
+No matter how you obtain a Proton user's PGP key, you can be confident it is valid and recent (actively used within the past six months) if it is signed by ProtonCA.
+
+> To avoid certifying old keys, ProtonCA enforces a strict expiration policy.  
+> Each key is certified for six months at a time.  
+> A month before a certificate expires, ProtonCA checks whether the associated e-mail address is still active and the current key has not been removed.  
+> If both criteria are met, ProtonCA renews the certification for another six months.
+
+You import the ProtonCA key into your local keyring via:
+
+```bash
+# Use the WKD protocol directly
+gpg -vv --auto-key-locate clear,nodefault,wkd --locate-keys openpgp-ca@proton.me
+
+# or use the ProtonCA API
+curl 'https://mail-api.proton.me/pks/lookup?op=get&search=openpgp-ca@proton.me' | gpg --import
+```
+
+Before you continue, you should check the fingerprint, which you can find on the [ProtonCA](https://proton.me/blog/why-we-created-protonca) website: `0a8652fe5d53386057899fe9d806c1af5978e8c7`.
+Proceed only if the fingerprints match.
+
+> When you verify a signature or encrypt to someone, GnuPG distinguishes between:
+> * **Validity / certification** - *"Have you (or a trusted CA) checked that this key really belongs to `user@domain`?"*
+> * **Ownertrust** - *"Do you trust this key's owner (or CA) to sign other people's keys correctly?"*
+>
+> ProtonCA is meant to be an entity you give high ownertrust to, because it vouches for many Proton users' keys.
+
+
+In Kleopatra, you can now:
+
+1. Right-click the ProtonCA key and choose **"Certify…"** with one of your own keys (trust level "ultimate").
+2. Then right-click again and choose **"Change Certification Power…"** to give it the power to certify other keys.
+
+The first step tells GnuPG that **you** trust the ProtonCA key after checking its fingerprint.
+The second step tells GnuPG that you are willing to use the ProtonCA signatures to calculate the validity of keys ProtonCA has signed (that is, you accept the ProtonCA trust chain).
+
+> If you prefer to use GnuPG directly on the command line, you can do:
+>
+> ```bash
+> gpg --edit-key openpgp-ca@proton.me
+> gpg> lsign        # locally sign the ProtonCA key
+> gpg> save
+> gpg> trust        # set to "full" (4)
+> gpg> save
+> ```
+
+From that moment on, keys fetched from Proton WKD should have an automatic validity of "full".
+In KMail, that will show up as a green "Signed by" envelope around the e-mail message.
+
+> **IMPORTANT**: Currently, in November 2025, there seems to be a bug in ProtonCA's renewal process, and I opened a support ticket with them.
+> I checked several keys of people whom I know are using Proton Mail regularly, and many of those certifications end in October 2025.
+
+
+##### Trusting Keys from Any Other Source
+
+For any other key that you want to trust - after you have verified the key fingerprint through an independent communication channel like an instant messenger, phone call, or in person - you can use a similar process in Kleopatra:
+
+1. Right-click the key.
+2. Choose **"Certify…"** and certify it with one of your own keys (trust level "ultimate").
+
+This tells GnuPG that **you** have personally checked that this key belongs to that e-mail address.
+
+##### Making Proton Trust Your WKD Key
+
+On the Proton Mail side, you can also mark your Mailu/WKD key as trusted.
+
+1. Sign in to your Proton account and go to **"Contacts"**.
+2. Pick the Mailu user account for which we set up WKD-PGP.
+3. Click the e-mail settings icon (gear wheel).
+4. Click **"Show advanced PGP settings"**.
+
+There you will see the fingerprint of your WKD key.
+Under **"Actions"** you can choose **"Trust"** once you have verified that the fingerprint matches your local record.
+
+Proton has a support article explaining the different lock colours and what they mean: [How to check encryption status using lock icons](https://proton.me/support/encryption-lock-meaning).
+
+##### Managing Your E-Mail Domain via Proton
+
+Sadly, ProtonCA will only sign keys that belong to e-mail addresses **hosted by Proton** (their own domains or custom domains you host through Proton).
+It is not a general "bring any e-mail address and we'll sign it" service like a public TLS CA.
+
+If you point `example.com`'s MX DNS record to Proton and use Proton Mail to host `you@example.com`, then:
+
+* Proton will manage (or at least store) the OpenPGP key for that account, and
+* ProtonCA will sign that key as belonging to `you@example.com`.
+
+You can then export that Proton-signed key and use it in GnuPG, Thunderbird, etc.
+
+So if you are okay with using Proton Mail (including with your own domain):
+
+* Move the address to Proton.
+* ProtonCA will automatically sign the key for that address.
+* You can then export and reuse that certified key anywhere.
+
+##### Proton Threat Model
+
+When describing S/MIME above, I mentioned a common catch with (most) free S/MIME offerings: the CA generates your key pair on the server and then sends you a PKCS#12 (`.p12` / `.pfx`) file to import.
+That means the CA has had your private key at least once, even if they promise to discard it.
+
+There is a conceptual similarity between "the CA controls the key generation" and "Proton controls the client that generates my key".
+
+The reason people complain more loudly about CA-generated keys is:
+
+* In that case, third-party access to your private key is **certain and systemic**.
+* With Proton, access is **not required** by the design - it would require an active, in-principle detectable betrayal (for example, shipping a malicious client or being forced to do so).
+
+From a paranoid point of view, it is absolutely fair to keep this in mind and to treat Proton's "we don't have your key" as:
+*"we designed it so we don't have your key, assuming we are honest and our client builds are what we say they are."*
+
+For that reason, I would argue that following this guide and setting up your own Mailu instance on your home server under your control is still superior to handing over your e-mails to any third-party service, even privacy-focused ones like Proton Mail.
+
 
 ## Footnotes
 
