@@ -55,6 +55,12 @@ Everything else is built step by step.
 > Once this recipe is working you can reuse it for becoming your own VPS hoster: a `/64` net of public IPv6 addresses is basically limitless, and your existing cheap VPS has unlimited traffic but only limited resources.
 > You can use the much more plentiful resources of your home server for Incus instance, with a public IPv6 address each. **Nice!!**
 
+### Different Readers and Different Levels of Prior Knowledge
+
+Different readers have different levels of prior knowledge, so it is hard to write one guide that fits everyone.
+If the explanations below feel too short or too advanced for you, just copy the URL of this post into an AI assistant like ChatGPT and ask it to walk you through the sections you are not yet comfortable with.
+For example, you can ask it to explain unfamiliar concepts or show the same steps for a different Linux distribution.
+
 ## Step 1: Check if Your Home Network Has IPv6
 
 Before touching any servers, it is worth checking whether your home network and desktop can reach the IPv6 Internet at all.  
