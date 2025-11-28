@@ -1653,9 +1653,344 @@ From a paranoid point of view, it is absolutely fair to keep this in mind and to
 
 For that reason, I would argue that following this guide and setting up your own Mailu instance on your home server under your control is still superior to handing over your e-mails to any third-party service, even privacy-focused ones like Proton Mail.
 
+### Serving Several Mail Domains With One Mailu Instance
+
+In the main part of this blog post we have set up a single e-mail domain.
+You use a DNS MX record for `mail.example.com`, and the DNS A and AAAA records for that host resolve to `mail.example.com`.
+One Mailu server instance can however handle e-mail for many different domains at the same time.
+In this appendix I would like to review some of the options you have for doing that in a clean and maintainable way.
+
+Let us assume that your Mailu setup for the domain `abc.com` is working fine.
+After that success you would like to add the domains `abc.net` and `xyz.com`.
+You can think of `abc.net` and `xyz.com` as brand e-mail domains.
+Every user in the organisation that owns `user@abc.com` should also get an e-mail address at `user@abc.net` and at `user@xyz.com`.
+Conceptually, each person in the organisation can end up with three different addresses across these domains.
+
+The main design question or dilemma at this point becomes: how many *real* mailboxes per user should you set up?
+
+**Option A: Full separation with one real mailbox in each domain**: In the first option you keep everything completely separated. For each user you create three independent real mailboxes:
+* `user@abc.com`
+* `user@abc.net`
+* `user@xyz.com`
+
+Each of these mailboxes has its own login credentials and its own storage.
+The user then configures three accounts in their mail client and handles them as three separate identities and inboxes.
+
+This model is easy to understand conceptually, because what you see is what you get:
+every domain has its own users, its own inboxes, and can be administered almost like a standalone system.
+
+**Option B: One primary mailbox with forwarding or aliases from brand domains**: In the second option each user has one main mailbox, for example `user@abc.com`.
+The additional brand addresses are then mapped onto this primary mailbox using forwarding or aliases. For example:
+* `user@abc.net` forwards to `user@abc.com`
+* `user@xyz.com` forwards to `user@abc.com`
+
+The user only configures one account, `user@abc.com`, in their mail client. They still receive all messages sent to `user@abc.net` and `user@xyz.com`, but everything arrives in the same inbox.
+
+> In Mailu, "aliases" are generally preferable for brand addresses that should share one mailbox.
+> "Forwarding" is a per‑user feature and is more appropriate for "send everything from this mailbox to Gmail / another provider".
+
+If they need to reply with the exact brand domain, they can configure multiple identities or sender addresses in their desktop or mobile client.
+
+> Many mail clients support the idea of one technical account with several identities.
+> The account defines how you log in (IMAP and SMTP login), while identities define which `From:` address and display name are used for a specific message.
+
+**Concerns and potential problems**: The "one mailbox, many identities" setup is very convenient for users and administrators, but it comes with a few concerns that you should consider.
+
+One important risk is user error. A user might accidentally reply from the wrong domain if they are not paying attention to the `From` address.
+For some organisations this is only a cosmetic issue, but for others it can be confusing or even unprofessional if a reply suddenly comes from `@abc.com` instead of `@abc.net`.
+
+A simple and effective mitigation is to use mail filters in the primary mailbox, usually `user@abc.com`.
+You can route e-mails that were originally sent to `user@abc.net` or `user@xyz.com` into separate folders, so that it is visually clear which domain they came in on.
+For example, you can create folders such as `Brand/abc.net` and `Brand/xyz.com` and define rules that move messages based on the recipient address.
+
+> In KMail you can bind an identity to a specific folder: right‑click the folder → **Properties…** → **General** tab, uncheck *Use default identity* and select the desired identity. When you reply from that folder, KMail will use that identity automatically.
+
+This way users get a clear visual hint for which identity they should use when replying.
+In practice this can be a good compromise that reduces complexity but still keeps the different brands visible and understandable.
+
+**GPG / PGP and WKD (Web Key Directory)**
+
+Because we already have a Web Key Directory set up with the advanced directory layout and it is working correctly for `abc.com`, the question now arises how to handle cryptographic keys across the three domains.
+
+Should each e-mail address (`user@abc.com`, `user@abc.net`, `user@xyz.com`) have its own PGP key, so that each user manages three separate keys?
+Or is it acceptable and practical to use one PGP key tied to the person behind `user@abc.com` and use that same key for all three e-mail addresses?
+
+> OpenPGP was designed with the idea of one key per person and multiple e-mail addresses as additional user IDs (UIDs) on that key.
+> Most modern mail clients and WKD implementations handle this pattern very well.
+> Using three different keys for one human quickly becomes painful when you later need to rotate keys, move to a new device, or revoke access, because you must perform each operation three times and communicate the changes to all contacts.
+
+**DNS, hostnames, and IP addresses (including rDNS considerations)**:
+
+Right now, we use something like the following:
+* `mail.abc.com` as the main mail host, with an A/AAAA record pointing to the Mailu server.
+
+You might now wonder whether you should also create brand specific hostnames, for example:
+* `mail.abc.net`
+* `mail.xyz.com`
+
+The question is whether there is a benefit in having a separate mail hostname for each domain, for example for branding, TLS certificates, or reputation, compared to using a single hostname for all domains, such as only `mail.abc.com`.
+
+If we do create `mail.abc.com`, `mail.abc.net`, and `mail.xyz.com`, do we also need separate IP addresses for each hostname in order to set appropriate rDNS (reverse DNS) for each hostname and avoid any negative impact on spam scoring?
+Or is it acceptable to have several mail hostnames pointing to the same IP address, use a single rDNS name, and still maintain good deliverability and reasonable spam scores?
+
+> In practice most receiving mail servers mainly check that the sending IP address has a valid reverse DNS entry and that the hostname given in the SMTP `EHLO` or `HELO` greeting resolves back to that same IP.
+> Using one shared IP and one consistent rDNS name for several domains is very common.
+> Separate IP addresses make sense when you want strict separation between tenants or very different reputations, but they are not required for a small self hosted setup like the one we build with Mailu.
+
+These are many questions at once. In the following sections I will first show how a fully separated setup would look, and then I will suggest a slimmed down configuration that serves the same purpose but reduces administrative overhead significantly.
+
+#### `mailu.env` vs. configuration in the admin GUI
+
+Before we go deeper into multi domain setups, there is one important remark: in everyday operation you usually do not change `mailu.env` when you add extra mail domains.
+You only need to touch `mailu.env` if you also introduce new hostnames (for example `mail.xyz.com`) that should terminate TLS on this server.
+
+In the normal case you simply add `xyz.com` in the Mailu admin GUI under `Mail domains` → `New domain`.
+Mailu will then show you exactly which DNS records you have to set up so that this additional mail domain works correctly.
+
+Mailu uses two different but related concepts in `mailu.env`:
+* **`DOMAIN` (in `mailu.env`)** describes the main mail domain of your installation. This domain is used for things like bounce addresses and DMARC reports. It is mostly an internal or default identity that represents "this Mailu installation as a whole".
+* **`HOSTNAMES` (in `mailu.env`)** lists the hostnames that clients connect to for IMAP, SMTP and webmail. These are also the hostnames for which Mailu will request TLS certificates when you use Let's Encrypt. You can list several hostnames here, separated by commas.
+
+A practical way to think about it is the following:
+* `DOMAIN` is about "who am I" as a mail system when I need a default domain name, for example for `postmaster` addresses or for internally generated messages.
+* `HOSTNAMES` is about "where do clients and other servers reach me" on the network level, and which names must be covered by valid TLS certificates.
+
+Whenever you change `mailu.env` you will need to recreate or restart the Mailu containers so that the new values are applied.
+In contrast, changes done through the admin GUI are stored in the database and take effect immediately without touching the containers.
+
+The actual mail domains that you serve to your users, such as `abc.com` or `xyz.com`, live in the Mailu database and are managed through the admin GUI under `"Mail domains"`.
+This part is separate from `mailu.env` and is where you define which e-mail domains exist, which users and aliases they contain, and how they behave.
+
+
+#### Three real mailboxes per user and separate PGP keys per email address
+
+In the fully separated setup you adapt `HOSTNAMES` in `mailu.env` so that it lists one hostname per mail domain, including the usual auto-configuration helpers:
+
+```ini
+HOSTNAMES=mail.abc.com,autoconfig.abc.com,autodiscover.abc.com, mail.abc.net,autoconfig.abc.net,autodiscover.abc.net, mail.xyz.com,autoconfig.xyz.com,autodiscover.xyz.com
+```
+
+You would also use three different IP addresses for `mail.abc.com`, `mail.abc.net`, and `mail.xyz.com` and set up DNS A and AAAA records and rDNS for each of them.
+
+> Using separate IP addresses is not technically required for basic mail delivery, but it gives you the option to separate reputation and blacklisting between domains.
+> If one brand gets into trouble with spam filters, the other brands are less likely to be affected if they use different IPs with their own reverse DNS.
+> This is a pattern that commercial mail hosting providers sometimes use when they host several independent customers.
+
+Next, you create three different mail domains in the Mailu admin GUI, which later correspond to MX records:
+* `abc.com`
+* `abc.net`
+* `xyz.com`
+
+Then, in DNS, you point each domain's MX record at the appropriate mail hostname (e.g. `abc.com` → `mail.abc.com`, `abc.net` → `mail.abc.net`, etc.).
+Mailu itself doesn't care which hostname was used, as long as they all resolve to your server.
+
+> In Mailu the association "domain → mail hostname" is done purely in DNS, *not* in Mailu's database:
+> * Mailu just knows about domains (`abc.com`, `abc.net`, `xyz.com`).
+> * `HOSTNAMES` is a global list of hostnames the stack answers as and requests TLS certs for.
+> * Which domain uses which hostname is decided by your MX records.
+
+After that you create three real mailboxes per user:
+* `user@abc.com`
+* `user@abc.net`
+* `user@xyz.com`
+
+Each of these is a real Mailu user with its own login and its own mailbox. The server treats them as three independent accounts.
+
+For PGP and WKD you use a separate key for each e-mail address.
+Each of the three addresses gets its own OpenPGP key and its own user ID (UID).
+You then publish the corresponding public keys in the WKD directory structure on the associated web server for each domain, so that clients can automatically discover the correct key for each address.
+
+On the user side, people set up each mailbox separately in their mail client.
+They work with three independent inboxes, and each mailbox has its own PGP key as cryptographic identity.
+This is very explicit: when they send from `user@xyz.com`, they also use the PGP key that belongs to `user@xyz.com`.
+
+So the `"Everything separate, maximum isolation"` setup looks like this:
+* **Mailboxes:** one real mailbox per domain (`user@abc.com`, `user@abc.net`, `user@xyz.com`).
+* **PGP and WKD:** one separate key per address, published in the WKD of the corresponding domain.
+* **DNS and rDNS:** separate hostnames per domain, with their own A and AAAA records and reverse DNS entries, usually backed by multiple IPs.
+
+**Pros**
+
+This design gives you crystal clear separation of brands at every layer.
+Each domain has its own hostname, its own mailboxes, its own cryptographic keys, and potentially its own IP space.
+You can move, revoke, or rotate keys, certificates, and IPs on a per domain basis without touching the others.
+
+> If later you decide to migrate only `xyz.com` to a different provider or a different physical server, you can move that one domain with its IP, MX, and WKD setup and leave the rest untouched.
+> This kind of isolation can be attractive for small commercial hosting or when you plan to sell or spin off one of the brands.
+
+**Cons**
+
+The price you pay is complexity and overhead, especially for a hobby setup.
+Users have to juggle multiple accounts, multiple passwords, and multiple PGP keys.
+From an operational point of view, you must think about backups, monitoring, and migrations for three times as many objects: more mailboxes, more keys, more hostnames, and often more IP addresses.
+
+I would only consider this design if you were building a small commercial mail hosting platform or a multi tenant environment.
+For a personal Mailu project or a single small organisation it is usually too much work for the benefit you get.
+
+#### One user, many brands (my recommended base)
+
+To reduce administrative overhead and still get almost all benefits of a multi domain, multi user setup, I recommend the following model:
+one real mailbox per person, but several branded addresses that all point to that mailbox.
+
+In practice I would do this:
+1. Keep `abc.com` as the main domain and `mail.abc.com` as the only canonical mail hostname with an IP address (A and AAAA records) and rDNS configured.
+   This means `mail.abc.com` is the name that appears in your MX records and in your SMTP `EHLO` greeting.
+2. Add `abc.net` and `xyz.com` as additional mail domains in the Mailu admin GUI and configure the DNS records as Mailu describes.
+3. Create one user per person, only under `abc.com`, for example `alice@abc.com` and `bob@abc.com`.
+4. Use mail aliases so that `user@abc.net` and `user@xyz.com` both deliver to `user@abc.com`.
+   For this to work smoothly, Mailu must allow sending with `From: user@abc.net` and `From: user@xyz.com` when you authenticate as `user@abc.com`.
+   With aliases or alternative domains (see below), this is exactly what you get: these addresses become valid local recipients and also permitted sender addresses.
+   * Your DNS (SPF, DKIM, DMARC) should be set so that `abc.net` and `xyz.com` have SPF records that authorise the same Mailu server.
+     Each domain should have DKIM keys configured in Mailu, and DMARC policies should not be stricter than what your setup can realistically support.
+   * From KMail's point of view this is simply one account with several `From` address identities, which it supports natively.
+5. For special brand only addresses that should not exist on `abc.com` (if you have any), use explicit mailboxes on the corresponding brand domain.
+
+Conceptually, `abc.com` becomes your internal canonical domain where users live, and `abc.net` or `xyz.com` are additional entrances to the same user base.
+This pattern is common in organisations that have one legal entity but use different domains for marketing or projects.
+It keeps your user database simple while allowing a flexible address layout towards the outside world.
+
+**DNS, hostnames, and rDNS**: In this recommended setup you can keep the DNS and IP side very simple:
+1. Pick a canonical mail host, for example `mail.abc.com`.
+2. Configure:
+   * `mail.abc.com A` → your Mailu IP
+   * `abc.com MX 10 mail.abc.com`
+   * `abc.net MX 10 mail.abc.com`
+   * `xyz.com MX 10 mail.abc.com`
+3. Use your VPS web admin console to set the PTR (rDNS) of that IP address to `mail.abc.com`.
+4. In Mailu's `HOSTNAMES` setting include at least `mail.abc.com`. If you want users to be able to connect with `mail.abc.net` or `mail.xyz.com` and still get a valid HTTPS or TLS certificate, add these hostnames too and point them to the same IP address.
+
+This is entirely acceptable from a spam and deliverability perspective:
+
+* Many domains sharing one IP address, one PTR, and one `EHLO` hostname that matches the PTR and A record is a normal pattern.
+* Per domain reputation is handled mostly by SPF, DKIM, DMARC and by your actual sending behaviour, not by trying to have a separate rDNS entry for each domain.
+
+> Most large providers send mail for many different domains from a small pool of IPs.
+> What matters is that the technical details are consistent: the IP has a valid PTR, the `EHLO` name resolves back to that IP, TLS is correctly configured, and the domain aligns with SPF and DKIM.
+> As long as you follow these rules, using one IP for several domains is perfectly fine.
+
+**PGP and WKD**: For OpenPGP and Web Key Directory, the "one user, many brands" model also gives you a nice simplification.
+1. Create one OpenPGP key per person.
+2. Add three user IDs (UIDs) to that key. Most key management tools make adding extra e mail UIDs very easy:
+   * `user@abc.com`
+   * `user@abc.net`
+   * `user@xyz.com`
+3. For WKD on each domain, publish the same public key at the WKD path for each address.
+   Internally you can use symlinks or copy the file.
+   WKD does not care how you store the file; it only cares which key is served for a given `user@domain`.
+
+This keeps key management simple and aligned with how clients and WKD expect things to look.
+
+> A single key with several e mail UIDs is the typical OpenPGP pattern.
+> When a contact looks up `user@xyz.com` via WKD, they receive the same key they would get for `user@abc.com`, but from the perspective of the protocol and the client everything still looks clean and per address.
+> Later, if you need to rotate or revoke keys, you only have to do it once per person.
+
+**Mail client side configuration**: On the client side the configuration is also straightforward:
+* Configure one account per person, for example IMAP and SMTP as `user@abc.com`.
+* Add identities for:
+  * `user@abc.com`
+  * `user@abc.net`
+  * `user@xyz.com`
+* Add server side or client side filters:
+  * If `To:` contains `@abc.net`, move the message to the folder `Brand/abc.net`.
+  * If `To:` contains `@xyz.com`, move the message to the folder `Brand/xyz.com`.
+    * BCC'd messages, mailing lists, and some forwards may not have the original address in the **`To:`** header.
+    * On the server side (Sieve) you'll often get better results by matching on the *envelope recipient* or on `X-Original-To` / equivalent, if your MTA adds it.
+    * For simple personal setups, matching on the `To:` header is usually good enough. If you later find cases where that fails (e.g. BCC or mailing lists), you can refine the rules to match on `X-Original-To` or the SMTP envelope recipient in your Sieve filters.
+
+KMail and many other mail clients can configure more than one identity for a given account.
+In the identity settings you can associate the same PGP key with all identities, because you added all three e mail UIDs to that key.
+
+> In KMail you can bind an identity to a specific folder: right‑click the folder → **Properties…** → **General** tab, uncheck *Use default identity* and select the desired identity. When you reply from that folder, KMail will use that identity automatically.
+
+For this to work smoothly, Mailu must accept sending with `From: user@abc.net` or `From: user@xyz.com` while you authenticate as `user@abc.com`.
+With aliases or alternative domains (see below), this is exactly what happens: these addresses are both valid local recipients and valid sender addresses for that user.
+
+This way it becomes visually obvious where a message was originally addressed, and users get a strong hint which identity to use when replying.
+
+**Pros**: This model has several advantages.
+
+From an administration point of view:
+* You have one mailbox per person.
+* You have one key per person.
+* You only maintain one main mail host and one IP address.
+
+From a branding point of view:
+* Users can send and receive mail as `@abc.com`, `@abc.net`, and `@xyz.com`.
+* Identities in the client plus folder based filtering make it clear which domain a message belongs to.
+
+From a technical point of view:
+* WKD behaves as expected, because there is a clear mapping from address to key.
+* DMARC and SPF are straightforward, as each domain has its own DNS records but shares the same MX host.
+* Deliverability matches how many multi domain MTAs work in practice on the public internet.
+
+**Cons**: The downside is that addresses across domains are strongly coupled:
+
+* If `user@abc.com` exists, then `user@abc.net` and `user@xyz.com` normally also resolve to that same user, especially if you use alternative domains.
+
+You are explicitly accepting that these three domains are different front doors for the same people and the same organisation, not independent cryptographic personas.
+If you need strong separation between identities, you should choose the fully separated model with independent mailboxes and keys.
+
+**Extra angles worth keeping in mind**
+
+**Backups and restores.** This suggested setup makes backups and restores much simpler. You have fewer mailboxes and fewer keys to back up, and you reduce the risk of forgetting one of them during a restore.
+
+**Future domain changes.** If in five years you decide to drop `xyz.com`, you simply remove the Mailu domain or alternative domain entry, clean up the DNS records, and stop publishing the `xyz.com` UID via WKD (or mark it as revoked). Your core `abc.com` identity and mailbox remain untouched.
+
+**Multi tenant behaviour.** If you ever start using this Mailu instance for several truly distinct organisations, you will probably want more separation.
+In that case you should avoid using alternative domains for everything, consider different domains with separate user lists, and possibly introduce additional IP addresses for stricter isolation.
+
+
+#### A word about alternative domains
+
+Mailu provides a feature called `"alternative domains"`, which you see as the `*` symbol under the `"Manage"` column in the admin GUI.
+
+> Up to now, the examples in this appendix have assumed *separate mail domains plus aliases*.
+> Mailu also offers a *different* mechanism called *alternative domains*, which you would use *instead of* adding `abc.net` and `xyz.com` as full domains.
+> Don't combine both patterns for the same domain name.
+
+From Mailu's documentation, an alternative domain *"acts as a copy of a given domain. Everything sent to an alternative domain is actually received in the domain the alternative is created for."*
+
+In practical terms this means:
+* You have one real domain in Mailu, for example `abc.com`.
+* You add `abc.net` as an alternative domain of `abc.com`.
+* When Mailu receives mail for `localpart@abc.net`, it internally treats that message as if it had been sent to `localpart@abc.com` and then:
+  * looks up users and aliases on `abc.com`,
+  * delivers the message according to what it finds there.
+
+So there is no separate `abc.net` user or alias list. There is a single canonical domain, `abc.com`, and the alternative domain is just another front door that maps one to one by local part.
+
+> You can still use aliases on the canonical domain. For example, if you create an alias `support@abc.com` → `alice@abc.com`, then `support@abc.net` will automatically behave the same way when `abc.net` is an alternative domain of `abc.com`.
+> This can be very convenient when you want all address logic in one place and simply mirror it to more domains.
+
+The trade-off is that you cannot make `support@abc.net` point to a different user than `support@abc.com`.
+For more complex multi tenant setups, or when two domains should have different internal structures, it is usually better to configure them as separate real domains instead of alternatives.
+
+If you decide to use alternative domains instead of setting up separate mail domains in the Mailu admin GUI, you lose some flexibility but gain a lot of automatic behaviour and a simpler configuration.
+You should decide for yourself whether that trade-off makes sense for your installation and for how independent your domains should appear.
+
+#### Using Mailgun for a free custom-domain e-mail address
+
+The blog post [Using Mailgun for a Free Custom Domain Email Address](https://www.dannyguo.com/blog/using-mailgun-for-a-free-custom-domain-email-address/)
+explains how to use [Mailgun](https://www.mailgun.com/) together with Gmail so that your custom-domain e-mails are forwarded to your Gmail account and you can send replies from that custom address through Gmail.
+In other words, you keep using the Gmail interface, but your contacts see your own domain in the `From` field.
+
+Mailgun's pricing and free‑tier limitations have changed several times. The blog I link to warns that the method may no longer be viable on the free plan; when I tried it, it still worked for my account.
+You should always check Mailgun's current pricing and free‑tier features before relying on this approach, especially around inbound routing and daily send limits.  
+
+> *As of 2025* their free plan *does* still offer:
+> * 100 messages/day
+> * 1 inbound route
+> * 1 custom domain
+>
+> So the underlying *technical* pattern (Mailgun forwarding to Gmail + SMTP send‑through) is still viable, just heavily constrained by rate limits and subject to frequent pricing tweaks.
+
+This Mailgun plus Gmail approach is very attractive if you want a quick way to put a custom domain in front of an existing Gmail inbox without running your own mail server.
+It avoids managing DNS for MX and SPF in depth, caring about SMTP ports from your home network, or operating a full Mailu stack.
+
+The downside is that it gives Mailgun and Google access to your messages and metadata, which is a very different privacy model from hosting Mailu on your own hardware.
+In the context of this article, I see the Mailgun solution more as a convenient shortcut or migration step, while the Mailu plus Traefik setup is the option for maximum control over your e-mail and long-term digital autonomy.
 
 ## Footnotes
 
 [^uncloud]: In a future blog post I might introduce [Uncloud](https://uncloud.run/docs/) as another option for how to set up a WireGuard Hub-and-Spoke (Star) topology.  
 [^hairpin]: See also [How to connect Docker containers across multiple hosts with WireGuard](https://uncloud.run/blog/connect-docker-containers-across-hosts-wireguard/) and [Direct routing to containers in bridge networks](https://docs.docker.com/engine/network/port-publishing/#direct-routing-to-containers-in-bridge-networks).
-
