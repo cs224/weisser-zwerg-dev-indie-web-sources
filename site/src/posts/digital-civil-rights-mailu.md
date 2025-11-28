@@ -1990,6 +1990,289 @@ It avoids managing DNS for MX and SPF in depth, caring about SMTP ports from you
 The downside is that it gives Mailgun and Google access to your messages and metadata, which is a very different privacy model from hosting Mailu on your own hardware.
 In the context of this article, I see the Mailgun solution more as a convenient shortcut or migration step, while the Mailu plus Traefik setup is the option for maximum control over your e-mail and long-term digital autonomy.
 
+
+### Mailu, Nextcloud, and Kontact as a Personal Information Management (PIM) Stack
+
+Once your Mailu instance is up and running, you can go beyond "just mail" and turn it into the backbone of a small personal groupware stack.
+
+In this setup:
+* **Mailu** handles email accounts, identities, aliases, and spam filtering.
+* **Nextcloud** manages calendars, contacts, files, sharing, and mobile sync.
+* **Kontact** (KMail, KOrganizer, KAddressBook) acts as the desktop PIM client that sits on top of both Mailu and Nextcloud.
+
+The core design idea is:
+
+> **Mailu is the single source of truth for user credentials.**  
+> Nextcloud and your desktop or mobile clients log in with the same username and password that you already use for email.
+
+The next sections describe one practical way to connect these pieces and then show how you can later add two factor authentication (2FA) and passkeys using Authelia together with Mailu's `AUTH_REQUIRE_TOKENS` mechanism.
+
+#### High Level Architecture
+
+At a high level the stack looks like this:
+* **Mailu on your home server**
+  * Handles IMAP and SMTP, spam filtering, webmail, and the admin GUI.
+  * Hosts the user database with email addresses and passwords.
+* **Nextcloud** (on the same home server or another host reachable over your WireGuard mesh)
+  * Uses Mailu's IMAP server as an **external user backend** for login.
+  * Provides CalDAV and CardDAV endpoints at paths such as `/remote.php/dav` for calendars and contacts.
+* **Kontact on your desktop** (KMail, KOrganizer, KAddressBook)
+  * KMail talks to Mailu using IMAP and SMTP as already described in the main part of the article.
+  * KOrganizer and KAddressBook talk to Nextcloud using DAV (CalDAV and CardDAV).
+
+All three layers share the same identity, for example `user@example.com` with the Mailu password.
+
+This gives you:
+* One login per person.
+* Central email on Mailu.
+* Calendars and contacts on Nextcloud.
+* A unified desktop PIM view via Kontact.
+
+In effect you get a small version of a "groupware suite" similar to what large organizations use, but built from standard open source tools that speak IMAP, CalDAV, and CardDAV.
+Because these are open protocols, you are not locked into a single vendor's clients or mobile apps.  
+
+#### Wiring Mailu and Nextcloud Together (IMAP External Auth)
+
+Nextcloud has an app called **"External user backends"** (`user_external`) which can authenticate users against an IMAP server. The Mailu documentation explains how to use this with Mailu for Nextcloud 15 and newer.
+
+The basic idea is:
+1. **Enable IMAP external authentication in Nextcloud**
+   * In Nextcloud, enable the **"External user backends"** app (`user_external`) from `Apps → Disabled apps`.
+   * In `config/config.php` add something like the following (adapted and simplified from the Mailu FAQ):
+     ```php
+     'user_backends' => [
+         [
+             'class' => 'OC_User_IMAP',
+             'arguments' => [
+                 '127.0.0.1',        // or internal IP/hostname where Mailu's IMAP is reachable
+                 993,                // IMAPS port
+                 'ssl',              // connection security
+                 'example.com',      // optional: limit to this domain
+                 true,               // strip domain part for internal username
+                 false,              // do not use STARTTLS
+             ],
+         ],
+     ],
+     ```
+   * This tells Nextcloud: when a user logs in with `user@example.com` and password `P`, try to log in to the IMAP server with the same credentials. If that IMAP login works, accept the Nextcloud login and create a Nextcloud account on the fly.  
+   ⚠️ **Version caveat**: the `user_external` app is community maintained and sometimes runs behind recent Nextcloud releases, for example there were reports around version 28. Before you commit to this architecture, check whether `user_external` supports your current Nextcloud version and keep an eye on its maintenance status.  
+   If `user_external` breaks after a future Nextcloud upgrade, users may suddenly be unable to log in. It is therefore a good idea to test new Nextcloud versions on a staging instance first or at least keep a backup of your working configuration so that you can roll back quickly.  
+2. **Resulting login behaviour**
+   * Users log in to Nextcloud with their Mailu email address and password.
+   * Nextcloud does not store the password itself. It only uses IMAP to verify the credentials.
+   * User provisioning becomes dynamic. As soon as a Mailu user logs in to Nextcloud once, a matching Nextcloud account is created.
+3. **What Mailu remains responsible for**
+   * You create users and reset passwords in the Mailu admin GUI.
+   * Nextcloud treats Mailu as its "authentication oracle" that knows which users and passwords are valid.
+
+If `example.com` is your main Mailu domain, you get a simple mental model:
+> "If you can read email at `user@example.com`, you can also log in to Nextcloud and access your calendar and contacts."
+
+#### How Kontact Fits on Top
+
+Once Mailu and Nextcloud are connected, you can place **Kontact** on top as your desktop PIM client.
+
+**KMail and Mailu**
+
+Configure KMail exactly as already shown in the main article:
+* IMAP and SMTP host: `mail.example.com`
+* Username: full email address such as `user@example.com`
+* Password: the Mailu password
+* Add multiple identities if you use several branded addresses. The appendix section "One user, many brands" explains this pattern.
+
+**KOrganizer, KAddressBook, and Nextcloud**
+
+Nextcloud offers a unified WebDAV endpoint, typically at `https://cloud.example.com/remote.php/dav/`.
+CalDAV (calendar) and CardDAV (contacts) live under that path and are often discovered via `/.well-known/caldav` and `/.well-known/carddav` redirects.
+
+CalDAV and CardDAV are standard protocols that extend WebDAV for calendar and address book data.
+Most modern calendar and contacts clients know how to talk to them, including many Android and iOS apps if you use an additional DAV sync app.  
+
+To connect Kontact:
+
+1. Open **KOrganizer**.
+2. In the calendar list at the bottom left, right click and choose **"Add Calendar..."**.
+3. Select **"DAV groupware resource"**.
+4. Fill in the fields as follows.
+   * **Server URL**: `https://cloud.example.com/remote.php/dav/`
+   * **Username**: `user@example.com` (the same as for Mailu)
+   * **Password**: the same Mailu password, because Nextcloud uses IMAP authentication against Mailu.
+5. KOrganizer will probe the server, discover your calendars, and offer them as DAV resources. Select the ones you want.
+
+Repeat a similar process in **KAddressBook**, again using a DAV groupware resource, to sync contacts from Nextcloud.
+
+Once this is done:
+* KMail shows your Mailu inbox.
+* KOrganizer shows your Nextcloud calendars.
+* KAddressBook shows your Nextcloud address books.
+* All of these appear together inside **Kontact** as one integrated PIM environment.
+
+#### Calendar Invites: from Mailu to Nextcloud via KMail and KOrganizer
+
+With this wiring, a calendar invite travels through your system in a predictable way.
+
+**Receiving an invite**
+
+1. Someone sends an invite to `user@example.com`. Their calendar server generates an iCalendar (`.ics`) attachment with a `text/calendar` MIME type, also called an iTIP event.
+2. Mailu receives the message and delivers it into your mailbox.
+3. KMail fetches the mail via IMAP. When you open the message, KMail recognizes the `.ics` attachment as a calendar invitation.
+4. KMail shows buttons such as "Accept", "Decline", and "Tentative". When you click "Accept", KMail delegates the action to **KOrganizer**:
+   * KOrganizer creates or updates an event in the calendar you have selected for invites.
+   * Because that calendar is a CalDAV resource pointing at Nextcloud, the event is written back to Nextcloud on the next sync.
+5. Your phone, laptop, and any other DAV clients that sync the same Nextcloud calendar see the event appear or update.
+
+This process is compatible with most other calendar systems, including Google Calendar and Microsoft 365, as long as they send standard iCalendar invites.
+On their side it just looks like they are inviting an email address.
+On your side, the mail client and CalDAV stack do the glue work.  
+
+**Sending an invite**
+
+1. In KOrganizer, you create a new event in a Nextcloud backed calendar and add attendees by entering their email addresses.
+2. KOrganizer stores the event into the Nextcloud calendar via CalDAV.
+3. When you save the event, KOrganizer and KMail generate iTIP invitations:
+   * KMail sends the `.ics` invites as regular email via Mailu's SMTP submission port.
+   * Recipients receive the invitations in their own mailboxes and can accept or decline them in their clients.
+4. Their replies arrive as `.ics` updates in your mailbox. KMail again hands those updates to KOrganizer, which updates the corresponding event in the Nextcloud calendar.
+
+From the user's point of view:
+* They do not need to think about Mailu and Nextcloud as separate services.
+* "Mail" is KMail talking to Mailu.
+* "Calendar" is KOrganizer talking to Nextcloud.
+* Invites "just work" as long as KOrganizer is connected to a Nextcloud calendar and KMail is configured as the mail transport.
+
+#### Security Limitations of the Basic Integration
+
+In this **Mailu as authentication provider** setup:
+* **Mailu** knows the real password for each user, for IMAP, SMTP, and webmail.
+* **Nextcloud** does not store the password, but still relies on simple username and password over IMAP for login.
+* **Kontact** stores the Mailu or Nextcloud password in its credential store (KWallet).
+
+By default:
+* There is no second factor (2FA) on the IMAP and SMTP flows.
+* Passkeys (FIDO2 and WebAuthn) are not used.
+* Nextcloud does support its own 2FA providers such as TOTP and WebAuthn, but IMAP external authentication makes this harder to use and the `user_external` app has had compatibility issues with some newer Nextcloud versions.
+
+So the basic design is:
+> Very simple, one password everywhere, but only single factor and therefore only as strong as that password and the overall hygiene of your devices and network.
+
+If you want stronger protection against phishing and device compromise, you need to add another layer on top.
+
+#### Hardening with Authelia and Mailu `AUTH_REQUIRE_TOKENS`
+
+The good news is that you can add modern 2FA or passkeys for web logins without throwing away your existing Mailu setup. The trick is to combine three ideas:
+1. Put an authentication layer such as **Authelia** in front of your web user interfaces (Mailu admin and webmail, Nextcloud).
+2. Use **Mailu application tokens** and the `AUTH_REQUIRE_TOKENS` flag for IMAP and SMTP.
+3. Optionally move Nextcloud away from IMAP authentication later and let it authenticate via Authelia using OpenID Connect (OIDC), if you are ready to relax the rule that "Mailu is the only credential store".
+
+##### What Authelia Brings
+
+[Authelia](https://www.authelia.com) is an open source single sign on (SSO) proxy that sits in front of web applications and adds:
+
+* First factor authentication with username and password, backed by a file or LDAP backend.
+* Second factor authentication, for example:
+  * TOTP with authenticator apps.
+  * WebAuthn, security keys, and passkeys.
+  * Other methods via plugins.
+
+You typically deploy Authelia next to Traefik:
+* Traefik terminates incoming HTTPS connections.
+* Traefik forwards protected paths, such as `/admin`, `/webmail`, and `/nextcloud`, to Authelia first using ForwardAuth.
+* If Authelia says "OK", Traefik passes the request to the backend service.
+
+Authelia does not speak IMAP, so it cannot use Mailu directly as a password backend. It expects either:
+
+* A small **file backend** with a YAML file containing users and hashed passwords.
+* An **LDAP backend** such as OpenLDAP, FreeIPA, or Samba AD.
+
+For a small home setup, a practical compromise is:
+
+* Keep Mailu as your mail credential store.
+* Use a file backend in Authelia, with the same usernames such as `user@example.com` and the same passwords as in Mailu, and keep them in sync manually or with a small script.
+* Let Authelia add 2FA or passkeys on top of those credentials for web access.
+
+From the user's perspective it still feels like logging in with the Mailu password, but with a second factor on top.
+
+> If you ever move to a real LDAP server later, you can point both Authelia and Mailu at LDAP.
+> In that case LDAP becomes your true primary user database, and Mailu and Authelia are both clients of it.
+> This is closer to how enterprise setups work, but it is more complex to manage on day one.  
+
+##### Using Mailu Header Authentication for Webmail and Admin
+
+Mailu 2024.06 introduced **header authentication**. A trusted reverse proxy can send the email address of the already authenticated user in an HTTP header (by default `X-Auth-Email`), and Mailu will log the user in without asking for the password again.
+
+In `mailu.env` you configure:
+* `PROXY_AUTH_WHITELIST` to specify which IP addresses are allowed to perform header authentication, for example the IP address of your Authelia or Traefik instance.
+* `PROXY_AUTH_HEADER` to specify which HTTP header contains the user's email address.
+* `PROXY_AUTH_CREATE` to control whether Mailu should create accounts automatically if the user does not exist yet.
+* `PROXY_AUTH_LOGOUT_URL` to specify where to send the user after logging out of Mailu.
+
+Once this is configured:
+* Traefik and Authelia protect `/admin` and `/webmail`.
+* After Authelia 2FA or passkey authentication succeeds, Traefik forwards the request to Mailu and adds `X-Auth-Email: user@example.com`.
+* Mailu sees the header from a whitelisted IP address and logs the user into the admin GUI or webmail without another password prompt.
+
+In effect:
+> For web access to Mailu, your second factor such as TOTP or WebAuthn is enforced by Authelia in front of Mailu.
+
+Your IMAP and SMTP connections still use classic username and password or tokens directly against Mailu. This brings us to the next part.
+
+##### Mailu Application Tokens and `AUTH_REQUIRE_TOKENS`
+
+Mailu offers **authentication tokens**, sometimes also called "application passwords". You manage them in the admin GUI.
+They are long, random, per application secrets that users can generate and revoke without changing their main account password.
+
+According to the Mailu documentation:
+* Token based authentication is exempt from Mailu's rate limits and therefore does not trigger the usual slowdowns from brute force protection.
+* Verifying tokens is less resource intensive than tracking rate limits on real passwords.
+
+The configuration flag `AUTH_REQUIRE_TOKENS` in `mailu.env` takes this idea one step further:
+* When `AUTH_REQUIRE_TOKENS=false` (the default), users can log in to IMAP, SMTP, and POP3 with either the account password or any application token.
+* When `AUTH_REQUIRE_TOKENS=true`, database backed users must use an application token for IMAP, SMTP, and POP3 and cannot use the main account password at all.
+  Internal service accounts can be configured separately if needed.
+
+This is important in a world with 2FA and passkeys:
+* Your Authelia SSO with 2FA or passkeys protects web logins for Mailu admin and webmail and maybe Nextcloud.
+* IMAP and SMTP cannot use WebAuthn or similar second factors. They can only use "something you know".
+* If you disable direct password logins and require tokens:
+  * The real account password is never stored in KMail, on phones, or in other mail apps.
+  * Each client gets a long random token that you generate via the Mailu web admin, which is itself protected by 2FA.
+  * If a device is lost or compromised, you revoke that one token without forcing the user to change their master password everywhere.
+
+The hardened model looks like this:
+* **Web flows for Mailu and possibly Nextcloud** use Authelia with a file or LDAP backend and 2FA or passkeys. Mailu trusts Authelia via header authentication.
+* **Mail protocols such as IMAP, SMTP, POP3, and Sieve** use `AUTH_REQUIRE_TOKENS=true`, so only long, per device tokens are valid.
+
+For users this leads to three categories of secrets:
+1. **Authelia credentials plus second factor**, used only in the browser to access Mailu and Nextcloud.
+2. **Mailu application tokens**, used in KMail, mobile mail clients, and similar tools.
+3. **Optional Nextcloud app passwords**, if you later move Nextcloud away from IMAP authentication and enable its own 2FA, so DAV clients use app specific passwords.
+
+In a small setup you can keep Authelia's file backend, Mailu users, and (if you stay with IMAP authentication) Nextcloud in sync by:
+* Using the same usernames such as `user@example.com`.
+* Keeping one main password in Mailu and copying it into Authelia.
+* Letting `AUTH_REQUIRE_TOKENS` enforce that even if this base password leaks, it still cannot be used directly with IMAP or SMTP.
+
+> This model is similar to how large providers like Google handle app passwords.
+> Human logins use strong 2FA, and non interactive protocols use long, random tokens that can be revoked individually.
+> You are essentially recreating that pattern on your own infrastructure.  
+
+##### Summary: When Is This Worth It?
+
+If you mainly want email and a simple calendar and contacts view, the basic integration is already a big improvement:
+* Mailu with Nextcloud using IMAP external authentication.
+* Kontact as a desktop PIM client.
+* One password in Mailu, reused across all services.
+
+If you want to move closer to "serious" self hosted security, you can go further:
+* Put Authelia with header authentication in front of Mailu's web interfaces.
+* Enable `AUTH_REQUIRE_TOKENS=true` in Mailu and switch all mail clients to use application tokens.
+* Optionally move Nextcloud away from IMAP authentication and let it also use Authelia via OIDC, with its own app passwords for DAV clients.
+
+You then have:
+* Web logins guarded by 2FA or passkeys through Authelia.
+* Protocol logins guarded by revocable, per device tokens such as Mailu tokens and Nextcloud app passwords.
+* A familiar PIM experience in Kontact built on top of a modern, privacy friendly, self hosted stack.
+
 ## Footnotes
 
 [^uncloud]: In a future blog post I might introduce [Uncloud](https://uncloud.run/docs/) as another option for how to set up a WireGuard Hub-and-Spoke (Star) topology.  
