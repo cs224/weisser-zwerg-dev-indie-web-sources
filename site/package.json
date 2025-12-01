@@ -22,7 +22,7 @@
     "ncu": "npm-check-updates --target minor",
     "ncu-u": "npm-check-updates --target minor -u",
     "ncua": "npm-check-updates",
-    "check-links": "npx broken-link-checker http://localhost:8080/posts/mikrotik-route64-ipv6-tunnelbroker"
+    "check-links": "npx broken-link-checker http://localhost:8080/posts/quick-tip-nugget-export-chatgpt-to-markdown-for-desktop-search"
   },
   "repository": {
     "type": "git",
