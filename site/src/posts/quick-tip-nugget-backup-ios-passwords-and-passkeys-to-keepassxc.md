@@ -23,13 +23,28 @@ I love passkeys and use them a lot for day to day authentication of accounts tha
 
 > For *super* important accounts I use [Trezor and FIDO2](../digital-civil-rights-nextcloud-i/#password-manager-(2fa%2C-totp%2C-fido2%2C-passkeys%2C-webauthn)).
 
-
 Since iOS 26, the iOS **Passwords** app supports **Export Data to Another App**.
 This finally includes both passwords *and* passkeys, so you can move everything into tools like KeePassXC and keep full control in a standard `kdbx` database.
 
 > KeePassXC is a local, open source password manager that stores all your secrets in a single `kdbx` file.
 > This file can be backed up, synced with your own infrastructure, and inspected with different compatible tools.
 > By exporting from iOS into a `kdbx` database, you keep the convenience of passkeys but also gain long term ownership of your credentials.
+
+> **CAVEAT**: Moving a passkey from Apple → Bitwarden → KeePassXC and expecting it to still work for login is basically **not supported yet**.
+> Unlike passwords, passkeys don't have a simple, agreed-upon "file format" for import/export.
+> Every manager (Apple, Bitwarden, KeePassXC, etc.) has its own internal way of storing the credential ID, keys, flags, and metadata.
+> A group of vendors ([Bitwarden](https://bitwarden.com/blog/security-vendors-join-forces-to-make-passkeys-more-portable-for-everyone/), 1Password, Dashlane, NordPass…) is [working on a standard](https://github.com/fido-alliance/credential-exchange-feedback), but it's still in progress.
+>
+> Apple → third-party is especially problematic: macOS/iOS's iCloud Keychain was not originally designed to export passkeys to other managers at all.
+> Articles about using third-party managers alongside Apple explicitly note that there's basically no portable way to move a passkey from iCloud Keychain into another vault.
+> The recommended approach is to create a new passkey in the new manager.
+>
+> Even with newer "export to app" flows in Apple's Passwords app, those are very app-specific and not a general "standard passkey file" that KeePassXC understands.
+>
+> So even if each step "succeeds" technically, the end result in KeePassXC may not be a passkey that your Proton account recognizes as the same credential.
+>
+> Different apps' passkeys are often mutually incompatible. There's even a [GitHub issue](https://github.com/keepassxreboot/keepassxc/issues/10414) showing that passkeys created in Strongbox don't work in KeePassXC, and vice versa, even when they share the same KDBX database.
+> Each app encodes the WebAuthn data slightly differently, so the other doesn't recognize it as a valid credential for the same site.
 
 ## Step 1: Export from iOS Passwords app to Bitwarden
 
