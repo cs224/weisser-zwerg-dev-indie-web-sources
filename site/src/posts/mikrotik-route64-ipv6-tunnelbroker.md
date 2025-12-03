@@ -159,6 +159,30 @@ To dump the current state of the MikroTik configuration into a file, you can use
 ssh admin@192.168.88.1 '/export hide-sensitive' > mikrotik-$(date +%F).rsc
 # or
 ssh admin@192.168.88.1 '/export hide-sensitive terse' > mikrotik-$(date +%F).rsc
+# or
+#  This creates a binary backup of your MikroTik router's entire configuration (and some state) and saves it on the router's local storage (NAND, disk, or flash).
+#  This type of backup is:
+#  - Version-specific: Best restored on the same device model and RouterOS version/architecture.
+#  - Not human-readable.
+#  - Intended for "I want the box back exactly as it was" scenarios (including users and passwords).
+#  By default, RouterOS saves the backup in the router’s root file store (what you see under /file).
+ssh admin@192.168.88.1 '/system backup save'
+# [admin@MikroTik] > /file print
+# Flags: S - shared 
+#  #   NAME                           TYPE             SIZE LAST-MODIFIED       
+#  0   MikroTik-20251203-0536.backup  backup       416.5KiB 2025-12-03 05:36:10 
+#
+# You restore the setup via:
+# /system backup load name=MikroTik-20251203-0536.backup
+#
+# You can copy via WinBox or WebGUI or
+# scp admin@192.168.88.1:MikroTik-20251203-0536.backup .
+#
+# You can allso export and restore via the text file mechanism
+#  That .rsc file contains CLI commands that, when run, recreate the configuration.
+#  It does not include runtime state, logs, queues counters, etc.
+# /export show-sensitive file=myconfig
+# /import file-name=myconfig.rsc
 ```
 
 The first command produces a human readable export, while the `terse` version is more compact and easier to diff in a version control system.
@@ -410,7 +434,8 @@ Create the WireGuard interface (this corresponds to the `[Interface]` section in
 # Use 2000::/3 (all current global unicast addresses) as the default IPv6 "internet":
 /ipv6 route add \
     dst-address=2000::/3 \
-    gateway=wireguard-route64
+    gateway=wireguard-route64 \
+    comment="Default IPv6 via Route64 WireGuard"
 ```
 
 > `2000::/3` is the range that currently contains all globally routable IPv6 unicast addresses.
@@ -799,3 +824,637 @@ If you want to try this yourself, I recommend following the excellent step by st
 [Setup Cloudflare WARP Connector on MikroTik](https://www.animmouse.com/p/setup-cloudflare-warp-connector-on-mikrotik/)
 
 > For the use case in this blog post (home IPv6 with ROUTE64, stable prefix, inbound services), the free WARP is fine to experiment with, but it is not a replacement for a real IPv6 tunnel broker.
+
+### The Easier Route - NAT66 Instead of a Tunnel Broker
+
+When I first wrote this post, I deliberately didn't think about NAT66.
+
+For years I'd internalised the usual IPv6 story:
+* We finally have enough addresses, so we don't need NAT anymore.
+* There is no IETF RFC for NAT66; instead there is RFC 4864 explaining why IPv6 networks don't need NAT for protection.
+* Articles like [You Thought There Was No NAT for IPv6, But NAT Still Exists](https://blogs.infoblox.com/ipv6-coe/you-thought-there-was-no-nat-for-ipv6-but-nat-still-exists/) emphasise that NAT66 is somewhat frowned upon, even though vendors quietly ship it (Linux/netfilter, firewalls, and now MikroTik RouterOS v7).
+
+So my mental model was:
+
+> "If I'm doing IPv6 'properly', I should avoid NAT and use a routed prefix."
+
+That's exactly what the ROUTE64 + WireGuard setup in the main article does: *no translation*, a full `/56` routed to my home, and global IPv6 addresses on the LAN.
+
+However, if your primary goal is simpler:
+
+> "I just want all devices behind the Salt Fiber Box and my MikroTik to have working IPv6."
+
+…then letting the MikroTik do **NAT66** (IPv6‑to‑IPv6 NAT) is a very practical alternative.
+
+> Cloudflare WARP is essentially a big NAT66/NAT64 box at scale (you get egress addresses in their network, but no routed prefix back home).
+
+This appendix shows how to:
+
+1. Look at what can *stay exactly as it is* when switching from ROUTE64 to NAT66.
+2. **Undo** only the ROUTE64/WireGuard‑specific parts.
+3. **Configure NAT66** on the MikroTik behind the Salt Fiber Box.
+
+Throughout, I'll stick to the same style as the main article: SSH commands, "look / expect / change" flow, and small explanations of what's going on.
+
+#### Diff Summary
+
+Here is a quick diff style summary of the changes we'll need to make:
+
+```diff
+-/interface wireguard add listen-port=51820 mtu=1420 name=wireguard-route64
+-/interface wireguard peers add allowed-address=::/1,8000::/1 endpoint-address=... endpoint-port=52929 interface=wireguard-route64 name=peer1 persistent-keepalive=25s public-key="..."
+-/ipv6 route add comment="Default IPv6 via Route64 WireGuard" dst-address=2000::/3 gateway=wireguard-route64
+-/ipv6 address add address=...::2 interface=wireguard-route64
+-/ipv6 address add address=... interface=bridge
+-/ipv6 nd set [ find default=yes ] advertise-dns=no interface=bridge mtu=1420
++/ipv6 settings set accept-router-advertisements=yes
++/ipv6 address add address=fd12:3456:789a:1::1 interface=bridge
++/ipv6 firewall nat add action=masquerade chain=srcnat comment="NAT66: ULA -> Salt global IPv6 (ether1)" out-interface-list=WAN
++/ipv6 nd set [ find default=yes ] dns=fd12:3456:789a:1::1 interface=bridge mtu=1420
+```
+
+#### What Can Stay As‑Is
+
+The good news: most of your LAN‑side logic *does not care* whether your IPv6 comes via a tunnel broker or via NAT66.
+
+**Topology and basic RouterOS layout**: All of this stays the same:
+* Physical topology:  
+  ```txt
+  Internet
+    |
+  [Salt Fiber Box]  -- has global prefix 2001:db8:dead:beef::/64
+    |
+    +-- devices directly on Salt LAN (e.g. home server) → get global IPv6 (works)
+    |
+    +-- [MikroTik WAN 192.168.1.2, single IPv6 address, IPv4 NAT + IPv6 NAT66] -- bridge(LAN) -- Wi-Fi and LAN ports -- clients
+            |
+            +-- my LAN with all normal home devices (192.168.88.x, fd80:.../64)
+  ```
+* Interface roles:
+  * `ether1` is still the WAN side (connected to the Salt box).
+  * `bridge` is still the LAN bridge for all internal interfaces.
+* Interface lists:
+  * `LAN` list includes `bridge`.
+  * `WAN` list includes at least `ether1`.
+
+**IPv4 side (DHCP, NAT, firewall)**: None of this changes:
+* The MikroTik still gets IPv4 from the Salt Fiber Box (often via DHCP).
+* You still do IPv4 NAT (`masquerade`) out of `ether1`.
+* Your existing IPv4 firewall rules keep working unchanged.
+
+We are only touching the *IPv6* side here.
+
+**IPv6 firewall rules**: The IPv6 firewall rules from the main article are *general* "sane defaults" for a home router:
+* Allow established/related traffic (both input and forward).
+* Allow ICMPv6 (needed for IPv6 to function properly).
+* Allow management access from LAN.
+* Drop invalid packets.
+* Drop new inbound connections from the internet.
+
+Those rules work *equally well* whether the internet‑facing IPv6 is:
+* The routed `/56` from ROUTE64 over WireGuard, or
+* A single `/64` from Salt with NAT66 on the MikroTik.
+
+So if you already configured them earlier, you can keep them verbatim.
+We'll rely on them again in the NAT66 setup.
+
+> As I did not change my default factory configuration (`defconf`) for the firewall I will also not modify anything at this point.
+
+To check:
+
+```txt
+/ipv6 firewall filter print
+```
+
+> You do *not* need a different IPv6 firewall philosophy just because you switch from ROUTE64 to NAT66.
+> The same "stateful firewall at the edge" pattern works for both.
+
+**Neighbor Discovery (RA) behaviour on the LAN**: The rough idea also stays the same:
+
+* The bridge interface (`bridge`) is where IPv6 *Router Advertisements (RAs)* are sent to LAN clients.
+* You want RA enabled there, with sensible intervals and options.
+* The router advertises:
+  * A prefix (which changes between ROUTE64 and NAT66, but the mechanism is identical).
+  * Optionally a DNS server (RDNSS).
+
+There will be details we change (the *prefix*, and maybe the *DNS* address we advertise), but conceptually nothing about "RA runs on `bridge` and hands prefixes to clients" changes.
+
+You can inspect your current ND/RA config with:
+
+```txt
+/ipv6 nd print detail where interface=bridge
+```
+
+We'll adjust this later, but the important part: *we will keep using ND on `bridge`*.
+
+#### What We Need to Undo (ROUTE64 / WireGuard Only)
+
+Now to the clean‑up.
+
+We'll remove everything that is *specifically tied* to the ROUTE64 tunnel broker:
+* The WireGuard interface and peer.
+* The IPv6 addresses from the ROUTE64 `/56`.
+* The static IPv6 route that points into the tunnel.
+* Any RA DNS pointing at the old ROUTE64 prefix.
+
+
+> As a reminder, here is how we created the WireGuard side, the related LAN side `/64` address, and the list membership in the "WAN" list:
+> ```txt
+> # listen-port can be any unused UDP port on your router
+> /interface wireguard add \
+>     name=wireguard-route64 \
+>     listen-port=51820 \
+>     mtu=1420 \
+>     private-key="YOUR_WG_PRIVATE_KEY"
+> 
+> # -- IPv6: WAN side (the tunnel itself) -- 
+> 
+> # Assign the IPv6 tunnel address from ROUTE64 to the WireGuard interface
+> /ipv6 address add \
+>     address=2a11:6c7:abcd:1000::2/64 \
+>     interface=wireguard-route64
+> 
+> # ROUTE64 will route global IPv6 space for you.
+> # Use 2000::/3 (all current global unicast addresses) as the default IPv6 "internet":
+> /ipv6 route add \
+>     dst-address=2000::/3 \
+>     gateway=wireguard-route64 \
+>     comment="Default IPv6 via Route64 WireGuard"
+>
+>  # Let us pick `2a11:6c7:abcd:2001::/64` for your existing LAN bridge and hand it out via SLAAC:
+>  # Hand out your chosen /64 to LAN via SLAAC
+> /ipv6 address add address=2a11:6c7:abcd:2001::/64 interface=bridge advertise=yes
+>
+> # Make sure the WireGuard interface stays in the "WAN" side
+> /interface list member add list=WAN interface=wireguard-route64
+> ```
+
+Everything else (LAN bridge, interface lists, firewall) remains.
+
+**Safety net: export your config**: From an SSH session:
+```txt
+/export file=before-route64-undo
+/system backup save name=before-route64-undo
+```
+
+You'll now have:
+* `before-route64-undo.rsc` - a text export.
+* `before-route64-undo.backup` - a binary backup.
+
+If you ever want to roll back, you can re‑import the `.rsc` or restore the `.backup`.
+
+**Remove the IPv6 "internet via WireGuard" route**: When configuring ROUTE64, we added a static IPv6 route for "all global internet" via the WireGuard interface, typically `2000::/3` using `wireguard-route64` as the gateway.
+
+Step 1: Look:
+```txt
+/ipv6 route print detail
+```
+
+You're looking for a line like:
+```text
+dst-address=2000::/3 gateway=wireguard-route64 ...
+```
+or possibly `::/0` via `wireguard-route64` if you used a full default route.
+
+You may also see a default route via `ether1` and a link‑local gateway (`fe80::…%ether1`); we *keep* that one.
+
+Step 2: Remove the WireGuard route:
+```txt
+/ipv6 route remove [find dst-address=2000::/3 && gateway=wireguard-route64]
+```
+
+Step 3: Check again:
+```txt
+/ipv6 route print
+```
+You should see *no* routes pointing to `wireguard-route64` anymore.
+
+**Remove IPv6 addresses from the ROUTE64 prefix**
+
+We placed ROUTE64 addresses:
+* On the WireGuard interface (`wireguard-route64`) - one `/64` for the tunnel.
+* On the LAN bridge (`bridge`) – one `/64` (or `/64` plus explicit `::1`) out of your `/56`.
+
+Assume your ROUTE64 `/56` looked like: `2a11:6c7:abcd:2000::/56`. Substitute your actual prefix throughout.
+
+*On the WireGuard interface*:
+
+Step 1: Look:
+```txt
+/ipv6 address print detail where interface=wireguard-route64
+# /ipv6 address print where address="2a11:6c7:abcd:1000::2/64"
+```
+
+You should see something like (in the example values we called it "Tunnel address"):
+```text
+address=2a11:6c7:abcd:1000::2/64 interface=wireguard-route64 ...
+```
+
+Step 2: Remove:
+```txt
+/ipv6 address remove [find address="2a11:6c7:abcd:1000::2/64"]
+```
+
+Step 3: Check again:
+```txt
+/ipv6 address print where interface=wireguard-route64
+```
+
+*On the LAN bridge*:
+
+Step 1: Look:
+```txt
+/ipv6 address print detail where interface=bridge
+```
+
+You'll see your previous ROUTE64 `/64`s (in the example values we called it "Chosen LAN /64"), for example:
+```text
+address=2a11:6c7:abcd:2001::/64  interface=bridge advertise=yes
+address=2a11:6c7:abcd:2001::1/64 interface=bridge advertise=yes
+```
+
+Step 2: Remove:
+```txt
+/ipv6 address remove [find interface=bridge && address~"2a11:6c7:abcd:200"]
+```
+
+Step 3: Check again:
+```txt
+/ipv6 address print where interface=bridge
+```
+
+At this point `bridge` should no longer have any `2a11:...` addresses – only link‑local (`fe80::…`) and anything else you may have configured separately.
+
+**Remove the WireGuard peer and interface**: We first delete the peer(s), then the interface itself.
+
+*Remove the ROUTE64 WireGuard peer*
+
+Step 1: Look:
+```txt
+/interface wireguard peers print detail
+```
+
+You're looking for the peer that used `wireguard-route64`:
+```text
+interface=wireguard-route64
+public-key="..." 
+endpoint-address=...
+allowed-address=::/1,8000::/1
+...
+```
+
+Step 2: Remove:
+```txt
+/interface wireguard peers remove [find interface=wireguard-route64]
+```
+
+Step 3: Check again:
+```txt
+/interface wireguard peers print
+```
+It should be empty, or contain only unrelated peers.
+
+**Remove the WireGuard interface**
+
+Step 1: Look:
+```txt
+/interface wireguard print detail
+```
+
+You'll see something like:
+
+```text
+name=wireguard-route64 listen-port=51820 ...
+```
+
+Step 2: Remove:
+```txt
+/interface wireguard remove [find name=wireguard-route64]
+```
+
+Step 3: Check again:
+```txt
+/interface wireguard print
+```
+
+There should be no `wireguard-route64` interface anymore.
+
+**Clean up interface list membership**: We previously added `wireguard-route64` to the `WAN` interface list so firewall rules could treat it as internet‑facing.
+
+Step 1: Look:
+```txt
+/interface list member print where interface=wireguard-route64
+```
+
+If you see something like:
+```text
+LIST  INTERFACE
+2 WAN   *A
+```
+
+Step 2: Remove:
+```txt
+/interface list member remove 2
+```
+
+After that step 3: Check again:
+```txt
+/interface list member print
+```
+
+Should show only the "real" WAN interface(s), e.g. `ether1`.
+
+**Reset ROUTE64‑specific RA/DNS settings**: If you followed the ROUTE64 section as written, you probably set RA DNS to either:
+* Cloudflare IPv6 (`2606:4700:4700::1111`), or
+* The router's ROUTE64 address (`2a11:6c7:abcd:2001::1`).
+
+Those now point at things we just deleted, so let’s neutralise them before reconfiguring for NAT66.
+
+**RA DNS on the bridge**:
+
+Step 1: Look:
+```txt
+/ipv6 nd print detail where interface=bridge
+```
+
+You might see:
+```text
+advertise-dns=yes dns=2606:4700:4700::1111
+```
+or:
+```text
+advertise-dns=yes dns=2a11:6c7:abcd:2001::1
+```
+
+Step 2: Reset:
+```txt
+/ipv6 nd set [find interface=bridge] advertise-dns=no dns=""
+```
+
+We'll re‑enable `advertise-dns` later with NAT66‑appropriate DNS addresses.
+
+**`/ip dns` configuration**: If you pointed `ip dns servers` at specific resolvers purely for the ROUTE64 setup, you can either keep them or go back to using the ISP's DNS.
+
+For now, a good neutral default is:
+```txt
+/ip dhcp-client set [find interface=ether1] use-peer-dns=yes add-default-route=yes
+/ip dns set servers="" allow-remote-requests=yes
+```
+This says:
+* Let the DHCP client on `ether1` get DNS from the Salt Fiber Box.
+* Use those for the router’s resolver (and, if allowed, for the LAN too).
+
+
+**Sanity check after uninstall**: Quick checks:
+```txt
+/interface wireguard print
+/ipv6 address print
+/ipv6 route print
+/interface list member print
+```
+
+You should *not* see:
+* Any `wireguard-route64` interface or peers.
+* Any `2a11:...` addresses from the ROUTE64 `/56`.
+* Any IPv6 route via `wireguard-route64`.
+
+At this point you have:
+* A plain Salt Fiber Box → MikroTik → LAN topology.
+* IPv4 still working as before.
+* IPv6 firewall rules still in place.
+* No tunnel broker bits left.
+
+Time to add NAT66.
+
+
+#### What We Need to Add for NAT66
+
+Now we switch to using the *IPv6 connectivity I already have from Salt*, but instead of getting a routed `/56` from a tunnel broker, we:
+* Let the MikroTik learn a single IPv6 address and default route from the Salt Fiber Box.
+* Give the LAN a private IPv6 range (ULA).
+* Do *NAT66* on the MikroTik so all those internal ULA addresses share the router's global IPv6 on `ether1`.
+
+**Make sure IPv6 is enabled and RAs are accepted**: We want MikroTik to:
+
+* *Accept Router Advertisements* on `ether1` (from the Salt box).
+* *Forward IPv6* between `ether1` and `bridge`.
+
+Check the global IPv6 settings:
+```txt
+/ipv6 settings print
+# Here are my current values
+                    disable-ipv6: no                        
+                         forward: yes                       
+                accept-redirects: yes-if-forwarding-disabled
+    accept-router-advertisements: yes-if-forwarding-disabled
+      disable-link-local-address: no                        
+```
+
+If `disable-ipv6` is `yes`, turn it on:
+
+```txt
+/ipv6 settings set disable-ipv6=no
+```
+
+Then:
+```txt
+/ipv6 settings set forward=yes accept-router-advertisements=yes
+# ipv6 *accept router advertisements* configuration has changed, please restart device to apply settings
+/system reboot
+```
+
+Now see what the Salt Fiber Box is giving us:
+
+```txt
+/ipv6 address print where interface=ether1
+/ipv6 route print where dst-address=::/0
+```
+
+You want:
+* A **global** IPv6 (not just `fe80::`) on `ether1`.
+* A default IPv6 route via `fe80::something%ether1`.
+
+If those aren't present, enable IPv6 on the Salt Fiber Box LAN first.
+
+**Assign a ULA prefix on the LAN and advertise it**: Because Salt is not delegating a routed prefix for your MikroTik, we use a *Unique Local Address (ULA)* range internally (Think: "IPv6's answer to RFC1918 private IPv4").
+
+> ULAs live in: `fc00::/7`.
+> In practice, everyone uses `fd00::/8` (because `fc00::/8` was reserved for a central allocation scheme that never really took off).
+>
+> *Terminology:*
+> ULA (`fd00::/8`) is for "locally unique but not globally routed" IPv6. It's the IPv6 equivalent of `10.0.0.0/8`, `192.168.0.0/16`, etc.
+>
+> Just to clarify: `fe80::` is not ULA. It's the IPv6 link-local range `fe80::/10`.
+> Every IPv6 interface *must* have a link-local address and these are only valid on a single layer-2 link (one Ethernet / Wi-Fi segment).
+> Routers must not forward packets with a link-local source or destination beyond that link.
+
+
+Pick a ULA prefix, for example:
+* LAN prefix: `fd12:3456:789a:1::/64`
+* Router's LAN address: `fd12:3456:789a:1::1`
+
+First, make sure Neighbor Discovery uses `bridge` for RAs:
+
+```txt
+/ipv6 nd set [find default=yes] interface=bridge advertise-mac-address=yes disabled=no
+```
+
+Then, assign the ULA /64 to the bridge and tell it to advertise:
+```txt
+/ipv6 address add address=fd12:3456:789a:1::1/64 interface=bridge advertise=yes
+```
+
+What this does:
+* The router itself gets `fd12:3456:789a:1::1` on the LAN.
+* It sends RAs on `bridge` so clients autoconfigure addresses in `fd12:3456:789a:1::/64`.
+
+Check:
+```txt
+/ipv6 address print where interface=bridge
+```
+
+You should see that ULA address listed.
+
+On a LAN client (Linux/macOS):
+```bash
+ip -6 address
+```
+
+You should see something like:
+
+```text
+inet6 fd12:3456:789a:1:....../64 scope global
+```
+
+That's good.
+
+**Advertise DNS to LAN clients (RDNSS)**: With IPv6 itself in place, we need DNS.
+
+Two common options:
+* Use MikroTik as DNS forwarder (my recommendation)
+* Advertise a public IPv6 DNS directly (e.g. Cloudflare)
+
+We will go with the MikroTik as DNS forwarder.
+
+1. Ensure the IPv4 DHCP client on `ether1` uses the ISP DNS:
+   ```txt
+   /ip dhcp-client set [find interface=ether1] use-peer-dns=yes add-default-route=yes
+   ```
+2. Configure RouterOS DNS:
+   ```txt
+   /ip dns set servers="" allow-remote-requests=yes
+   ```
+   Empty `servers` means "use DNS from the DHCP client" (the Salt box's DNS).
+3. Advertise the router’s IPv6 address as DNS via RA:
+   ```txt
+   /ipv6 nd set [find interface=bridge] advertise-dns=yes dns=fd12:3456:789a:1::1
+   ```
+
+Clients will now:
+* Autofill a ULA address in `fd12:3456:789a:1::/64`.
+* Use `fd12:3456:789a:1::1` as their DNS resolver.
+
+The router in turn forwards those queries to the Salt Fiber Box / ISP DNS.
+
+> *Terminology:*
+> RDNSS is the "Recursive DNS Server" option inside IPv6 Router Advertisements. In RouterOS it's controlled by `advertise-dns` and `dns=` in `/ipv6 nd`.
+
+**Add the NAT66 rule**: This is the core of the new setup.
+
+RouterOS v7 has an IPv6 NAT table: `/ipv6 firewall nat`. We'll add a *source NAT* rule that says:
+
+> "For packets leaving via `WAN`, rewrite their source IPv6 to the IPv6 on that WAN interface."
+
+If you already have `LAN` and `WAN` interface lists set up:
+```txt
+/ipv6 firewall nat add chain=srcnat out-interface-list=WAN action=masquerade comment="NAT66: ULA -> Salt global IPv6 (ether1)"
+```
+
+That's it.
+
+This operates very much like IPv4 masquerade:
+* All traffic from your ULA LAN going out via `ether1` gets its source rewritten to the global IPv6 on `ether1`.
+* MikroTik tracks connections so replies are mapped back to the correct internal host.
+
+If you prefer to be explicit and you know you'll always have exactly `ether1` as WAN:
+```txt
+/ipv6 firewall nat add chain=srcnat out-interface=ether1 action=masquerade comment="NAT66: ULA -> Salt global IPv6 on ether1"
+```
+
+You can see counters with:
+```txt
+/ipv6 firewall nat print stats
+```
+
+Once clients start talking IPv6, the packet and byte counters will start increasing.
+
+> *Terminology:*
+> *NAT66* means IPv6‑to‑IPv6 NAT. In this case, it's many‑to‑one: many internal ULA addresses → one global IPv6 on `ether1`.
+
+#### Re‑use the existing IPv6 firewall rules
+
+Because we kept the stateful IPv6 firewall rules from the ROUTE64 setup (or the default factory configuration (`defconf`)), we don't need to change them for NAT66. They still do exactly what we want:
+* *Input chain*: protect the router itself.
+* *Forward chain*: protect the LAN from unsolicited inbound traffic, while allowing outbound.
+
+Here is how the firewall rules interact with NAT66:
+* Outbound connections:
+  * Match "LAN to anywhere" in `forward` → allowed out.
+  * Hit the NAT66 `srcnat` rule → translated to the global IPv6 on `ether1`.
+* Reply traffic:
+  * Matches `connection-state=established` → allowed back in.
+* New unsolicited inbound connections:
+  * Reach the `forward` rule "drop new inbound from internet" → dropped (unless you later override with a `dst-nat` and an allow rule).
+
+#### Test that everything works
+
+From a **LAN client**:
+1. Confirm IPv6 address & gateway:
+   * On Linux/macOS:
+     ```bash
+     ip -6 address
+     ip -6 route
+     ```
+   * You should see:
+     * A global ULA address in `fd12:3456:789a:1::/64`.
+     * A default route via the MikroTik’s link‑local (`fe80::...`).
+2. Ping the router’s ULA:
+   ```bash
+   ping -6 fd12:3456:789a:1::1
+   ```
+3. Ping an external IPv6 host:
+   ```bash
+   ping -6 ipv6.google.com
+   ```
+4. Open [https://test-ipv6.com](https://test-ipv6.com) in your browser and verify IPv6 connectivity.
+
+On the MikroTik:
+```txt
+/ipv6 firewall nat print stats
+/ipv6 route print
+```
+
+You should see:
+* The NAT66 rule’s counters increasing.
+* A default route via `fe80::...%ether1` being used.
+
+If all that works: congratulations, you now have working IPv6 on your LAN via *NAT66*, without the extra moving parts from the tunnel broker.
+
+
+
+#### NAT66 vs ROUTE64 - When to Choose Which
+
+To wrap up:
+* *ROUTE64 + WireGuard (main article):*
+  * You get a routed `/56` that is really yours.
+  * No IPv6 NAT; everything is globally addressable.
+  * Inbound services are straightforward (assign stable IPv6 addresses, open firewall).
+  * Extra moving parts: VPS/tunnel broker account, WireGuard tunnel, static routes.
+* *NAT66 on MikroTik (this appendix):*
+  * Simpler: no VPS or tunnel; just the Salt Fiber Box and your MikroTik.
+  * Uses the native IPv6 connectivity Salt already gives you.
+  * All LAN devices share the router's single global IPv6 (just like IPv4 NAT).
+  * Inbound services require IPv6 port‑forward rules and don't get "nice" global addresses.
+
+The original post focused on the "clean" IPv6 routing approach.
+This appendix shows that, if you're willing to compromise on IPv6 purity, *NAT66 is indeed the easier route* for the specific "Salt Fiber Box → MikroTik → LAN" setup.
