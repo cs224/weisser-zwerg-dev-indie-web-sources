@@ -1,6 +1,6 @@
 ---
 layout: "layouts/post-with-toc.njk"
-title: "Quick Tip: Export Passwords and Passkeys from iPhone (iOS 26, 2025) to KeePassXC (kdbx)"
+title: "Quick Tip Nugget: Export Passwords and Passkeys from iPhone (iOS 26, 2025) to KeePassXC (kdbx)"
 description: "I love passkeys and I also want to own my data and credentials. With iOS 26 this is finally possible."
 keywords: iOS 26, iCloud Keychain, passwords, passkeys, export, KeePassXC, kdbx, iPhone, password manager, bitwarden
 creationdate: 2025-12-02
