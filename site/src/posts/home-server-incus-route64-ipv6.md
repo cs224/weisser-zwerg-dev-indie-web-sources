@@ -1324,3 +1324,48 @@ One helpful person replied that SSH on port 22 works for them on the `fra2.de` h
 From that perspective, it does not look like a global ROUTE64 limitation, but rather something specific to my setup or my account, or possibly a subtle routing or policy detail at the upstream side.
 
 If you have ideas on what else to test, or if you have seen similar port specific filtering with ROUTE64 or other tunnel brokers, please leave a comment below.
+
+### Resolving the SSH Connectivity Issue
+
+I recreated the ROUTE64 tunnel setup by deleting my existing tunnel on the `fra2.de` hub and then creating a new one on the `fra3.de` hub, following the steps from [MikroTik Tunnelbroker with Route64](../mikrotik-route64-ipv6-tunnelbroker/#mikrotik-tunnelbroker-with-route64).
+
+After deleting and recreating the tunnel, the only thing that changed was the WireGuard configuration.
+The allocated IPv6 space stayed the same.
+In practice, this meant I only had to do a small update in `route64-gw-profile.yml` so that the generated `/etc/wireguard/wg0.conf` inside the gateway container matched the new tunnel settings.
+
+> It seems that ROUTE64 typically assigns you an IPv6 prefix that is independent from a specific PoP.
+> When you move from one hub to another, you usually keep the same routed prefix, but your WireGuard peer information changes.
+
+Once I recreated both the gateway container and the test workload container, I could reach port 22 on the workload container from the outside.
+I verified this by connecting over SSH from an external VPS to the public IPv6 address of the Incus instance.
+
+This strongly suggests the issue was upstream, related to the `fra2.de` tunnel path, because I did not change anything else besides switching to the new tunnel configuration.
+
+The `librespeed-cli` test also improved considerably:
+```bash
+root@pub-test:~# librespeed-cli -6 --server 50
+Retrieving server list from https://librespeed.org/backend-servers/servers.php
+Selected server: Frankfurt, Germany (Clouvider) [fra.speedtest.clouvider.net]
+Sponsored by: Clouvider @ https://www.clouvider.co.uk/
+You're testing from: 2a11:6c7:abcd:2001::2 - Unknown ISP
+Ping: 19.91 ms  Jitter: 0.18 ms
+Download rate:  373.37 Mbps
+Upload rate:    477.80 Mbps
+```
+
+To further confirm stability, I repeated the external ping test. This time, it looked very consistent:
+```bash
+me@vps:~$ ping -i 0.2 -c 100 2a11:6c7:abcd:2001::2
+PING 2a11:6c7:abcd:2001::2 (2a11:6c7:abcd:2001::2) 56 data bytes
+64 bytes from 2a11:6c7:abcd:2001::2: icmp_seq=1 ttl=50 time=22.6 ms
+64 bytes from 2a11:6c7:abcd:2001::2: icmp_seq=2 ttl=50 time=22.6 ms
+...
+64 bytes from 2a11:6c7:abcd:2001::2: icmp_seq=99 ttl=50 time=22.5 ms
+64 bytes from 2a11:6c7:abcd:2001::2: icmp_seq=100 ttl=50 time=23.6 ms
+
+--- 2a11:6c7:abcd:2001::2 ping statistics ---
+100 packets transmitted, 100 received, 0% packet loss, time 19889ms
+rtt min/avg/max/mdev = 22.380/23.149/25.835/0.564 ms
+```
+
+Overall, moving the tunnel from `fra2.de` to `fra3.de` seems to have improved the setup across the board.
