@@ -1127,3 +1127,200 @@ Just as importantly, the default remains private: the host system stays unexpose
 The same idea can also work for public IPv4 if you use a tunnel broker that routes IPv4 space to you.
 For example, [novacloud-hosting.com](https://novacloud-hosting.com) offers IPv4 transit where IPs are routed through GRETAP, GRE, VXLAN, and WireGuard, starting at 0.75 € per IPv4 address per month (as of beginning 2026).
 See their offer here: [https://novacloud-hosting.com/ip-transit.html](https://novacloud-hosting.com/ip-transit.html).
+
+## Appendix
+
+### No SSH Connectivity
+
+At this point I still have one problem, and it looks like it might be upstream at ROUTE64.
+I cannot connect to SSH on port 22 on the `pub-test` container, even though other TCP ports work.
+
+To debug this cleanly, I first remove all firewall rules on every hop that could possibly drop the traffic.
+The goal is to get to a state where the only remaining variables are routing and upstream filtering.
+
+> Disabling firewalls for a short test like this is useful because it separates two kinds of problems:
+>
+> * Local problems, for example nftables rules that accidentally block inbound traffic.
+> * Upstream problems, for example filtering before packets even reach your tunnel endpoint.
+>
+> Once you have proof that packets do or do not arrive at the tunnel interface, you can re enable the firewalls with much more confidence.
+
+
+#### Step 1: Temporarily disable firewalling everywhere
+
+1. On the home server host, remove the Incus veth guard table:
+   ```bash
+   root@homeserver:~# nft delete table inet incus_veth_guard
+   root@homeserver:~# nft list table inet incus_veth_guard
+   root@homeserver:~# nft list ruleset | grep inet
+   # Turn on again:
+   root@homeserver:~# systemctl restart incus-veth-guard.service
+   ```
+2. On the `route64-gw` instance, stop its init service and remove the gateway nftables table:
+
+   ```bash
+   root@homeserver:~# incus exec route64-gw -- bash
+   root@route64-gw:~# systemctl stop route64-gw-init.service
+   root@route64-gw:~# nft delete table inet route64_gw
+   root@route64-gw:~# nft list table inet route64_gw
+   # Turn on again:
+   root@route64-gw:~# systemctl start route64-gw-init.service
+   ```
+3. On the `pub-test` instance, stop the local firewall service and remove its nftables table:
+   ```bash
+   root@homeserver:~# incus exec pub-test -- bash
+   root@pub-test:~# systemctl stop local-firewall.service
+   root@pub-test:~# nft delete table inet local
+   root@pub-test:~# nft list table inet local
+   # Turn on again:
+   root@pub-test:~# systemctl start local-firewall.service
+   ```
+
+#### Step 2: Replace SSH with a minimal TCP listener
+
+Next, I stop the SSH daemon on `pub-test` and replace it with a netcat listener.
+This removes SSH configuration as a factor and leaves only plain TCP reachability:
+
+```bash
+root@pub-test:~# systemctl stop ssh
+root@pub-test:~# nc -6 -lvn 22
+```
+
+> Using netcat here is a simple but powerful trick. If a TCP SYN reaches the container, netcat will accept it.
+> If nothing reaches the container at all, you will not see any connection, which strongly points to filtering or routing earlier in the path.
+
+#### Step 3: Test from outside
+
+From another machine, ideally a VPS for a true outside in test, I try to connect to the container's public IPv6 address on port 22:
+
+```bash
+me@vps:~$ nc -6 -vz -w3 2a11:6c7:abcd:2001::2 22
+nc: connect to 2a11:6c7:abcd:2001::2 port 22 (tcp) timed out: Operation now in progress
+```
+
+#### Step 4: Capture traffic on the gateway
+
+Now open two terminals on the route64 gateway container and run two `tcpdump` captures.
+
+The first capture monitors the outer tunnel transport on `eth0`.
+On this interface you should at least see periodic WireGuard keepalives (typically every 15 seconds), and you should also see encapsulated tunnel packets when there is real traffic:
+
+```bash
+root@route64-gw:~# tcpdump -ni eth0 "udp and port 58140"
+```
+
+The second capture monitors the decrypted traffic on the tunnel interface `wg0`.
+I filter for TCP port 22 and TCP port 2222 so that I can compare a failing connection attempt (22) with a working one (2222):
+
+```bash
+root@route64-gw:~# tcpdump -ni wg0 'tcp port 22 or tcp port 2222'
+```
+
+> These two captures answer two different questions:
+> * `eth0` (outer UDP) tells you whether any tunnel traffic is happening at all for a given test.
+> * `wg0` (inner IPv6) tells you whether the specific TCP SYN packets actually arrive through the tunnel.
+>
+> If you see traffic on `eth0` but nothing on `wg0`, the tunnel might be up but routing might be wrong.
+> If you see nothing on both for a specific destination port, that often means the packets never reached your tunnel endpoint in the first place.
+
+#### What I observe
+
+##### Outer tunnel traffic on `eth0`
+
+Here is what I see on the outer tunnel:
+
+```bash
+root@route64-gw:~# tcpdump -ni eth0 "udp and port 52929"
+tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
+listening on eth0, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+14:37:27.561665 IP 10.248.99.209.35377 > 165.140.142.113.58140: UDP, length 32
+14:37:42.669481 IP 10.248.99.209.35377 > 165.140.142.113.58140: UDP, length 32
+# me@vps:~$ nc -6 -vz -w3 2a11:6c7:abcd:2001::2 22
+14:37:57.769600 IP 10.248.99.209.35377 > 165.140.142.113.58140: UDP, length 32
+# me@vps:~$ nc -6 -vz -w3 2a11:6c7:abcd:2001::2 22
+14:38:12.873632 IP 10.248.99.209.35377 > 165.140.142.113.58140: UDP, length 32
+14:38:12.873787 IP 10.248.99.209.35377 > 165.140.142.113.58140: UDP, length 148
+14:38:12.889092 IP 165.140.142.113.58140 > 10.248.99.209.35377: UDP, length 92
+14:38:12.889335 IP 10.248.99.209.35377 > 165.140.142.113.58140: UDP, length 32
+14:38:27.924819 IP 165.140.142.113.58140 > 10.248.99.209.35377: UDP, length 32
+# me@vps:~$ nc -6 -vz -w3 2a11:6c7:abcd:2001::2 2222
+14:38:29.838319 IP 165.140.142.113.58140 > 10.248.99.209.35377: UDP, length 112
+14:38:29.838640 IP 10.248.99.209.35377 > 165.140.142.113.58140: UDP, length 112
+14:38:29.868946 IP 165.140.142.113.58140 > 10.248.99.209.35377: UDP, length 112
+14:38:29.869011 IP 165.140.142.113.58140 > 10.248.99.209.35377: UDP, length 112
+14:38:29.870146 IP 10.248.99.209.35377 > 165.140.142.113.58140: UDP, length 112
+14:38:29.903499 IP 165.140.142.113.58140 > 10.248.99.209.35377: UDP, length 112
+```
+
+The key detail for me is the contrast: when I test port 22, I do not see any burst of tunnel traffic that would match a TCP SYN reaching the gateway.
+When I test port 2222, I immediately see additional UDP packets on the outer tunnel.
+
+##### Inner tunnel traffic on `wg0`
+
+Here is what I see on the decrypted TCP traffic:
+
+```bash
+root@route64-gw:~# tcpdump -ni wg0 'tcp port 22 or tcp port 2222'
+tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
+listening on wg0, link-type RAW (Raw IP), snapshot length 262144 bytes
+# me@vps:~$ nc -6 -vz -w3 2a11:6c7:abcd:2001::2 22
+# me@vps:~$ nc -6 -vz -w3 2a11:6c7:abcd:2001::2 22
+# me@vps:~$ nc -6 -vz -w3 2a11:6c7:abcd:2001::2 2222
+14:38:29.838457 IP6 2001:db8:dead:beef:6f4:1cff:fe82:1284.33340 > 2a11:6c7:abcd:2001::2.2222: Flags [S], seq 2262543438, win 65280, options [mss 1360,sackOK,TS val 1053821553 ecr 0,nop,wscale 7], length 0
+14:38:29.838543 IP6 2a11:6c7:abcd:2001::2.2222 > 2001:db8:dead:beef:6f4:1cff:fe82:1284.33340: Flags [S.], seq 4224223900, ack 2262543439, win 64704, options [mss 1360,sackOK,TS val 2787236864 ecr 1053821553,nop,wscale 7], length 0
+14:38:29.869112 IP6 2001:db8:dead:beef:6f4:1cff:fe82:1284.33340 > 2a11:6c7:abcd:2001::2.2222: Flags [.], ack 1, win 510, options [nop,nop,TS val 1053821586 ecr 2787236864], length 0
+14:38:29.869112 IP6 2001:db8:dead:beef:6f4:1cff:fe82:1284.33340 > 2a11:6c7:abcd:2001::2.2222: Flags [F.], seq 1, ack 1, win 510, options [nop,nop,TS val 1053821586 ecr 2787236864], length 0
+14:38:29.869385 IP6 2a11:6c7:abcd:2001::2.2222 > 2001:db8:dead:beef:6f4:1cff:fe82:1284.33340: Flags [F.], seq 1, ack 2, win 506, options [nop,nop,TS val 2787236894 ecr 1053821586], length 0
+14:38:29.903630 IP6 2001:db8:dead:beef:6f4:1cff:fe82:1284.33340 > 2a11:6c7:abcd:2001::2.2222: Flags [.], ack 2, win 510, options [nop,nop,TS val 1053821619 ecr 2787236894], length 0
+```
+
+For port 22 there is simply nothing. No SYN packets appear on `wg0`.
+For port 2222, I can see a normal TCP handshake.
+
+##### What the container itself sees
+
+On the `pub-test` instance, netcat confirms the same story. Port 22 never receives a connection, but port 2222 does:
+
+```bash
+root@pub-test:~# nc -6 -lvn 22
+Listening on :: 22
+^C
+root@pub-test:~# nc -6 -lvn 2222
+Listening on :: 2222
+Connection received on 2001:db8:dead:beef:6f4:1cff:fe82:1284 33340
+```
+
+#### Interpretation
+
+Putting these observations together:
+
+* When I try to connect to port 22, no corresponding TCP traffic appears on the inner `wg0` interface.
+* Even on the outer `eth0` interface, I do not see a tunnel traffic burst that would match a forwarded TCP SYN for port 22.
+* When I connect to port 2222, I immediately see both outer UDP tunnel activity and inner TCP packets on `wg0`, and the container accepts the connection.
+
+So the problem is not that `pub-test` refuses SSH.
+The traffic does not even reach the tunnel, at least not in a way that reaches my gateway.
+
+> This kind of behavior is consistent with upstream filtering on specific destination ports.
+> Port 22 is heavily scanned on the internet, so some providers apply additional filtering or abuse mitigation policies.
+> That said, I do not know whether ROUTE64 does this, whether it is specific to a particular hub, or whether something else along the path triggers it.
+
+#### Asking the ROUTE64 community
+
+Based on the evidence above, I reported the issue in the ROUTE64 Discord community:
+
+> Hi all, I am new to Route64 and I spent quite some time debugging why I cannot connect to port 22 on a Route64 IPv6 address, while I can connect to other ports, for example 80, 443, and 2222.
+> I can work around it by running SSH on a different port, but I was wondering whether this is documented somewhere.
+>
+> More context: I set up the Route64 WireGuard tunnel on one machine.
+> The tunnel provides a public /56 IPv6 network, and I route a single /128 from that /56 to another virtual machine.
+> On that VM I run services like SSH (22) and web (80, 443).
+> As a test I also listened on port 2222 via netcat.
+> I can connect to the /128 on ports 80, 443, and 2222, but not 22.
+> If I capture at the WireGuard level (outer UDP and inner wg0), I see that connection attempts to port 22 do not even create tunnel traffic.
+> That suggests upstream filtering before packets reach my tunnel endpoint.
+
+One helpful person replied that SSH on port 22 works for them on the `fra2.de` hub, which is the same hub I am using.
+From that perspective, it does not look like a global ROUTE64 limitation, but rather something specific to my setup or my account, or possibly a subtle routing or policy detail at the upstream side.
+
+If you have ideas on what else to test, or if you have seen similar port specific filtering with ROUTE64 or other tunnel brokers, please leave a comment below.
