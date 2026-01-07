@@ -859,6 +859,40 @@ case "${1:-}" in
 esac
 ```
 
+Dedicated `smtp-egress.service` on the home server (waits for wg0 + Mailu network):
+```txt
+# /etc/systemd/system/smtp-egress.service
+# systemctl daemon-reload
+# systemctl enable --now smtp-egress.service
+[Unit]
+Description=SMTP egress policy routing (Mailu -> VPS via wg0)
+Wants=wg-quick@wg0.service docker.service
+After=wg-quick@wg0.service docker.service
+
+# If you have a systemd unit for Mailu, add it here:
+# Wants=mailu.service
+# After=mailu.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+# Wait for wg0
+ExecStartPre=/usr/bin/bash -lc 'until ip link show wg0 >/dev/null 2>&1; do sleep 1; done'
+
+# Wait for Docker to have installed its chains (DOCKER-USER is what the script touches)
+ExecStartPre=/usr/bin/bash -lc 'until iptables -S DOCKER-USER >/dev/null 2>&1; do sleep 1; done'
+
+# Wait for the Mailu bridge interface that owns 192.168.203.0/24 to exist (matches the script’s autodetect logic)
+ExecStartPre=/usr/bin/bash -lc 'until ip -o -4 addr show | grep -qE '\'' br-[^ ]+ +inet 192\.168\.203\.'\''; do sleep 1; done'
+
+ExecStart=/usr/local/sbin/smtp-egress-home-via-vps.sh enable
+ExecStop=/usr/local/sbin/smtp-egress-home-via-vps.sh disable
+
+[Install]
+WantedBy=multi-user.target
+```
+
 `smtp-egress-vps.sh`
 ```bash
 #!/usr/bin/env bash
@@ -936,6 +970,42 @@ case "${1:-}" in
     exit 1
     ;;
 esac
+```
+
+Dedicated `smtp-egress-vps.service` on the VPS server:
+```txt
+# /etc/systemd/system/smtp-egress-vps.service
+# systemctl daemon-reload
+# systemctl enable --now smtp-egress-vps.service
+[Unit]
+Description=VPS SMTP egress gateway (SNAT tcp/25 from Mailu subnet via wg0)
+Wants=wg-quick@wg0.service network-online.target
+After=wg-quick@wg0.service network-online.target
+
+# If you use a firewall manager that applies rules late, add it here so we run after it:
+# After=ufw.service nftables.service
+
+# When wg-quick@wg0 stops, also stop this (so ExecStop runs and cleans up)
+PartOf=wg-quick@wg0.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+# Wait for interfaces to exist
+ExecStartPre=/usr/bin/bash -lc 'until ip link show wg0  >/dev/null 2>&1; do sleep 1; done'
+ExecStartPre=/usr/bin/bash -lc 'until ip link show eth0 >/dev/null 2>&1; do sleep 1; done'
+
+# Optional but strongly recommended: ensure the public IP is actually configured on WAN_IF
+# Replace 1.2.3.4 and eth0 to match your script variables.
+ExecStartPre=/usr/bin/bash -lc 'until ip -o -4 addr show dev eth0 | grep -q " 1.2.3.4/"; do sleep 1; done'
+
+ExecStart=/usr/local/sbin/smtp-egress-vps.sh enable
+ExecStop=/usr/local/sbin/smtp-egress-vps.sh disable
+
+[Install]
+WantedBy=multi-user.target
+WantedBy=wg-quick@wg0.service
 ```
 
 ### Configure Mailu via the Admin Web Interface
