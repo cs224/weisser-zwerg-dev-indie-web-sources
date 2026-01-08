@@ -571,6 +571,11 @@ config:
 
     hostname: route64-gw
 
+    apt:
+      conf: |
+        APT::Install-Recommends "0";
+        APT::Install-Suggests "0";
+
     package_update: true
     package_upgrade: true
     packages:
@@ -988,6 +993,11 @@ config:
       all: '| tee -a /var/log/cloud-init-output.log'
 
     hostname: pub-test
+
+    apt:
+      conf: |
+        APT::Install-Recommends "0";
+        APT::Install-Suggests "0";
 
     package_update: true
     package_upgrade: true
