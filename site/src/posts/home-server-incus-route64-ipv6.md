@@ -882,8 +882,11 @@ incus exec pub-test -- bash
 
 # Quick sanity checks
 cloud-init status --long
+cloud-init query --list-keys 
 cloud-init query userdata
 ls -l /var/lib/cloud/instance/
+ls -l /run/cloud-init/
+sshd -T | egrep -i 'permitrootlogin|passwordauthentication|kbdinteractiveauthentication|pubkeyauthentication|usepam'
 ```
 
 > If `tail -f /var/log/cloud-init-output.log` fails because the file does not exist yet, just retry after a few seconds.
@@ -994,13 +997,14 @@ config:
 
     hostname: pub-test
 
+    package_update: true
+    package_upgrade: true
+
     apt:
       conf: |
         APT::Install-Recommends "0";
         APT::Install-Suggests "0";
-
-    package_update: true
-    package_upgrade: true
+    
     packages:
       - openssh-server
       - ca-certificates
@@ -1025,10 +1029,50 @@ config:
         groups: [sudo]
         shell: /bin/bash
         sudo: "ALL=(ALL) NOPASSWD:ALL"
+        lock_passwd: true
         ssh_authorized_keys:
           - ssh-ed25519 AAAA...fp me@home
 
+    # bootcmd runs every boot (module frequency always): https://cloudinit.readthedocs.io/en/latest/reference/modules.html
+    bootcmd:
+      - mkdir -p /etc/ssh/sshd_config.d
+
     write_files:
+      # Restore a Debian-like include-based layout (your image currently lacks this)
+      - path: /etc/ssh/sshd_config
+        owner: root:root
+        permissions: '0644'
+        content: |
+          # Managed by cloud-init
+          Include /etc/ssh/sshd_config.d/*.conf
+
+      # Enforce your actual policy (name it early so it wins)
+      # Also note: OpenSSH uses the first value it sees for most keywords. 
+      #  So if you need to override something cloud-init might write in 50-cloud-init.conf, name yours earlier (e.g., 01-hardening.conf).
+      - path: /etc/ssh/sshd_config.d/00-hardening.conf
+        owner: root:root
+        permissions: '0644'
+        content: |
+          PermitRootLogin no
+          PubkeyAuthentication yes
+          PasswordAuthentication no
+          KbdInteractiveAuthentication no
+          UsePAM yes
+
+      # Persistent local overrides for cloud-init generated networkd unit
+      # Alternative: full replacement via earlier .network file: 
+      #  If you prefer a full replacement rather than overrides, systemd-networkd applies the first matching .network file in alphanumeric order, and ignores later matches.
+      #  That means you can create something like /etc/systemd/network/05-pub0.network and systemd-networkd will ignore 10-cloud-init-pub0.network.
+      - path: /etc/systemd/network/10-cloud-init-pub0.network.d/99-local.conf
+        owner: root:root
+        permissions: '0644'
+        content: |
+          # Local overrides for pub0 (not managed by cloud-init).
+          # Put manual changes here instead of editing 10-cloud-init-pub0.network.
+          [Network]
+          #DNS=2606:4700:4700::1111
+          #DNS=2001:4860:4860::8888
+
       # Optional: a minimal local firewall for defense-in-depth (recommended).
       # Keep it empty for now if you want; the GW already enforces inbound policy.
       - path: /etc/nftables.d/local.nft
@@ -1073,6 +1117,7 @@ config:
           [Install]
           WantedBy=multi-user.target
 
+    # runcmd is first boot only (once-per-instance): https://cloudinit.readthedocs.io/en/latest/reference/modules.html
     runcmd:
       - [ usermod, -p, '*', admin ] # Lock password login but keep key-based SSH (set password hash to '*')    
       - [ systemctl, enable, --now, systemd-resolved ]
@@ -1080,6 +1125,9 @@ config:
       - [ systemctl, enable, --now, systemd-networkd ]
       - [ systemctl, daemon-reload ]
       - [ systemctl, enable, --now, local-firewall.service ]
+      - [ sh, -c, 'systemctl reload ssh || systemctl restart ssh' ]
+      - [ sh, -c, 'printf "%s\n" "network: {config: disabled}" > /etc/cloud/cloud.cfg.d/99-disable-cloud-init-network.cfg' ]
+
 
   cloud-init.network-config: |
     version: 2
