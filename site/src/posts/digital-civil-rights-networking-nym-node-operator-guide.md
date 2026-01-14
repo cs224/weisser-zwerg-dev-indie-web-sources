@@ -8,6 +8,18 @@ date: 2025-02-27
 tags: ['post']
 ---
 
+## Deprecated
+
+<div style="border: 2px solid #d32f2f; background: #fff5f5; color: #d32f2f; padding: 12px 16px; margin: 16px 0; border-radius: 6px; font-weight: 700;">
+  <span>!!DEPRECATED!!</span><br>
+  <span style="font-weight: 600;">
+    This post is no longer current and has been superseded by a <a href="../digital-civil-rights-networking-nym-node-operator-guide-2026" target="_blank">newer, updated article</a>.
+    Please refer to the latest post for accurate and up-to-date information.
+  </span><br>
+  <span>!!DEPRECATED!!</span>
+</div>
+
+
 ## Rationale
 
 The [Nym](https://nym.com/about) mixnet and its distributed VPN (dVPN) depend on people like you to run nodes, which keep the network robust.
