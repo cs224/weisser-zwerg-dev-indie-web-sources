@@ -941,8 +941,34 @@ The docs page [Change Settings via Desktop Wallet](https://nym.com/docs/operator
 
 ## Upgrade
 
-The script `upgrade-swap-binary-symlink.sh` upgrades the node binary using a symlink swap.
-It stops the node, points `/root/nym-binaries/nym-node` to a specific versioned binary, and then starts the node again.
+Before you upgrade, I recommend that you read through the [changelog](https://nym.com/docs/operators/changelog).
+It often includes important operator notes, such as configuration changes, new defaults, and networking updates that can affect your node after the restart.
+
+The first step is to check which versions are available. You can use the [previously mentioned](#backup) bash alias `nym-ls` for that:
+
+```bash
+nym-ls
+prerelease,draft,updated_at,url
+false,false,"2025-11-25T14:28:12Z","https://github.com/nymtech/nym/releases/download/nym-binaries-v2025.21-mozzarella/nym-node"
+false,false,"2025-11-12T08:21:17Z","https://github.com/nymtech/nym/releases/download/nym-binaries-v2025.20-leerdammer/nym-node"
+...
+```
+
+Next, download the release you want to upgrade to.
+In the list above, a stable and recent example is `nym-binaries-v2025.21-mozzarella`.
+Use the [previously mentioned](#backup) bash alias `nym-dl` for that:
+
+```bash
+nym-dl nym-binaries-v2025.21-mozzarella
+```
+
+This command will place the downloaded binary at: `/root/nym-binaries/nym-node-v2025.21-mozzarella`.
+
+After the download, the script `upgrade-swap-binary-symlink.sh` upgrades the node binary by swapping a symlink. In practical terms, it does the following:
+
+1. Stops the `nym-node` systemd service
+2. Points `/root/nym-binaries/nym-node` to the selected versioned binary
+3. Starts the service again
 
 Example run:
 
@@ -982,6 +1008,34 @@ rustc Version:      1.88.0
 rustc Channel:      stable
 cargo Profile:      release
 ```
+
+Next, watch the logs closely. If you do not see errors during startup and the node settles into normal operation, verify the node's build information endpoint.
+
+```bash
+# watch the logs:
+journalctl -u nym-node -f -n 200
+
+# verify the node's info endpoint (direct):
+curl -sS -X 'GET' 'http://45.157.233.31:8080/api/v1/build-information' -H 'accept: application/json' | jq
+
+# or via DNS name and through the nginx proxy:
+curl -sS -X 'GET' 'https://wznymnode2.root.sx/api/v1/build-information' -H 'accept: application/json' | jq
+```
+
+Sometimes you will see in the [changelog](https://nym.com/docs/operators/changelog) that the Nym network has changed which ports are allowed for exit traffic (or which ports are expected to be reachable, depending on your node role and configuration).
+These changes typically come from NIP proposals that node operators can vote on.
+If approved, the updated port policy becomes part of the network's operating assumptions.
+
+> Just as an example of that governance process, you can review: [NIP-4: Nym Exit Policy Update 'Opening Port 587'](https://governator.nym.com/proposal/prop-ca6726ea-38b1-4568-97fe-8bdc5fdc83a0).
+
+If this happens, you will need to run the [Network Tunnel Manager (NTM)](https://nym.com/docs/operators/nodes/nym-node/configuration#routing-configuration) again so that your local routing and policy configuration matches the current network expectations.
+
+> You can also make it a habit to rerun the Network Tunnel Manager reconfiguration after every upgrade.
+> This is slightly redundant when nothing changed, but it reduces the chance that you forget it when the changelog does include a port or routing update.
+
+Have a look at the appendix section [Network Tunnel Manager](#network-tunnel-manager) for step by step instructions.
+
+### Backup after Upgrade
 
 The upgrade script itself does not create a backup commit.
 After a successful upgrade, it is a good habit to record the new state in your backup repository:
@@ -1146,6 +1200,53 @@ Then, you can [install Python executables](https://docs.astral.sh/uv/concepts/py
 For example, to install Python 3.12 and make it the default:
 ```bash
 uv python install 3.12 --default
+```
+
+### Network Tunnel Manager
+
+The Nym network has two separate datapaths: the dVPN datapath (2-hop, WireGuard based) and the mixnet datapath (5-hop).
+Because these two parts work differently, their exit policies are handled differently as well.
+
+#### dVPN Datapath (2-hop, WireGuard)
+
+For the dVPN datapath (2-hop, WireGuard), the exit policy is enforced locally via firewall rules on your server.
+To (re)apply the current WireGuard exit policy, use the `network-tunnel-manager.sh` helper script:
+
+```bash
+curl -L https://raw.githubusercontent.com/nymtech/nym/refs/heads/develop/scripts/nym-node-setup/network-tunnel-manager.sh \
+  -o network-tunnel-manager.sh \
+  && chmod +x network-tunnel-manager.sh \
+  && ./network-tunnel-manager.sh --help
+
+# Then run:
+./network-tunnel-manager.sh complete_networking_configuration
+```
+
+> In practice, this script configures the networking pieces that make the 2 hop dVPN mode work safely on your host.
+> Depending on your distribution and kernel firewall backend, it may apply rules via `iptables` or `nftables`.
+
+If you do not want to run the single "all in one" command, you can also run the same steps piece by piece:
+
+```bash
+./network-tunnel-manager.sh exit_policy_clear
+./network-tunnel-manager.sh exit_policy_install
+./network-tunnel-manager.sh exit_policy_status
+./network-tunnel-manager.sh exit_policy_tests
+```
+
+It is a good idea to run `exit_policy_status` and `exit_policy_tests` either way (whether you used `complete_networking_configuration` or the step by step approach).
+This gives you a quick confirmation that the policy is installed and behaves as expected.
+
+#### Mixnet Datapath (5-hop)
+
+For the mixnet datapath, the exit policy is not maintained through your local firewall rules in the same way.
+Instead, `nym-node` pulls the current exit policy on startup and applies it as part of its normal runtime configuration.
+The policy file is published here: <https://nymtech.net/.wellknown/network-requester/exit-policy.txt>.
+
+In most cases, you do not need to do anything special beyond restarting your node, which you likely already did during the upgrade:
+
+```bash
+systemctl restart nym-node
 ```
 
 ## Footnotes
