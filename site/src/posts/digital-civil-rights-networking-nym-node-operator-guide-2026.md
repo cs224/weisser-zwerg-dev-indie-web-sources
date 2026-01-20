@@ -1643,6 +1643,26 @@ Use this when you primarily care about WireGuard registration and basic connecti
   --gateway-ip "152.53.122.46:8080"
 ```
 
+##### Troubleshooting
+
+If you see errors like:
+
+```txt
+ERROR nym_client_core::client::base_client: Could not authenticate and start up the gateway connection - gateway returned an error response: the client is not registered
+ERROR nym_gateway_probe: Failed to connect to mixnet: gateway client error (...): gateway returned an error response: the client is not registered
+```
+
+This typically means the probe has local state that no longer matches what the gateway expects.
+The fastest recovery is to delete the local registration and reply store so the probe can re register cleanly.
+
+```bash
+cd "$HOME/.local/share/nym-gateway-probe"
+rm -f persistent_reply_store.sqlite*
+rm -f gateways_registrations.sqlite*
+```
+
+Then run your `nym-gateway-probe run-local` command again.
+
 ### Monitoring a Nym Node's Earnings with CMD Reward Tracker
 
 The [Nym operators docs](https://nym.com/docs/operators/introduction) mention a [CMD Reward Tracker](https://nym.com/docs/operators/tools#cmd-reward-tracker).
