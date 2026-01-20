@@ -282,10 +282,11 @@ apt --fix-broken install -y
 # Install common admin tools and dependencies used throughout this guide
 apt install -y --no-install-recommends \
   ca-certificates curl wget jq tmux git rsync sqlite3 coreutils \
-  ufw netcat-openbsd ipset tcpdump \
+  ufw netcat-openbsd ipset tcpdump net-tools \
   pkg-config build-essential libssl-dev \
   nginx certbot python3-certbot-nginx python-is-python3 \
-  tree emacs-nox
+  tree emacs-nox \
+  librespeed-cli btop glances ncdu
 
 # Verify NTP via systemd-timesyncd
 timedatectl show -p NTP -p NTPSynchronized -p NTPService
@@ -351,11 +352,11 @@ Here is what the rough outline
       * `22/tcp`, `80/tcp`, `443/tcp`
       * `1789/tcp`, `1790/tcp`, `8080/tcp`, `9000/tcp`, `9001/tcp`
       * `51822/udp` (WireGuard)
-      * plus an allow rule on `nymwg` for `51830/tcp` (“bandwidth queries/topup - inside the tunnel”)
+      * plus an allow rule on `nymwg` for `51830/tcp` ("bandwidth queries/topup - inside the tunnel")
       * then `ufw reload` and shows status.
     * **Action for you:** review/tighten these rules based on your actual mode and ports. The script is convenient but somewhat "broad."
 4. **Start `nym-node`, then bond**
-   * Nym’s routing config doc explicitly says: have the latest `nym-node` installed, finish VPS setup, ensure the service is running, and bond the node before running NTM.
+   * Nym's routing config doc explicitly says: have the latest `nym-node` installed, finish VPS setup, ensure the service is running, and bond the node before running NTM.
 5. **Run NTM routing configuration**
    * WireGuard enabled: `complete_networking_configuration`
    * WireGuard disabled: `nym_tunnel_setup`
@@ -1148,6 +1149,12 @@ curl -sS -X 'GET' 'https://wznymnode2.root.sx/api/v1/load' -H 'accept: applicati
 curl -sS -X 'GET' https://validator.nymtech.net/api/v1/gateways/blacklisted | jq | grep DBBCDYsgAAj7g4FLQkSxXZAcdG5m9Hx8vMreqRaX1Yqo
 ```
 
+> Nym provides a public [Swagger UI](https://validator.nymtech.net/api/swagger/index.html) for the validator hosted API.
+> In practice, you should treat the Swagger and OpenAPI definition published by that specific deployment as the source of truth for what the instance actually exposes.
+>
+> There is also a public  [Swagger UI](https://mainnet-node-status-api.nymtech.cc/swagger/#/Gateways) for the node status APIs.
+
+
 ### Troubleshoot IPv4 + IPv6
 
 When node setup fails, networking is a common root cause.
@@ -1249,6 +1256,506 @@ In most cases, you do not need to do anything special beyond restarting your nod
 systemctl restart nym-node
 ```
 
+
+### Node Ping Tester
+
+The [Node Ping Tester](https://nym.com/docs/operators/tools#node-ping-tester) helps you check how many Nym nodes will respond to an ICMP ping from your current machine and IP address.
+This is a quick way to understand basic network reachability from where you are running the test.
+
+Under the hood, it is a small shell script that fetches the list of nodes from Nym's `nym-nodes/described` API endpoint, extracts any IP addresses that nodes publish in their self description, and then tries to ping each of them.
+The goal is not to prove that a node is healthy, but to see whether ping traffic is allowed through the node's firewall and hosting provider.
+
+Run it like this:
+
+```bash
+wget https://raw.githubusercontent.com/nymtech/nym/refs/heads/develop/scripts/test-nodes-pings.sh \
+  && chmod +x test-nodes-pings.sh \
+  && ./test-nodes-pings.sh
+```
+
+### Nym Gateway Probe
+
+Nym node operators are usually familiar with the [Harbourmaster](https://harbourmaster.nymtech.net/) monitoring interface.
+Under the hood, Nym's monitoring stack runs periodic [gateway probes](https://nym.com/docs/operators/performance-and-testing/gateway-probe) and then displays the results in Harbourmaster.
+
+The key point is that a probe is not just a passive "status ping".
+It actively behaves like a real user would, and it exercises multiple parts of the gateway and the surrounding infrastructure:
+
+* it checks the gateway's published capabilities and configuration
+* it registers a mixnet client
+* it registers a WireGuard peer
+* it tops up bandwidth using a zk nym credential
+* it sends ICMP pings
+* it downloads test files
+
+Because the probe tries to follow real user flows, it needs paid credential material to perform some of these steps.
+In Nym's terminology, [zk nyms](https://support.nym.com/hc/en-us/articles/32814392735377-What-are-zk-nyms) are anonymous credentials that can be used to prove you have the right to access bandwidth, without revealing a long term identity.
+
+Because the official probes run periodically, operators typically get fresh results in Harbourmaster without doing anything.
+Still, there are many situations where you want to run a probe on demand.
+With `nym-gateway-probe`, you can test a gateway from your own machine at any time, which is especially useful after configuration changes, firewall updates, routing changes, or when you are diagnosing reachability problems from a specific network.
+
+In a single run, the probe may query directory and metadata sources such as:
+
+* [nym api](https://validator.nymtech.net/api/v1/nym-nodes/described)
+* [explorer and node status APIs](https://mainnet-node-status-api.nymtech.cc/swagger/#/Gateways)
+* [Harbourmaster](https://harbourmaster.nymtech.net/)
+
+> Also have a look at [Gateway Probe Details and Contradictions](https://nym.com/docs/operators/performance-and-testing/gateway-probe-details).
+> Here is a key portion:
+>
+> > The cheaper the VPS, the more it is likely to be rate limited or have a leaky bucket quota that will appear to users as "unreliable".
+> >
+> > The best hosts will be ones with a fixed bandwidth that is capped by the hosting provider with network equipment, because:
+> > * Users will scale with the available bandwidth
+> > * No weird side effects of quotas
+> > * Most predictable behaviour
+> > * Will not be the cheapest, but will also not be the most expensive
+> >
+> > Bursting sounds attractive, but could be financially crippling for operators.
+
+
+#### Build
+
+Build the probe from the Nym monorepo (example for Debian/Ubuntu):
+
+```bash
+sudo apt update
+sudo apt install -y pkg-config build-essential libssl-dev curl jq git
+
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+rustup update
+
+git clone https://github.com/nymtech/nym.git
+cd nym
+
+git reset --hard      # in case you made any changes on your branch
+git pull              # in case you've checked it out before
+
+git checkout develop   # or master
+cargo build --release -p nym-gateway-probe # build your binaries with **mainnet** configuration
+```
+
+Verify the build:
+
+```bash
+./target/release/nym-gateway-probe --help
+./target/release/nym-gateway-probe run-local --help
+```
+
+#### Wallet funding and "why ~30 NYM?"
+
+A full probe run performs paid actions that intentionally "act like a user", such as registration and bandwidth top ups.
+To do that, the probe acquires *ticketbooks*, and your logs will show messages like these:
+
+* `we'll need to deposit 10000000unym to obtain the ticketbook` (10 NYM)
+* `Succeeded adding a ticketbook of type 'v1-mixnet-entry'`
+* `Succeeded adding a ticketbook of type 'v1-wireguard-entry'`
+* `Succeeded adding a ticketbook of type 'v1-wireguard-exit'`
+
+In mixnet mode, this commonly results in roughly 3 ticketbooks times 10 NYM, so around 30 NYM, plus transaction fees.
+
+> What is a "ticketbook" in practice?
+>
+> A useful mental model is to treat a ticketbook like a prepaid bundle of anonymous access tickets.
+> The probe deposits NYM on chain (that is the "10 NYM" you see in the logs) and receives cryptographic credential material in return.
+> Later, when the probe needs to perform an action that consumes bandwidth or requires authorization, it spends tickets from that local credential material rather than paying each step on chain again.
+>
+> This also explains why the probe needs a funded wallet even if you only want to run a quick connectivity test.
+> The probe is not only checking that an IP and port are reachable.
+> It is trying to reproduce the same flows that a real user would trigger, and those flows are designed to be rate limited and paid for.
+
+The ticketbooks are stored locally, inside the probe's state directory.
+If you lose that local state directory, you also lose the locally stored ticketbooks.
+This can make it look like tokens "disappeared".
+
+Operationally, this has two consequences:
+
+* Treat the probe state directory as valuable data.
+* Run probes from a stable environment and keep the state directory persistent.
+
+#### Persisting state (avoid using `/tmp`)
+
+By default, the probe stores its local state under `/tmp/nym-gateway-probe/...` (including the persistent reply store database).
+On many Linux systems, `/tmp` is backed by `tmpfs`, which means it is stored in memory and is cleared on reboot.
+In that case, your probe state will silently disappear whenever the machine restarts.
+
+To persist state on disk, use `--config-dir` with `run-local` and point it to a durable location, for example under your home directory:
+
+```bash
+./target/release/nym-gateway-probe run-local \
+  --config-dir "$HOME/.local/share/nym-gateway-probe" \
+  -g <GATEWAY_IDENTITY_KEY> \
+  --mnemonic "<FUNDED_24_WORD_MNEMONIC>"
+```
+
+If the stored state becomes inconsistent, for example after an unclean shutdown, you can delete the directory and run the probe again.
+Be aware that this also deletes any cached ticketbooks stored in that directory, so the probe may need to fund and obtain new ticketbooks on the next run.
+
+
+#### `run-local` vs top-level invocation
+
+The probe exposes two CLI entry points, and they are designed for different operational setups.
+
+* `nym-gateway-probe run-local ...`  
+  This mode is intended for running the probe from your own machine while keeping things simple.
+  You provide a funded wallet mnemonic using `--mnemonic`, and the probe will acquire the required credential material for you.
+  You can also set `--config-dir` to control where the probe stores its local state.
+
+* `nym-gateway-probe ...` (without `run-local`)  
+  This mode is intended for environments where you manage credential material outside of the probe itself, for example in monitoring automation or an operator controlled pipeline.
+  In this case, you are expected to provide the ticket material explicitly.
+
+If you run the probe without `run-local` and you do not provide the required `--ticket-materials`, the CLI will fail with an error like `ticket_materials is required`.
+
+#### LP Mode (Lewes Protocol) - FYI
+
+The repository includes LP documentation (`./docs/LP_README.md`) describing a "fast registration" protocol called the Lewes Protocol.
+The idea is to register and set up WireGuard using a direct TCP control port (default `41264`), without going through mixnet based registration.
+
+In the probe CLI, this is exposed via options such as:
+
+* `--mode single-hop`
+* `--mode two-hop`
+* `--mode lp-only`
+* and/or `--test-lp-wg`
+
+> A simple way to think about LP is that it trades privacy properties for speed and simplicity.
+> Mixnet based registration intentionally routes control traffic through the mixnet, which adds latency but aligns with Nym's privacy design.
+> LP instead uses a direct network path to the gateway's control port, which can be faster and easier to debug, but it depends on the gateway exposing that port to the public internet.
+
+Operationally, there are two important realities to keep in mind:
+
+* Most gateways on mainnet will not have LP enabled or reachable.
+  In that case, the probe will fail with timeouts when trying to connect to TCP port `41264`, even if the gateway is otherwise fully functional for mixnet and WireGuard.
+* This is expected unless the gateway operator has explicitly enabled LP in the gateway configuration and opened the firewall for TCP port `41264`.
+
+Therefore, treat LP as an optional capability check.
+Do not interpret LP failures as "the gateway is unhealthy" unless your operational model explicitly depends on LP.
+
+For most operators today, the primary value comes from mixnet mode (`--mode mixnet`).
+It exercises the normal user path and does not require LP to be enabled.
+
+#### CLI Guide: Key Parameters, Grouped by Intent
+
+This section groups the most relevant `nym-gateway-probe` CLI parameters by what you are trying to achieve operationally.
+
+##### Target Selection
+
+You can tell the probe which gateway to test in a few main ways.
+
+* **Directory based selection (by identity key)**  
+  Use this when you want to test the gateway as it is seen by the network.
+  * `-g, --entry-gateway <ENTRY_GATEWAY>`  
+    Select a gateway by its identity key (an Ed25519 public key encoded in base58). This is the normal operational mode: the probe looks up the node in the directory and then runs the selected tests.
+* **Direct targeting**  
+  Use this if you know the `<GATEWAY_IP>`.
+  * `--gateway-ip <GATEWAY_IP>`  
+    Probe a gateway directly by connecting to its HTTP API (often on port `8080`) and reading its descriptor. It typically accepts `IP`, `IP:PORT`, or `HOST:PORT` such as `152.53.122.46:8080`.
+* **Two hop and forwarding test target (LP focused)**  
+  Use this only when you intentionally test LP forwarding behavior with a fixed entry and exit.
+  * `--exit-gateway-ip <EXIT_GATEWAY_IP>`  
+    Sets the explicit exit gateway for LP based forwarding tests.
+
+##### Test Mode Selection
+
+The probe supports multiple test modes. A mode determines which registration path is used and which subsystems are exercised.
+
+* `--mode <MODE>`  
+  Explicitly selects the test mode.
+
+Common modes as shown by `--help` include:
+
+* `mixnet`  
+  Traditional mixnet testing. This is the most representative operational path: attach to an entry gateway, validate mixnet routing, and then run WireGuard through the normal authenticator path. No LP support is required.
+
+* `single-hop`  
+  LP registration plus WireGuard on a single gateway, without mixnet involvement. This requires the gateway to expose the LP control port, typically `41264`.
+
+* `two-hop`  
+  LP forwarding test across an entry gateway and an exit gateway, plus WireGuard. This also requires LP to be reachable.
+
+* `lp-only`  
+  LP registration checks only, without WireGuard.
+
+As mentioned earlier, most mainnet gateways do not have LP enabled or reachable.
+In practice, that means `--mode mixnet` is the mode that applies to most real world operator diagnostics.
+
+##### Cost Control Knobs
+
+The probe "acts like a user" and may acquire ticketbooks, each of which can require an on chain deposit.
+Whether it needs to do that depends on what tests you run and whether your local credential store already contains the required ticketbooks.
+
+The most useful cost and scope controls are:
+
+* `--only-wireguard`  
+  Runs only the WireGuard portion of the probe without executing the full set of other checks.
+  This is helpful for quick checks and for aligning with the WireGuard focused view you often see in Harbourmaster.
+
+* `--min-gateway-mixnet-performance <N>`  
+  Influences filtering and eligibility when selecting nodes from the directory.
+  Setting it to `0` can help when your gateway is reachable but is being excluded due to limited performance history or strict selection criteria.
+
+**Important operational point**: if you persist the probe state using `--config-dir`, the probe can reuse cached ticketbooks.
+This reduces repeated deposits and makes repeated runs cheaper.
+
+##### Netstack Options
+
+The "netstack" options tune the probe's internal network test behaviour, such as timeouts, DNS resolvers, ping targets, and download behaviour.
+These options matter most when you diagnose flaky networks, IPv6 issues, captive portals, strict egress rules, or hosting providers that treat ICMP and large downloads differently.
+
+Common knobs include:
+
+* Timeouts
+  * `--metadata-timeout-sec`
+  * `--netstack-download-timeout-sec`
+  * `--netstack-send-timeout-sec`
+  * `--netstack-recv-timeout-sec`
+
+* DNS configuration
+  * `--netstack-v4-dns`
+  * `--netstack-v6-dns`
+
+* Ping behaviour
+  * `--netstack-num-ping`
+  * `--netstack-ping-hosts-v4`, `--netstack-ping-ips-v4`
+  * `--netstack-ping-hosts-v6`, `--netstack-ping-ips-v6`
+
+#### Practical Run Examples
+
+Below are command lines that correspond to common operator questions. All examples assume you have already built the binary as shown earlier.
+
+##### Verifying directory presence with `curl` and `jq`
+
+Before you start deeper diagnostics, it is worth confirming whether the directory API currently exposes your node at all.
+If the directory does not list your gateway, many directory based workflows will fail, even when the gateway is reachable by IP.
+
+This example looks up a node by its identity key (Ed25519, base58 encoded):
+
+```bash
+ID="DBBCDYsgAAj7g4FLQkSxXZAcdG5m9Hx8vMreqRaX1Yqo"
+
+curl -fsS 'https://validator.nymtech.net/api/v1/nym-nodes/described' | jq -r --arg id "$ID" '
+  .data[]
+  | select(.description.host_information.keys.ed25519 == $id)
+  | {
+      node_id,
+      last_polled: .description.last_polled,
+      ip: .description.host_information.ip_address,
+      hostname: .description.host_information.hostname,
+      declared_role: .description.declared_role,
+      ws_port: .description.mixnet_websockets.ws_port,
+      wss_port: .description.mixnet_websockets.wss_port,
+      wg: .description.wireguard
+    }'
+```
+
+How to interpret the output:
+
+* If you get a JSON object back, the directory API currently includes your node.
+* If you get no output, the node is not present in this particular directory view at that moment.
+
+##### `--mnemonic` and `--min-gateway-mixnet-performance`
+
+The two parameters `--mnemonic` and `--min-gateway-mixnet-performance` deserve special attention.
+
+You typically only need to provide `--mnemonic "<FUNDED_24_WORD_MNEMONIC>"` the first time you run `nym-gateway-probe`, as long as you keep a persistent state directory (for example with `--config-dir "$HOME/.local/share/nym-gateway-probe"`).
+After the first run, the probe can usually reuse the locally stored ticketbooks from that state directory.
+You only need to pass the mnemonic again when the probe must acquire additional ticketbooks, or when you lost or deleted the local state directory.
+
+The other flag matters mainly when you are testing a fresh Nym node.
+New gateways often have little or no performance history yet.
+If the probe selects targets via the directory, that low score can cause filtering and eligibility issues.
+This is why `--min-gateway-mixnet-performance 0` is useful during early setup: it tells `nym-gateway-probe` to treat your node as eligible even if the current performance score is low.
+
+> This flag is relevant when you select a gateway via `-g, --entry-gateway` or `--gateway-ip`. Either way, the probe consults directory data.
+
+To investigate performance, it helps to first resolve your gateway's `node_id` from your identity key:
+
+```bash
+ID="DBBCDYsgAAj7g4FLQkSxXZAcdG5m9Hx8vMreqRaX1Yqo"
+
+NODE_ID=$(
+  curl -fsS 'https://validator.nymtech.net/api/v1/nym-nodes/described' | jq -r --arg id "$ID" '
+    .data[]
+    | select(.description.host_information.keys.ed25519 == $id)
+    | .node_id
+  '
+)
+
+echo "node_id=$NODE_ID"
+```
+
+Once you have a `node_id`, you can query performance and uptime related endpoints.
+These are useful when you want to understand whether a failure is caused by your gateway being excluded by selection heuristics, rather than by a real connectivity issue:
+
+```bash
+curl -fsS "https://validator.nymtech.net/api/v1/nym-nodes/performance-history/$NODE_ID" | jq
+curl -fsS "https://validator.nymtech.net/api/v1/nym-nodes/historical-performance/${NODE_ID}?date=2026-01-18" | jq
+curl -fsS "https://validator.nymtech.net/api/v1/nym-nodes/performance/${NODE_ID}" | jq
+curl -fsS "https://validator.nymtech.net/api/v1/nym-nodes/uptime-history/${NODE_ID}" | jq
+curl -fsS "https://validator.nymtech.net/api/v1/status/gateways/unstable/${ID}/test-results" | jq | head -n 50
+```
+
+> Nym provides a public [Swagger UI](https://validator.nymtech.net/api/swagger/index.html) for the validator hosted API.
+> In practice, treat the Swagger and OpenAPI definition published by that specific deployment as the source of truth for what the instance actually exposes.
+
+##### Full operational probe (mixnet mode) using direct IP bootstrap
+
+This is one of the most robust ways to validate "real user" behaviour end to end, including entry connectivity, mixnet routing, WireGuard registration, DNS resolution, ping checks, and test downloads.
+
+```bash
+./target/release/nym-gateway-probe run-local \
+  --config-dir "$HOME/.local/share/nym-gateway-probe" \
+  --mode mixnet \
+  --min-gateway-mixnet-performance 0 \
+  --gateway-ip "152.53.122.46:8080" \
+  --mnemonic "<FUNDED_24_WORD_MNEMONIC>"
+```
+
+Why this is useful:
+
+* `--min-gateway-mixnet-performance 0` reduces the chance that the gateway is excluded by selection filters when the probe builds its topology.
+* `--config-dir` persists state, which helps the probe reuse cached ticketbooks across runs and keeps results more consistent.
+
+##### Full operational probe (mixnet mode) by identity key
+
+This is basically the same as above, but starting from the node's identity key.
+
+```bash
+./target/release/nym-gateway-probe run-local \
+  --config-dir "$HOME/.local/share/nym-gateway-probe" \
+  --mode mixnet \
+  --min-gateway-mixnet-performance 0 \
+  -g "DBBCDYsgAAj7g4FLQkSxXZAcdG5m9Hx8vMreqRaX1Yqo"
+```
+
+##### WireGuard only check (fast health check)
+
+Use this when you primarily care about WireGuard registration and basic connectivity signals, and you want faster feedback than a full operational probe run.
+
+```bash
+./target/release/nym-gateway-probe run-local \
+  --config-dir "$HOME/.local/share/nym-gateway-probe" \
+  --mode mixnet \
+  --only-wireguard \
+  --min-gateway-mixnet-performance 0 \
+  --gateway-ip "152.53.122.46:8080"
+```
+
+### Monitoring a Nym Node's Earnings with CMD Reward Tracker
+
+The [Nym operators docs](https://nym.com/docs/operators/introduction) mention a [CMD Reward Tracker](https://nym.com/docs/operators/tools#cmd-reward-tracker).
+It is a small Python tool inside the [main Nym Git repository](https://github.com/nymtech/nym), located at `nym/scripts/rewards-tracker`.
+
+#### Add your Nyx accounts
+
+Before you start, add the Nyx wallet addresses you used to bond your nodes to `nym/scripts/rewards-tracker/data/wallet-addresses.csv`.
+The [official documentation](https://nym.com/docs/operators/tools#cmd-reward-tracker) explains this step clearly and is worth following closely.
+
+> This file contains public wallet addresses, not private keys.
+
+#### Install and run
+
+The script has a few Python dependencies.
+I suggest tracking them in `nym/scripts/rewards-tracker/requirements.in`:
+
+```txt
+PyYAML
+requests
+tabulate
+colorama
+```
+
+> I use [`uv`](#uv-python-environment) to run the script.
+
+Then install and run it like this:
+
+```bash
+cd nym/scripts/rewards-tracker
+
+# start fresh if you want
+rm -rf .venv
+
+# create + activate venv
+uv venv --python 3.12
+source .venv/bin/activate
+
+# install from requirements.in
+uv pip install -r requirements.in
+
+# sanity check
+python -c "import yaml, requests, tabulate, colorama; print('deps ok')"
+
+# run
+python ./node_rewards_tracker.py
+```
+
+If you prefer a pinned, lockfile style workflow, you can compile and sync a fully resolved `requirements.txt`:
+
+```bash
+uv pip compile requirements.in -o requirements.txt
+uv pip sync requirements.txt
+```
+
+> If you run the tracker from automation, use `uv run` or an activated venv consistently.
+
+#### Why you are not seeing "reward transactions"
+
+I expected the script to output a list of reward transactions with timestamps per epoch, but it works differently.
+
+What the script does is not transaction tracking. It:
+
+* maps your wallet addresses to nodes (via the SpectreDAO nodes API, plus validator "bonded" and "described" lists)
+* reads a **current operator rewards balance** per node
+* writes a point in time snapshot to `data/data.yaml`
+* computes deltas such as "profit_difference", hourly rate, and 7 day or 30 day estimates **only by comparing snapshots across runs**
+
+Its outputs are a terminal table, `data/node-balances.csv`, and the historical snapshot store `data/data.yaml`.
+
+On the first run, `data.yaml` contains only one snapshot per node, so:
+
+* "Difference of total balance from last time" is `0.00` because there is no earlier snapshot to compare
+* 7 day and 30 day estimates need snapshots that are at least 7 or 30 days old, so you will see messages like "no data stored"
+
+Once you run it again later, for example a couple of hours later, you should start seeing a non zero "Difference ... from last time" if the operator rewards balance increased between runs.
+After enough history accumulates, the 7 day and 30 day columns will fill in.
+
+To make the tracker useful, run it periodically. Hourly is a common choice.
+
+> If you want hands off collection, run it from a scheduler such as cron or a systemd timer, and store the `data` directory on persistent disk.
+
+
+<!-- NymVPN docker image usage -->
+
 ## Footnotes
 
 [^duckdns]: Originally, I used [Duck DNS](https://www.duckdns.org), but it encountered several downtimes and service degradations for my use case. DuckDNS is a free dynamic DNS service that maps a subdomain under `duckdns.org` to your public IP.Then I moved to [No IP](https://www.noip.com/), but I found the manual renewal process annoying for long term operations. No IP's free hostnames require confirmation roughly every 30 days to remain active. Finally, I ended up with [FreeDNS](https://freedns.afraid.org/), mainly because it gives me more flexibility around DNS management and does not require the same recurring confirmation workflow for the setup I wanted.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
