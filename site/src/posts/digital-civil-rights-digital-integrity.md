@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Digital Civil Rights and Privacy: Embracing Digital Integrity"
 description: "Digital Integrity (Recht auf digitale Unversehrtheit) is a more comprehensive approach to what life in the digital age entails."
+seodescription: "Digital integrity as a civil right: why our online selves deserve autonomy. Threat model: surveillance, nudging, coercion, lifecycle lock-in. And safeguards: sanctity of the home."
 creationdate: 2025-03-30
 keywords: digital civil rights, privacy, digital integrity, digital bill of rights
 date: 2025-03-30
