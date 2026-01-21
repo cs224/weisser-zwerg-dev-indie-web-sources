@@ -18,13 +18,14 @@ eleventyExcludeFromCollections: true
 
         {%- for post in collections.post %}
             {% set absolutePostUrl %}{{ post.url | url | absoluteUrl(metadata.url) }}{% endset %}
+            {% set metaDesc = post.data.seodescription or post.data.description %}
             <item>
                 <guid isPermaLink="true">{{ absolutePostUrl }}</guid>
                 <pubDate>{{ post.data.creationdate | rssRfc822Date }}</pubDate>
                 <link>{{ absolutePostUrl }}</link>
                 <atom:link rel="alternate" type="text/html" href="{{ absolutePostUrl }}"/>
                 <title>{{ post.data.title }}</title>
-                <description>{{ post.data.description }}</description>
+                <description>{{ metaDesc | striptags | replace('\n', ' ') | trim | escape }}</description>
                 <content:encoded><![CDATA[<a href="{{ absolutePostUrl }}">{{ post.data.title }}</a>]]></content:encoded>
             </item>
         {%- endfor %}
