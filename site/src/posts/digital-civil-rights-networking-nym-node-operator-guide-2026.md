@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Nym Mixnet & dVPN: A Node Operator's Guide (2026)"
 description: "Support reclaiming our digital civil rights and privacy by running your own Nym node as a node operator."
+seodescription: "Run a Nym mixnet/dVPN node in 2026: pick a VPS, install with Nym Node CLI, bond NYM, configure firewall/NGINX, back up, upgrade and track rewards & earnings."
 creationdate: 2026-01-11
 keywords: vpn, dvpn, 2-hop, Nym, NymVPN, mixnet, operator, WireGuard, Amnezia, Censorship Resistance
 date: 2026-01-11

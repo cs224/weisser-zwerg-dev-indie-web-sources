@@ -77,3 +77,10 @@ pre[class*="language-"] {
   padding: 10px;
   margin: 10px;  
 }
+
+.site-title {
+  display: inline;
+  font-size: 2.5rem;   /* matches h1 */
+  font-weight: 500;
+  line-height: 1.2;
+}
