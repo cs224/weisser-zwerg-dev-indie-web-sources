@@ -39,7 +39,7 @@
     "@11ty/eleventy-plugin-rss": "^2.0.4",
     "@11ty/eleventy-plugin-syntaxhighlight": "^5.0.2",
     "@remy/webmention": "^1.5.0",
-    "bootstrap-scss": "^4.6.2",
+    "bootstrap": "4.6.2",
     "broken-link-checker": "^0.7.8",
     "dotenv": "^16.6.1",
     "ecstatic": ">=4.1.4",
