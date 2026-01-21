@@ -1748,34 +1748,427 @@ To make the tracker useful, run it periodically. Hourly is a common choice.
 
 <!-- NymVPN docker image usage -->
 
+### Avoro vs. netcup VPS: a debugging story
+
+In my [post from last year](../digital-civil-rights-networking-nym-node-operator-guide), I already used a [VPS](https://avoro.eu/en/vps) from [Avoro](https://avoro.eu/en).
+I was (and still am) quite happy with it.
+For that reason, I also chose Avoro again for this updated guide.
+
+After I installed the Nym node, the [harbourmaster](https://harbourmaster.nymtech.net/gateway/DBBCDYsgAAj7g4FLQkSxXZAcdG5m9Hx8vMreqRaX1Yqo) status for my new node kept flipping between fully green, fully red, and everything in between.
+What made this confusing was that the logs stayed clean the whole time.
+By comparison, my node from last year never showed this behaviour, and it still does not show it today.
+
+> You can see one run of [`nym-gateway-probe`](#nym-gateway-probe) for the Avoro instance (avoro2) in this gist: [avoro2](https://gist.github.com/cs224/5c80f995cc88b245ae89741a9ad9caa3). The relevant file is `nym-gateway-probe-45.157.233.31-avoro2-2.txt`.
+>
+> When you skim the output, focus on the fields `download_duration_sec`. In this run, it shows values in the multiple seconds range, for example 5 or 7 seconds.
+>
+> You will also notice several `fail` entries and at least one message like `"Failed to send ping: ping failed after 2 attempts"`.
+> These errors look alarming at first sight, but the same messages also appeared in a probe run for the netcup2 instance, and that node showed up as green in harbourmaster (see below).
+>
+> You can ignore the message `LP handshake failed`.
+> I did not set up the [Lewes Protocol](#lp-mode-(lewes-protocol)---fyi) handlers on my node, so any LP related handshake attempt is expected to fail in this configuration.
+
+To isolate the problem, I ran initial speed tests from three machines:
+
+* my old Avoro instance (avoro1: 94.143.231.195)
+* my new Avoro instance (avoro2: 45.157.233.31)
+* a [VPS 1000 G11](https://www.netcup.com/de/server/vps) from netcup (netcup2: 152.53.122.46) that I provisioned only to debug this issue
+
+The results looked normal and did not reveal any obvious bottleneck:
+```bash
+# avoro1
+~# librespeed-cli --server 50
+Retrieving server list from https://librespeed.org/backend-servers/servers.php
+Selected server: Frankfurt, Germany (Clouvider) [fra.speedtest.clouvider.net]
+Sponsored by: Clouvider @ https://www.clouvider.co.uk/
+You're testing from: 2a0d:5940:81:11:: - Unknown ISP
+Ping: 1.64 ms   Jitter: 0.84 ms
+Download rate:  5658.62 Mbps
+Upload rate:    223.16 Mbps
+
+# avoro2
+~# librespeed-cli --server 50
+Retrieving server list from https://librespeed.org/backend-servers/servers.php
+Selected server: Frankfurt, Germany (Clouvider) [fra.speedtest.clouvider.net]
+Sponsored by: Clouvider @ https://www.clouvider.co.uk/
+You're testing from: 2a0d:5940:42:d7:: - Unknown ISP
+Ping: 0.00 ms   Jitter: 0.18 ms
+Download rate:  6196.34 Mbps
+Upload rate:    123.68 Mbps
+
+# netcup2
+~# librespeed-cli --server 50
+Retrieving server list from https://librespeed.org/backend-servers/servers.php
+Selected server: Frankfurt, Germany (Clouvider) [fra.speedtest.clouvider.net]
+Sponsored by: Clouvider @ https://www.clouvider.co.uk/
+You're testing from: 2a0a:4cc0:c0:42fb:6881:9fff:feae:2d6a - Unknown ISP
+Ping: 3.00 ms   Jitter: 0.00 ms
+Download rate:  2299.06 Mbps
+Upload rate:    297.36 Mbps
+```
+
+As a next step, I migrated my Nym node from avoro2 to netcup2.
+To avoid any accidental double running, I first stopped and disabled the systemd service `nym-node.service` on avoro2.
+Only after that did I install and start the node on netcup2.
+
+> You also need to update a few things:
+>
+> * the DNS entries for your `A` (IPv4) and `AAAA` (IPv6) records
+> * the `"Host"` settings of your bonded node, so that the Nym meta-data services point to the new address
+>
+> The official documentation explains how to update the bonded node settings under [Change Settings via Desktop Wallet](https://nym.com/docs/operators/nodes/nym-node/bonding#change-settings-via-desktop-wallet).
+
+To read the harbourmaster results correctly, you must give the network some time to catch up after a migration.
+It can take a few hours and sometimes up to a day until the status stabilizes.
+
+After that settling period, the node running on netcup2 stayed fully green.
+For me, this was the confirmation I needed: the instability was specific to my avoro2 instance, not a general issue with my node configuration.
+
+> You can see one run of [`nym-gateway-probe`](#nym-gateway-probe) for the netcup test machine (netcup2) in this gist: [netcup2](https://gist.github.com/cs224/553f83b277192eca7bd1ba11352e0cc4). The relevant file is `nym-gateway-probe-152.53.122.46-netcup2.txt`.
+>
+> Again, focus on `download_duration_sec`. In this run, it stays at 0 seconds.
+>
+> Interestingly, the logs still contain the same kind of `fail` messages and the `"Failed to send ping: ping failed after 2 attempts"` line that we saw for avoro2.
+> This is why I treated those messages as a weak signal on their own.
+>
+> You can also ignore `LP handshake failed` in this run.
+> As above, I did not set up the [Lewes Protocol](#lp-mode-(lewes-protocol)---fyi) handlers on my node, so LP handshake attempts are expected to fail.
+
+> In the [avoro2](https://gist.github.com/cs224/5c80f995cc88b245ae89741a9ad9caa3) gist and the [netcup2](https://gist.github.com/cs224/553f83b277192eca7bd1ba11352e0cc4) gist,
+> I also included a few screenshots from [Harbourmaster](https://harbourmaster.nymtech.net/gateway/DBBCDYsgAAj7g4FLQkSxXZAcdG5m9Hx8vMreqRaX1Yqo) and from the [Spectre Explorer](https://explorer.nym.spectredao.net/nodes/DBBCDYsgAAj7g4FLQkSxXZAcdG5m9Hx8vMreqRaX1Yqo).
+> They show the same node from two different public dashboards while it was running on two different VPS instances.
+> This makes it easier to compare what you may see during setup and operations.
+
+#### `iperf3`
+
+I did not want to just find a workaround.
+I also wanted to understand what was causing the instability.
+So I migrated the Nym node back from netcup2 to avoro2 and started debugging systematically.
+
+A good first step for this kind of network investigation is to run [`iperf3`](https://github.com/esnet/iperf).
+It does not tell you everything, but it is excellent for answering basic questions like: "Is TCP stable in both directions?" and "Is UDP being dropped, shaped, or rate limited?"
+
+Because I already had two VPS instances, avoro2 and netcup2, I used those as my main test endpoints.
+I also involved avoro1 as a reference system for A/B testing.
+
+> For Nym nodes, UDP behaviour matters in practice even if you mostly think in terms of TCP, because its dVPN datapath (2-hop) is based on WireGuard, which is UDP based.
+
+I set up the `iperf3` server on netcup2 first and ran the client on avoro2 and avoro1.
+Later, I swapped roles as well, just to make sure the results were not tied to one specific direction.
+
+Before running the tests, I temporarily disabled the firewall on the involved servers, to reduce the risk that local filtering would distort the results.
+The `network-tunnel-manager.sh` (NTM) install process already pulls in the `netfilter-persistent` package, which makes it easy to flush and restore rules:
+
+```bash
+# sanity: confirm plugins exist (iptables-persistent plugin should be present)
+ls -l /usr/share/netfilter-persistent/plugins.d
+
+# Save the current state
+netfilter-persistent save
+
+# Clear the firewall rules
+netfilter-persistent flush
+
+# Check that the firewall is "empty"
+iptables -S
+ip6tables -S
+
+# Perform tests
+...
+
+# Restore firewall state after your tests
+netfilter-persistent start
+```
+
+On netcup2, start the server:
+```bash
+apt update && apt install -y iperf3
+iperf3 -s
+```
+
+On avoro2, install the client:
+```bash
+apt update && apt install -y iperf3
+```
+
+Then run the following tests.
+
+> By default, `iperf3` listens on TCP port 5201.
+> For UDP tests, keep in mind that `iperf3` reports loss from the receiver's perspective, and that high send rates can trigger provider DDoS protection or traffic policers.
+
+**Test 1: sustained TCP outbound (avoro2 to netcup2)**
+
+```bash
+# iperf3 -c <NETCUP_IP> -t 600 -i 1 | tee iperf3_tcp_out_10min.txt
+
+iperf3 -c 152.53.122.46 -t 600 -i 1 | tee iperf3_tcp_out_10min.txt
+```
+
+**Test 2: sustained TCP inbound (netcup2 to avoro2)**  
+This uses `-R`, so the test traffic flows in the reverse direction while the client command still runs on avoro2.
+
+```bash
+iperf3 -c 152.53.122.46 -R -t 600 -i 1 | tee iperf3_tcp_in_10min.txt
+```
+
+**Test 3: UDP throughput and loss (larger datagrams)**
+
+```bash
+iperf3 -c 152.53.122.46 -u -b 100M -l 1200 -t 120 -i 1 | tee iperf3_udp_100M_1200B.txt
+# Reverse
+iperf3 -c 152.53.122.46 -u -R -b 100M -l 1200 -t 120 -i 1 | tee iperf3_udp_R_100M_1200B.txt
+# Lost/Total Datagrams: 1154859/1242442 (93%)  receiver
+```
+
+**Test 4: UDP packets per second stress (small datagrams)**
+
+```bash
+iperf3 -c 152.53.122.46 -u -b 100M -l 200 -t 60 -i 1 | tee iperf3_udp_100M_200B.txt
+# Reverse
+iperf3 -c 152.53.122.46 -u -R -b 100M -l 200  -t 120 -i 1 | tee iperf3_udp_R_100M_200B.txt
+# Lost/Total Datagrams: 7372752/7458885 (99%)  receiver
+```
+
+**Test 5: burst or policer detection with a "step test"**  
+Here I increase the UDP bitrate gradually to see at which point loss starts to explode.
+
+```bash
+for b in 10M 25M 50M 75M 100M 150M; do
+  echo "=== $b ==="
+  iperf3 -c 152.53.122.46 -u -b $b -l 200 -t 30 -i 1
+done | tee iperf3_udp_step_200B.txt
+```
+
+These tests already hinted at the core problem: incoming UDP traffic (netcup2 to avoro2) suffered extreme packet loss.
+TCP looked much less suspicious, but UDP in the reverse direction was clearly unhealthy, with losses in the 90% to 99% range in my runs.
+
+> A result like "Lost/Total Datagrams: 99%" usually means you are not looking at random noise.
+> Typical causes include provider level filtering, DDoS mitigation systems that treat high rate UDP as suspicious, bandwidth policing that drops bursts, or issues with the path MTU and fragmentation.
+> That is why I focused my next debugging steps on "why UDP inbound to avoro2 is getting dropped".
+
+
+#### `nping`, `mausezahn`, and `hping3`
+
+For the next debugging steps, I tried three packet generation tools: `nping`, `mausezahn`, and `hping3`.
+
+* `nping` is maintained as part of [Nmap](https://github.com/nmap/nmap).
+* `mausezahn` development is now part of [netsniff-ng](https://github.com/netsniff-ng/netsniff-ng).
+* The last upstream commit to [hping](https://github.com/antirez/hping) is from 2014, but distributions such as Debian maintain [their own packaging and patches](https://salsa.debian.org/debian/hping3).
+
+> At a high level, all three tools can send UDP packets, but they are primarily designed for interactive diagnostics and packet crafting, not for precise high rate traffic generation.
+> That difference became important for my use case, because I wanted to find the exact point where packet loss started, not just prove that packet loss exists.
+
+While `nping` has a `--rate` parameter, it effectively only supports millisecond level timing granularity.
+In practice, that means rate values above roughly 1000 packets per second become difficult: the tool tends to send packets in a short burst as fast as it can, rather than spreading them evenly across time.
+These tests clearly showed packet drops, but they did not help me identify a stable "threshold rate" where loss started.
+
+Next, I tried `mausezahn`. It does not have a `--rate` parameter, but it provides a delay option with `-d`. The man page describes it like this:
+
+> ```txt
+> -d <delay>
+>        Apply delay between transmissions. The delay value can be
+>        specified in usec (default, no additional unit needed), or in msec
+>        (e.g. 100m or 100msec), or in seconds (e.g. 100s or 100sec). Note:
+>        mops also supports nanosecond delay resolution if you need it (see
+>        interactive mode).
+> ```
+
+In my runs, `mausezahn` still ended up sending packets in a burst and did not seem to honour the delay I configured.
+So again, I could reproduce loss, but I could not perform a clean, repeatable "increase traffic slowly until it breaks" experiment.
+
+Finally, I tested `hping3`.
+Like `mausezahn`, it is based on timing rather than a direct rate setting.
+It supports `--interval`, for example `--interval u250` for a 250 microsecond pause between packets.
+In my environment, however, I could not push it beyond roughly 5 to 8 kpps (kilo packets per second).
+
+> This is a common practical limitation with user space packet generators.
+> Timing is affected by process scheduling, CPU load, and the precision of sleep or delay functions.
+> Once you aim for high packet rates, the tooling overhead becomes part of the measurement, which makes it harder to tell whether "the network drops packets" or "the sender cannot generate packets steadily enough".
+
+At this point, I needed something more deterministic for high rate testing.
+That is why I switched to `pktgen`, which is a [Linux kernel feature](https://docs.kernel.org/networking/pktgen.html).
+Because it runs inside the kernel, it can generate traffic at much higher and more stable packet rates, which made it a better tool for pinpointing when inbound UDP to avoro2 started to fail.
+
+#### `pktgen`
+
+First, you may need to enable `pktgen` on the sending machine:
+
+```bash
+sudo -i
+modprobe pktgen
+ls -1 /proc/net/pktgen
+# You should see at least pgctrl and one or more kpktgend_*.
+```
+
+> If `modprobe pktgen` fails, your kernel might not include the module, or the module might not be installed.
+
+For a remote IP, `pktgen` needs the MAC address of the *next hop* on your local network path.
+In a typical VPS setup, that is the MAC address of your default gateway, not the MAC address of the remote host.
+
+```bash
+DST_IP="45.157.233.31"          # avoro2 public IPv4 
+DEV="$(ip route get "$DST_IP" | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')"
+GW="$(ip route get "$DST_IP" | awk '{for(i=1;i<=NF;i++) if($i=="via"){print $(i+1); exit}}')"
+
+echo "DEV=$DEV GW=$GW"
+DEV=eth0 GW=152.53.120.1
+
+# Prime ARP/ND for the gateway, then read MAC
+ping -c 1 -W 1 "$GW" >/dev/null
+DST_MAC="$(ip neigh show "$GW" | awk '{print $5; exit}')"
+echo "DST_MAC=$DST_MAC"
+DST_MAC=00:00:5e:00:01:96
+```
+
+On netcup2, I used the following `pktgen_udp.sh` script to generate UDP packets at a defined packet rate for a defined duration:
+
+```bash
+cat >/root/pktgen_udp.sh <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Usage: pktgen_udp.sh <dst_ip> <dst_mac> <ratep_pps> <duration_s> [dst_port] [src_port] [dev] [thread]
+DST_IP="${1:?dst_ip}"
+DST_MAC="${2:?dst_mac}"
+RATEP="${3:?ratep_pps}"          # packets per second (pps)
+DUR="${4:?duration_seconds}"
+DST_PORT="${5:-51822}"
+SRC_PORT="${6:-40000}"
+DEV="${7:-eth0}"
+THREAD="${8:-0}"
+
+# Packet sizing:
+# Ethernet(14) + IPv4(20) + UDP(8) + payload(1200) = 1242 bytes
+PKT_SIZE=1242
+
+COUNT=$(( RATEP * DUR ))
+
+modprobe pktgen >/dev/null 2>&1 || true
+
+PGCTRL=/proc/net/pktgen/pgctrl
+KTHREAD=/proc/net/pktgen/kpktgend_${THREAD}
+PGDEV=/proc/net/pktgen/${DEV}@${THREAD}
+
+# Reset all pktgen state
+echo "reset" > "$PGCTRL"
+
+# Attach device to thread with a unique name (device@something) 
+echo "rem_device_all" > "$KTHREAD"
+echo "add_device ${DEV}@${THREAD}" > "$KTHREAD"
+
+# Configure device
+{
+  echo "count $COUNT"                    # number of packets to send 
+  echo "clone_skb 0"                     # reuse skb (lower overhead) 
+  echo "burst 1"                         # batch pushes to NIC (often improves rate) 
+  echo "pkt_size $PKT_SIZE"              # total L2 frame size 
+  echo "delay 0"                         # we’ll use ratep, not delay 
+  echo "ratep $RATEP"                    # pps target 
+
+  echo "dst_min $DST_IP"
+  echo "dst_max $DST_IP"
+
+  echo "dst_mac $DST_MAC"                # required in sample scripts 
+
+  # UDP ports (min=max makes them effectively fixed) 
+  echo "udp_dst_min $DST_PORT"
+  echo "udp_dst_max $DST_PORT"
+  echo "udp_src_min $SRC_PORT"
+  echo "udp_src_max $SRC_PORT"
+
+  # Flags: enable UDP port handling + compute UDP checksum
+  echo "flag UDPSRC_RND"
+  echo "flag UDPDST_RND"
+  echo "flag UDPCSUM"
+  echo "flag NO_TIMESTAMP"
+} > "$PGDEV"
+
+echo "Starting pktgen: dst=$DST_IP:$DST_PORT ratep=${RATEP}pps duration=${DUR}s count=$COUNT dev=${DEV}@${THREAD}"
+echo "start" > "$PGCTRL"
+
+# Print result
+echo "----- pktgen device result -----"
+cat "$PGDEV" | tail -n +1
+EOF
+
+chmod +x /root/pktgen_udp.sh
+```
+
+The test runs themselves worked like this.
+
+**Step 1: start `tcpdump` on avoro2**: Use a dedicated UDP destination port for each run. That makes filtering and analysis easier.
+
+```bash
+UDPPORT=51822
+RATE=4000
+
+timeout 15 tcpdump -ni eth0 "udp and src host 152.53.122.46 and src port 40000 and dst port ${UDPPORT}" -tt > "/tmp/udp_${UDPPORT}_pktgen_${RATE}.tcpdump"
+```
+
+**Step 2: generate UDP packets from netcup2 with `pktgen_udp.sh`**: This example sends 4000 packets per second for 10 seconds.
+
+```bash
+/root/pktgen_udp.sh 45.157.233.31 "$DST_MAC" 4000 10 51822 40000 "$DEV" 0
+```
+
+**Step 3: analyse the `tcpdump` timestamps to compute delivered packets per second**
+
+```bash
+LC_ALL=C awk '/^[0-9]/ { if(!first) first=$1; last=$1; pkts++ } END { dur=last-first; printf("delivered_pkts=%d dur=%.6fs delivered_pps=%.1f\n", pkts, dur, pkts/dur) }' /tmp/udp_${UDPPORT}_pktgen_${RATE}.tcpdump
+```
+
+> Make sure the `pktgen` run in step 2, which lasts 10 seconds, happens inside the 15 second `tcpdump` window in step 1.
+
+Before focusing on avoro2, I verified the setup with a test run from netcup2 to avoro1.
+There, packet rates above 12 kpps worked as expected. After that, I ran the same tests from netcup2 to avoro2.
+
+Results on avoro2 (`45.157.233.31`) looked like this:
+
+* Offered 600 pps for about 10 seconds (count 6000)  
+  Captured: **6000 packets**  
+  Computed: `delivered_pps=600.2` (no loss)
+* Offered 1000 pps for about 10 seconds (count 10000)  
+  Captured: **7295 packets**  
+  Computed: `delivered_pps=729.7` (loss starts somewhere between 600 and 1000 pps)
+* Offered 4000 pps for about 10 seconds (count 40000)  
+  Captured: **7820 packets**  
+  Computed: `delivered_pps≈792.8`
+* Offered 12000 pps for about 10 seconds (count 120000)  
+  Captured: **7820 packets**  
+  Computed: `delivered_pps≈812.7`
+* Offered 4000 pps, but changed the destination port to 33434  
+  Captured: **7820 packets**  
+  Computed: `delivered_pps≈836.6`
+
+**Key observation:** on avoro2, once the offered packet rate exceeded roughly 600 to 1000 pps, the delivered packet rate plateaued around **780 to 830 pps**.
+This plateau was independent of the offered pps and independent of the destination UDP port.
+At the same time, `tcpdump` reported **0 kernel drops**, which strongly suggests that packets were dropped *before* they reached the VM.
+
+> The phrase "0 kernel drops" matters. If the receiving VM was overloaded, you would often see drops reported by the capture stack or by the NIC receive queue.
+> Seeing no local drops while still observing a hard plateau in delivered pps is a classic hint for upstream policing: a rate limiter or DDoS mitigation system that caps inbound UDP packet rates for a specific IP.
+
+#### Resolution
+
+With the packet capture results in hand, I opened a support ticket and included the key evidence: the `pktgen` step tests, the `tcpdump` captures, and the clear plateau at roughly 780 to 830 delivered UDP packets per second on avoro2.
+
+I received a near immediate reply:
+
+> "I disabled the DDoS protection for 45.157.233.31. Can you check if it is better now?"
+
+After that change, my retests looked completely different.
+Packet rates above 12 kpps also worked on avoro2, just like they did on avoro1.
+That was a strong confirmation that the earlier behaviour came from upstream filtering or rate limiting.
+Based on these retests, I consider this issue resolved.
+
+Since then, I have let the system run and given harbourmaster enough time to stabilize again.
+At the time of writing, the node looks better in [Harbourmaster](https://harbourmaster.nymtech.net/gateway/DBBCDYsgAAj7g4FLQkSxXZAcdG5m9Hx8vMreqRaX1Yqo) and in [Spectre Explorer](https://explorer.nym.spectredao.net/nodes/DBBCDYsgAAj7g4FLQkSxXZAcdG5m9Hx8vMreqRaX1Yqo),
+but I would still describe the overall state as "**orange**".
+
+I added the screenshots `after-ddos-protection-fix-nym-node-spectre-explorer-avoro2-orange.png` and `after-ddos-protection-fix-nym-node-harbourmaster-avoro2-orange.png` to the [avoro2](https://gist.github.com/cs224/5c80f995cc88b245ae89741a9ad9caa3) gist for reference.
+
+<a href="https://gist.githubusercontent.com/cs224/5c80f995cc88b245ae89741a9ad9caa3/raw/f21b205742d0522d900784990fc9ea4b99441a73/after-ddos-protection-fix-nym-node-harbourmaster-avoro2-orange.png" target="_blank"><img src="https://gist.githubusercontent.com/cs224/5c80f995cc88b245ae89741a9ad9caa3/raw/f21b205742d0522d900784990fc9ea4b99441a73/after-ddos-protection-fix-nym-node-harbourmaster-avoro2-orange.png" alt="Nym Harbour Master for avoro2" style="max-height: 200px"></a>
+<a href="https://gist.githubusercontent.com/cs224/5c80f995cc88b245ae89741a9ad9caa3/raw/f21b205742d0522d900784990fc9ea4b99441a73/after-ddos-protection-fix-nym-node-spectre-explorer-avoro2-orange.png" target="_blank"><img src="https://gist.githubusercontent.com/cs224/5c80f995cc88b245ae89741a9ad9caa3/raw/f21b205742d0522d900784990fc9ea4b99441a73/after-ddos-protection-fix-nym-node-spectre-explorer-avoro2-orange.png" alt="Nym Spectre Explorer for avoro2" style="max-height: 200px"></a>
+
 ## Footnotes
 
 [^duckdns]: Originally, I used [Duck DNS](https://www.duckdns.org), but it encountered several downtimes and service degradations for my use case. DuckDNS is a free dynamic DNS service that maps a subdomain under `duckdns.org` to your public IP.Then I moved to [No IP](https://www.noip.com/), but I found the manual renewal process annoying for long term operations. No IP's free hostnames require confirmation roughly every 30 days to remain active. Finally, I ended up with [FreeDNS](https://freedns.afraid.org/), mainly because it gives me more flexibility around DNS management and does not require the same recurring confirmation workflow for the setup I wanted.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
