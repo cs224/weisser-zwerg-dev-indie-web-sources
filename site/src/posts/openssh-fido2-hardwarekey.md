@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Step Up Your SSH Game: A Deep Dive into FIDO2 Hardware Keys and ProxyJump Configuration"
 description: "How to configure OpenSSH to use a FIDO2 hardware key with ProxyJump."
+seodescription: "Use FIDO2 security keys for OpenSSH: create resident ed25519-sk keys with YubiKey/Nitrokey/Trezor, configure ProxyJump with multiplexing, harden sshd, and run ssh-agent."
 creationdate: 2023-05-18
 keywords: OpenSSH, FIDO2, ProxyJump
 date: 2023-05-18

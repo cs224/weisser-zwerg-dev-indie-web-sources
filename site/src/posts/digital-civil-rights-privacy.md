@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Digital Civil Rights and Privacy: An Overview (Part I)"
 description: "Exploring the Landscape, Setting Goals, and Paving the Way Forward."
+seodescription: "Digital civil rights primer: why privacy matters, anonymity vs pseudonymity, what metadata reveals, how fingerprinting tracks you, resist surveillance and profiling, and defending free speech."
 creationdate: 2024-11-09
 keywords: digital civil rights, privacy, landscape, goals
 date: 2024-11-09

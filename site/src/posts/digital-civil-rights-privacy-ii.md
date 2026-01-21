@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Digital Civil Rights and Privacy: A Practical Guide (Part II)"
 description: "Crafting a Plan for your Online Freedom."
+seodescription: "Action plan for digital civil rights: trust your device, anonymize networking with Tor/mixnets, avoid phone/IoT leaks, then pick messengers, browsers and credential tools, and design a VM-based workstation setup."
 creationdate: 2024-11-15
 keywords: digital civil rights, privacy, to-do list, work breakdown structure, WBS, online freedom
 date: 2024-11-15

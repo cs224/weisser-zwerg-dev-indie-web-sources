@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "sigrok: UNI-T UT61E Multimiter on Linux"
 description: "Capture data from a UNI-T UT61E Multimiter on Linux via the sigrok signal analysis software suite."
+seodescription: "Connect a UNI-T UT61E multimeter to Linux with sigrok: identify UT-D02/UT-D09 cables, find the right conn= string, and capture readings via sigrok-cli."
 creationdate: 2023-12-11
 keywords: linux,multimeter,uni-trend,uni-t,ut61e,datalogging,usb/hid,usb/rs232,cp2110-hid-uart-bridge
 date: 2023-12-11
