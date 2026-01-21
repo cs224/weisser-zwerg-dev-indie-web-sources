@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Risk of Indirection"
 description: "Risk involved in acquiring legal titles via a service provider."
+seodescription: "How intermediaries add hidden risk: custody accounts, omnibus structures, deposits, ETFs and derivatives - plus a step-by-step framework to mitigate with checks."
 creationdate: 2020-05-23T12:43:00+02:00
 date: 2020-05-23T12:43:00+02:00
 keywords: financial risk, legal title, fungible goods, service provider

@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "GPG Agent Forwarding with Hardware Tokens: YubiKey, Nitrokey, or Trezor on Remote Servers"
 description: "Sign and Decrypt on Remote Servers Through GPG Agent Forwarding"
+seodescription: "Use GPG agent forwarding over SSH to sign and decrypt on remote servers securely, while private keys stay on your YubiKey, Nitrokey or Trezor hardware token."
 creationdate: 2025-03-12
 keywords: gpg, pgp, hardware keys, ssh tunnel, ssh agent forwarding, gpg agent, linux security, remote signing, cryptography, openpgp card, hardware token, smartcard
 date: 2025-03-13

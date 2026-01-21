@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Take Control of Your Code: Replace GitHub by Self-Hosting Gitea with Traefik as a Reverse Proxy"
 description: "How to set up your own private Git repositories and reclaim your digital independence and privacy."
+seodescription: "Replace GitHub with self-hosted Gitea behind Traefik: deploy Gitea + PostgreSQL with Docker Compose, publish through Traefik on a VPS, connect home server via WireGuard, enable MFA."
 creationdate: 2025-02-22
 keywords: Gitea, Git, self-hosted, Traefik, reverse proxy, private repositories, GitHub
 date: 2025-02-22

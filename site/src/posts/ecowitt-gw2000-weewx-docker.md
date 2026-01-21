@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Ecowitt WS2910 weather station via Ecowitt GW2000 (Wittboy) and dockerized WeeWX"
 description: "Setting up WeeWX as a second weather station software besides HomeAssistant."
+seodescription: "Connect an Ecowitt WS2910 to WeeWX via the GW2000 gateway: Ecowitt WS2910 → GW2000 gateway → dockerized WeeWX. Deploy Docker + weewx-interceptor, plus Duplicati backups, add MQTT."
 creationdate: 2023-04-03
 keywords: ecowitt,ws2910,gw2000,wittboy,weewx
 date: 2023-04-03

@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: 'Censorship-Resistant "reverse-Nextcloud" for Identity-Free Web Publishing'
 description: "From “Protect My Files” to “Publish My Thoughts Without a Landlord”"
+seodescription: "Concept for identity-free blogging: a censorship-resistant, Substack-like blog from your home server, hidden behind gateway reverse proxies over a Nym-style mixnet."
 creationdate: 2025-11-18
 keywords: privacy-tech, anonymity, censorship resistance, minority opinions, anonymous publishing, dissident blogs, reverse-Nextcloud, Substack alternative, DAO, self-hosting, home appliance, Nym, NymVPN, mixnet
 date: 2025-11-18

@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Digital Civil Rights and Privacy: Networking, VPN, Tor, Onion over VPN, I2P (Invisible Internet Project), Nym Mixnet"
 description: "Reclaiming your digital identity by disguising your networking activity (part I)"
+seodescription: "Practical network-layer privacy guide: Tor Browser, SOCKS5 proxies, Shadowsocks and VPN pitfalls, plus Onion-over-VPN, practical Docker setups, I2P and Nym."
 creationdate: 2024-12-17
 keywords: digital civil rights, digital privacy, online freedom, secure browsing, GrapheneOS, shadowsocks, VPN, Tor, Onion-over-VPN, I2P, Invisible Internet Project, Nym, mixnet
 date: 2024-12-17

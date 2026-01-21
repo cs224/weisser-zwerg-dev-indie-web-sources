@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Running private LARGE AI Models on Your Hardware: A Guide to Scaling Local LLMs"
 description: "How to Set Up AI Models Across Multiple GPUs for Powerful Inference"
+seodescription: "Scale local LLM inference with multi-GPU setups: choose models, rent bare-metal GPUs, install vLLM/TGI, download from Hugging Face, and run Open WebUI."
 creationdate: 2025-02-21
 keywords: local llm, multi-GPU setup, vllm, Text Generation Inference, TGI
 date: 2025-02-21

@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "ChatGPT - Open AI API for Proofreading Markdown Blog Posts"
 description: "How to use the Open AI ChatGPT API to proofread and correct the sections of a markdown blog post."
+seodescription: "Proofread Markdown blog posts with the OpenAI ChatGPT API: split Markdown sections to fit token limits, fix grammar and spelling, and review diffs with Redlines."
 creationdate: 2023-05-08
 keywords: ChatGPT, Open AI, API, proofread, correct
 date: 2023-05-08
