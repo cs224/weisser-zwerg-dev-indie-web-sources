@@ -497,10 +497,10 @@ Failed to start nginx.service: Unit nginx.service not found.
 This error means the Nginx package was not installed at the time the script attempted to configure and restart it.
 Installing `nginx` and the certificate tooling upfront fixed the issue on the second run.
 
-#### Bonding (One Wallet per Node)
+#### Bonding (One Account per Node)
 
 During installation, the CLI prints a lot of output.
-The important part is the bonding flow, where you connect your node identity to a wallet and submit an on chain bonding transaction.
+The important part is the bonding flow, where you connect your node identity to a wallet account (address) and submit an on chain bonding transaction.
 
 Here are some relevant excerpts from my run:
 
@@ -538,13 +538,13 @@ In my case, the tooling later added this flag to the systemd unit at `/etc/syste
 
 Because I already operated a first Nym node from my initial [guide](../digital-civil-rights-networking-nym-node-operator-guide/), I ran into an important bonding constraint.
 
-I initially assumed I could bond a second node with the same wallet.
+I initially assumed I could bond a second node with the same wallet account (address).
 That is not possible.
-I got confirmation in the [Node Operators](https://matrix.to/#/#operators:nymtech.chat) channel that a single wallet can only be used to bond one node.
+I got confirmation in the [Node Operators](https://matrix.to/#/#operators:nymtech.chat) channel that a single account/address can only be used to bond one node (a single wallet can contain multiple accounts).
 
-So, I created another wallet, funded it from my first wallet, and then continued with bonding:
+So, I created another account (new address / 24 word mnemonic), funded it from my first account, and then continued with bonding:
 
-* New wallet address: [n1myvxdm68x35eqswl042me9gsenq0pn39kltfx0](https://explorer.nym.spectredao.net/account/n1myvxdm68x35eqswl042me9gsenq0pn39kltfx0)
+* New account address: [n1myvxdm68x35eqswl042me9gsenq0pn39kltfx0](https://explorer.nym.spectredao.net/account/n1myvxdm68x35eqswl042me9gsenq0pn39kltfx0)
 * Funding transaction: [7755A3ACF61BA2935766DF2D851ACE2BE8D2D1CD0ADC5F10FC8ED15861EF3B1F](https://ping.pub/nyx/tx/7755A3ACF61BA2935766DF2D851ACE2BE8D2D1CD0ADC5F10FC8ED15861EF3B1F)
 * Bonding transaction: [96AB17E0E6763A28775073D07698723BEB13572EC839D1D695566AB65D4D562F](https://ping.pub/nyx/tx/96AB17E0E6763A28775073D07698723BEB13572EC839D1D695566AB65D4D562F)
 
