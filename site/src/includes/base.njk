@@ -132,9 +132,7 @@
     </script>
 -->
 {% if metadata.mastodonSharing %}
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="/js/bootstrap.bundle.min.js"></script>
 {% endif  %}
 {% if jupyter %}
     <style type="text/css">
@@ -208,10 +206,10 @@
     <div style="display: inline-block">
         <a href="/" style="text-decoration: none">
             <div class="d-flex flex-row" style="align-items: center; justify-content: center;">
-                <div class="col center" >
+                <div class="col center pe-3" >
                     <img src="/android-chrome-256x256.png" style="height: 5rem; float: left;" alt="Weisser Zwerg Logo">
                 </div>
-                <div class="col" style="flex-grow: 100">
+                <div class="col ps-3" style="flex-grow: 100">
                     <span class="site-title headlinewhite">{{ metadata.title }}</span>
                 </div>
             </div>
@@ -236,7 +234,7 @@
                 <li style="display:none"><a class="u-url" rel="me" href="https://xn--sr8hvo.ws/%F0%9F%9A%B2%F0%9F%8D%A5%F0%9F%A4%97">Profile on the IndieWeb Webring</a></li>
                 <li style="display:none"><a href="https://xn--sr8hvo.ws/directory">IndieWeb Webring Directory</a></li>
             </ul>
-            <p class="ml-auto text-right">
+            <p class="ms-auto text-end">
                 <!-- <a href="https://mastodon.social/@cs224" title="mastodon.social/@cs224"><img src="/img/mastodon-icon.png" class="icon icon--feed" alt="Mastodon Icon" title="Mastodon Icon" style="height: 36px"></a>
                 <a href="https://github.com/cs224/weisser-zwerg-dev-indie-web-sources" title="Edit this page on Github"><svg class="icon icon--github" role="img" aria-hidden="true" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#icon-github"></use></svg></a> -->
                 <a href="/feed/feed.xml" title="Atom Feed"><svg class="icon icon--feed" role="img" aria-hidden="true" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#icon-feed"></use></svg></a>
@@ -245,10 +243,14 @@
             </p>
         </div>
     </div>
-    <div class="row w-100 text-center justify-content-center">
-        <a href="https://xn--sr8hvo.ws/%F0%9F%9A%B2%F0%9F%8D%A5%F0%9F%A4%97/previous">←</a>An IndieWeb Webring <svg role="img" aria-hidden="true" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#spider-web-2"></use></svg><svg role="img" aria-hidden="true" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#ring"></use></svg><a href="https://xn--sr8hvo.ws/%F0%9F%9A%B2%F0%9F%8D%A5%F0%9F%A4%97/next">→</a>
+    <div class="w-100 d-flex justify-content-center align-items-center gap-2 flex-wrap text-center">
+        <a href="https://xn--sr8hvo.ws/%F0%9F%9A%B2%F0%9F%8D%A5%F0%9F%A4%97/previous">←</a>
+        <span>An IndieWeb Webring</span>
+        <svg role="img" aria-hidden="true" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#spider-web-2"></use></svg>
+        <svg role="img" aria-hidden="true" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/icons.svg#ring"></use></svg>
+        <a href="https://xn--sr8hvo.ws/%F0%9F%9A%B2%F0%9F%8D%A5%F0%9F%A4%97/next">→</a>
     </div>
-    <div class="row w-100 text-center justify-content-center" style="font-size: smaller">
+    <div class="w-100 d-flex justify-content-center align-items-center gap-2 flex-wrap text-center" style="font-size: smaller">
         Using&nbsp;<a href="http://www.onlinewebfonts.com">oNline Web Fonts</a>.
     </div>
 </footer>
