@@ -24,6 +24,7 @@ module.exports = function(eleventyConfig) {
 
     eleventyConfig.addPassthroughCopy({ "./src/assets": "/" });
     eleventyConfig.addPassthroughCopy({ "./node_modules/bootstrap/dist/css/bootstrap.min.css": "/css/bootstrap.min.css" });
+    eleventyConfig.addPassthroughCopy({ "./node_modules/bootstrap/dist/js/bootstrap.bundle.min.js": "/js/bootstrap.bundle.min.js" });
 
     eleventyConfig.addFilter('dateIso', date => {
         //return moment(date).toISOString();
