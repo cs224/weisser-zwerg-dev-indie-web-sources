@@ -39,7 +39,7 @@ In addition, you can find helpful resources and support at the following platfor
 
 ### The Result
 
-Below you can see the outcome of this guide: the Nym node I set up for this 2026 post, and the node I set up in my earlier guide.
+Below you can see the outcome of this guide: the Nym node I set up for this 2026 post, and the node I set up in my earlier guide[^nymtech].
 The table links to several public dashboards so you can verify that both nodes are visible on the network.
 
 > These explorers and dashboards do not all show exactly the same information at the same time.
@@ -74,7 +74,7 @@ The table links to several public dashboards so you can verify that both nodes a
     <tr>
       <td><b>Nym Harbour Master</b></td> <!-- <a href="https://harbourmaster.nymtech.net" target="_blank"> -->
       <td><a href="https://harbourmaster.nymtech.net/gateway/DBBCDYsgAAj7g4FLQkSxXZAcdG5m9Hx8vMreqRaX1Yqo" target="_blank">DBBCDYsgAAj7g4FLQkSxXZAcdG5m9Hx8vMreqRaX1Yqo</a></td>
-      <td><a href="https://harbourmaster.nymtech.net/gateway/E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ" target="_blank">E67dRcrMNsEpNvRAxvFTkvMyqigTYpRWUYYPm25rDuGQ</a></td>
+      <td><a href="https://harbourmaster.nymtech.net/gateway/2BuMSfMW3zpeAjKXyKLhmY4QW1DXurrtSPEJ6CjX3SEh" target="_blank">2BuMSfMW3zpeAjKXyKLhmY4QW1DXurrtSPEJ6CjX3SEh</a></td>
     </tr>
     <tr>
       <td><b><a href="https://forum.nym.com/t/nym-grant-proposal-nymesis/1010" target="_blank">Nymesis</a></b></td> <!-- <a href="https://nymesis.vercel.app" target="_blank"> -->
@@ -2261,4 +2261,5 @@ I added the screenshots `after-ddos-protection-fix-nym-node-spectre-explorer-avo
 
 ## Footnotes
 
+[^nymtech]: Harbouermaster is only available for gateways, but not for nodes in mixnode mode. That is why I use here as a comparison reference the nymtech (mainnet-gateway2.nymte.ch) node.
 [^duckdns]: Originally, I used [Duck DNS](https://www.duckdns.org), but it encountered several downtimes and service degradations for my use case. DuckDNS is a free dynamic DNS service that maps a subdomain under `duckdns.org` to your public IP.Then I moved to [No IP](https://www.noip.com/), but I found the manual renewal process annoying for long term operations. No IP's free hostnames require confirmation roughly every 30 days to remain active. Finally, I ended up with [FreeDNS](https://freedns.afraid.org/), mainly because it gives me more flexibility around DNS management and does not require the same recurring confirmation workflow for the setup I wanted.
