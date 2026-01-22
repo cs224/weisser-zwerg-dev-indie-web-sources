@@ -1747,7 +1747,96 @@ To make the tracker useful, run it periodically. Hourly is a common choice.
 > If you want hands off collection, run it from a scheduler such as cron or a systemd timer, and store the `data` directory on persistent disk.
 
 
-<!-- NymVPN docker image usage -->
+### Nym Mixnet: NymVPN
+
+This section updates the NymVPN portion in [Digital Civil Rights and Privacy: Networking, VPN, Tor, Onion over VPN, I2P (Invisible Internet Project), Nym Mixnet](../digital-civil-rights-networking-i/#nym-mixnet%3A-nymvpn).
+
+Current NymVPN clients include a `socks5` command:
+
+```txt
+Usage: nym-vpnc socks5 [OPTIONS] <COMMAND>
+
+Commands:
+  enable   Enable SOCKS5 proxy
+```
+
+In NymVPN, the built in `socks5` feature is an application level proxy.
+It exposes a local SOCKS endpoint on your machine, typically `127.0.0.1:<port>`.
+Only applications you explicitly configure to use that proxy will have their traffic routed through Nym's mixnet.
+Everything else continues to use your normal network path.
+
+It is important to understand what this `socks5` feature is not.
+It does **not** expose the Fast mode two hop WireGuard tunnel as a SOCKS5 proxy.
+In other words, you cannot enable Fast mode and then "export" that VPN tunnel as a local SOCKS5 port using `nym-vpnc socks5`.
+
+> NymVPN has two main paths:
+>
+> * Fast mode, which uses a WireGuard based two hop tunnel for low latency and general VPN usage.
+> * Mixnet based routing, which prioritizes stronger metadata protection at the cost of more latency.
+>
+> The built in SOCKS5 proxy is meant to provide mixnet access to specific apps, not to convert the Fast mode tunnel into a SOCKS interface.
+
+Conceptually, this is "per app routing", sometimes also described in Nym's docs as "App & wallet proxy" or "dApp mode".
+The idea is that you keep your device on Fast mode for everyday activity, while routing specific apps through a SOCKS5 proxy when you want stronger metadata protection for that app's traffic.
+
+Because the built in `socks5` command does not wrap the Fast mode two hop WireGuard path, I created a Docker Compose stack that *does*.
+It runs NymVPN in Fast mode, and then exposes that VPN path via a local SOCKS5 proxy implemented with Shadowsocks.
+The result is a SOCKS5 interface that is backed by NymVPN's Fast mode two hop path.
+
+> Shadowsocks is often used as a lightweight proxy layer that can present a local SOCKS5 port to client applications.
+> In this setup, the SOCKS5 port is the "adapter" that lets SOCKS capable apps reuse a VPN tunnel that would otherwise be available only at the network interface level.
+
+You can find the source files in this GitHub Gist: [Docker Compose Shadowsocks SOCKS5 proxy with NymVPN](https://gist.github.com/cs224/738b1d2f59fba776c880888d21221dfa).
+
+Edit `secrets.env` and replace the placeholder 24 word mnemonic with your own.
+
+Build the image:
+
+```bash
+TAG_DATE=$(date +%Y%m%d) docker compose build
+```
+
+To force a clean rebuild:
+
+```bash
+TAG_DATE=$(date +%Y%m%d) docker compose build --no-cache
+```
+
+Run it:
+
+```bash
+docker compose up
+```
+
+Once the stack is running, you will have a Fast mode two hop WireGuard backed SOCKS5 proxy on port `1090`.
+This is convenient for browsing, streaming, and downloads where you want the VPN path but also need a SOCKS interface for tooling or per app configuration.
+
+I run this stack on my home server and expose it to local machines via SSH port forwarding.
+
+I have the following in my `~/.ssh/config`:
+
+```txt
+Host homeserver-nym
+  HostName 127.0.0.1
+  ProxyJump me@homeserver
+  User root
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+  RemoteCommand bash -lc 'cd /opt/nymvpn && docker compose up; exec bash'
+  RequestTTY yes
+```
+
+And in my `~/.bashrc`:
+
+```bash
+alias nymvpn="ssh -L 1090:localhost:1090 homeserver-nym"
+```
+
+A short explanation of what is happening here:
+
+* `ssh -L 1090:localhost:1090 ...` forwards your local port `1090` to port `1090` on the remote server.
+* With the forwarded port in place, you can configure a local app to use a SOCKS5 proxy at `127.0.0.1:1090`, while the actual proxy service runs on the server.
+* The `HostName 127.0.0.1` plus `ProxyJump me@homeserver` pattern is a deliberate "jump to the server, then SSH to its localhost" setup. It is useful when the final SSH target (often `root`) is only reachable from the server itself.
 
 ### Avoro vs. netcup VPS: a debugging story
 
