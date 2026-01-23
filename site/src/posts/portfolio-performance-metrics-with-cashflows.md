@@ -440,3 +440,12 @@ A simple rule of thumb that often helps is:
 * "NAV per share tells me how well the strategy did."
 * "Shares tell me how much of the strategy I owned over time."
 * "My portfolio value is shares times NAV per share, so my outcome is a mix of both."
+
+### `nbdev2` Copier Template
+
+I've created a [`nbdev2` Copier Template](https://github.com/cs224/nbdev2-cli-template).
+Look a the `README.md` and `smoke_test.sh` script to see how to use it.
+
+```bash
+bash nbdev2-cli-template/smoke_test.sh
+```
