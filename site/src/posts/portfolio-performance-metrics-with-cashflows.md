@@ -2,6 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Portfolio Performance Metrics with External Cashflows"
 description: "An exercise in literate programming with nbdev2."
+seodescription: "Portfolio performance with deposits/withdrawals: manager vs investor view, TWR and money-weighted XIRR, Dietz, unitization NAV/share, plus a practical nbdev2 Python implementation."
 keywords: TWR, MWR, XIRR, IRR, Modified Dietz, unitization, NAV per share, shares outstanding, nbdev, nbdev2, literate programming, Python, Jupyter
 creationdate: 2025-12-15
 date: 2025-12-15
