@@ -1322,7 +1322,7 @@ Build the probe from the Nym monorepo (example for Debian/Ubuntu):
 
 ```bash
 sudo apt update
-sudo apt install -y pkg-config build-essential libssl-dev curl jq git
+sudo apt install -y pkg-config build-essential libssl-dev curl jq git golang-go
 
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 rustup update
