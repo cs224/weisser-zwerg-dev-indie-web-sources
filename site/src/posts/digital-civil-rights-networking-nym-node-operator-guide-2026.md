@@ -2259,6 +2259,30 @@ I added the screenshots `after-ddos-protection-fix-nym-node-spectre-explorer-avo
 <a href="https://gist.githubusercontent.com/cs224/5c80f995cc88b245ae89741a9ad9caa3/raw/f21b205742d0522d900784990fc9ea4b99441a73/after-ddos-protection-fix-nym-node-harbourmaster-avoro2-orange.png" target="_blank"><img src="https://gist.githubusercontent.com/cs224/5c80f995cc88b245ae89741a9ad9caa3/raw/f21b205742d0522d900784990fc9ea4b99441a73/after-ddos-protection-fix-nym-node-harbourmaster-avoro2-orange.png" alt="Nym Harbour Master for avoro2" style="max-height: 200px"></a>
 <a href="https://gist.githubusercontent.com/cs224/5c80f995cc88b245ae89741a9ad9caa3/raw/f21b205742d0522d900784990fc9ea4b99441a73/after-ddos-protection-fix-nym-node-spectre-explorer-avoro2-orange.png" target="_blank"><img src="https://gist.githubusercontent.com/cs224/5c80f995cc88b245ae89741a9ad9caa3/raw/f21b205742d0522d900784990fc9ea4b99441a73/after-ddos-protection-fix-nym-node-spectre-explorer-avoro2-orange.png" alt="Nym Spectre Explorer for avoro2" style="max-height: 200px"></a>
 
+##### Update 2026-01-28
+
+I published a short field report about installing and operating a Nym node in 2026 on the Nym forum: [Nym Mixnet & dVPN: A Node Operator’s Guide (2026) + `nym-node-cli.py`](https://forum.nym.com/t/nym-mixnet-dvpn-a-node-operators-guide-2026-nym-node-cli-py/2115).
+
+At the time of writing, my main open issue was that one server still behaved noticeably worse than the others, even though the setup was the same:
+
+> avoro2 is still not operating as well as avoro1 (or when I run the same setup on netcup2). I'm continuing the debugging, but I'd be happy if someone has a clue or can give me a hand.
+
+In practice, the only decisive way to judge whether your node works well is to actually use it for real traffic in your NymVPN client over a longer period, and compare it against other nodes.
+This means selecting your node in NymVPN as an entry or exit, and then watching how it behaves during normal daily use.
+As a reference point, I compare against [mainnet-gateway2.nymte.ch](https://explorer.nym.spectredao.net/nodes/2BuMSfMW3zpeAjKXyKLhmY4QW1DXurrtSPEJ6CjX3SEh), which is operated by the Nym team.
+
+After spending quite some time debugging, I stopped trying to make Avoro2 work reliably and moved the node to my netcup server instead.
+On netcup, the node works smoothly.
+
+> It is a bit unfortunate that I ended up on netcup, because netcup is listed on the Tor Project's "[avoid list](https://community.torproject.org/relay/community-resources/good-bad-isps/)" for network diversity reasons.
+> Netcup currently ranks at place 5 in the [top providers list](https://nymesis.vercel.app/) for the Nym network.
+> The main concern is not performance, but concentration: these large hosting providers already host many Tor/Nym relays, and adding more capacity there can reduce overall provider diversity.
+
+> I spent quite some time debugging the issues on Avoro because I hoped to turn that work into something reusable.
+> My goal was to build a small preflight test suite of standard tools you can run on a VPS before installing a Nym node,
+> so you can quickly check whether the server and its network are a good fit for stable Nym node operation.
+
+
 ## Footnotes
 
 [^nymtech]: Harbouermaster is only available for gateways, but not for nodes in mixnode mode. That is why I use here as a comparison reference the nymtech (mainnet-gateway2.nymte.ch) node.
