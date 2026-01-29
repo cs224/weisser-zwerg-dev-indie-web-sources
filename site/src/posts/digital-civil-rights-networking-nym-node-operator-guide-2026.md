@@ -181,6 +181,15 @@ If you discover a provider that works well for Nym nodes, consider adding your f
 
 The Amnezia guide [How to run your VPN](https://amnezia.org/en/starter-guide) also lists VPS providers.
 
+> The following links come closest to what you could call a "yellow pages" of VPS providers worldwide:
+> 
+> * [WHTop](https://www.whtop.com/directory/category/vps) (hosting directory + VPS category). This is a very large, directory-style listing that's useful for breadth, but expect some stale entries.
+> * [ServerHunter](https://www.serverhunter.com/) is an index/search engine for VPS and dedicated offers, and is great when you want "show me offers that match X in location Y."
+> * [Hostings.info](https://hostings.info/hosting/catalog) and [HostSearch](https://www.hostsearch.com/) are provider directories and can be useful for discovery, but quality varies.
+> * [VPSBenchmarks](https://www.vpsbenchmarks.com/) and [VPSMetrics](https://vpsmetrics.com/) are benchmark-driven and helpful for narrowing down providers that meet specific technical requirements.
+> * [Cloud Infrastructure Map](https://www.cloudinfrastructuremap.com/) provides good visual representations of cloud regions/locations, but it's not necessarily focused on VPS providers, but more on "public cloud regions."
+> * [Cloudscene](https://cloudscene.com/) is a directory focused on datacenters, cloud service providers, and connectivity.
+
 If you want additional background reading, these two posts give a practical feel for how providers react to privacy infrastructure:
 
 > * [Running a Tor Exit node/Mysterium Node in Linode. (24629) | Linode Questions](https://www.linode.com/community/questions/24629/running-a-tor-exit-nodemysterium-node-in-linode), and
@@ -220,6 +229,29 @@ One reason for dense node concentration in a few countries is simple economics: 
 As an operator, you can help the network by choosing a less common provider or a less common region.
 
 In addition, if you plan to operate a Nym exit gateway, you should think carefully about the legal [jurisdictions](https://nym.com/docs/operators/community-counsel/jurisdictions) of your hosting provider and the country where your server is located.
+
+> I'm not a lawyer, but based on my research, a distinctly U.S., First Amendment-absolutist view would place these jurisdictions among the most protective of free speech worldwide:
+> 
+> 1. **United States (baseline)**
+> 1. **Estonia:** Among EU states, Estonia is unusually close to a "pure incitement" standard and ranks extremely high on press-freedom indexes.
+> 1. **Norway:** Very strong constitutional language on speech, highly independent courts and media, and consistently among the top countries for press freedom.
+> 1. **New Zealand:** Strong legal protection for expression, high overall freedom, and relatively narrow hate-speech offenses (mostly racial incitement), with recent attempts to expand them scaled back.
+> 1. **Netherlands:** Very high press freedom, a long tradition of religious and political tolerance, and a strong free-expression culture despite hate-speech statutes.
+> 
+> Keep in mind, though, that the United States is in a category of its own:
+> every other country you'd recognize as a liberal democracy generally has more latitude to restrict speech in law - especially around hate speech, "extremism," or religious offense.
+
+Viewed through a very US-style, First-Amendment-absolutist lens, the most free speech jurisdictions around the world would be the following.
+But keep in mind that the US is in a category of its own. Every other country you'd recognize as "liberal-democratic" has more room to restrict speech in law, especially around hate speech, "extremism," or religious offense.
+
+1. United States (baseline) 
+1. Estonia: Among EU states, Estonia is unusually close to a "pure incitement" standard and is extremely high on press-freedom rankings. 
+1. Norway: Super-strong constitutional speech language, very independent courts and media, and consistently the top press-freedom country. 
+1. New Zealand: Strong legal protection of expression, high overall freedom, and relatively narrow hate-speech crimes (mostly racial incitement), with attempts to expand them recently scaled back. 
+1. Netherlands: Very high press freedom, long tradition of religious and political tolerance, and a strong free-expression culture despite hate-speech statutes. 
+
+
+
 Exit gateways can attract more attention than other node types because they connect the Nym network to the public Internet.
 That makes provider policy, local law, and abuse handling procedures much more important.
 
@@ -2152,7 +2184,7 @@ echo "add_device ${DEV}@${THREAD}" > "$KTHREAD"
   echo "clone_skb 0"                     # reuse skb (lower overhead) 
   echo "burst 1"                         # batch pushes to NIC (often improves rate) 
   echo "pkt_size $PKT_SIZE"              # total L2 frame size 
-  echo "delay 0"                         # we’ll use ratep, not delay 
+  echo "delay 0"                         # we'll use ratep, not delay 
   echo "ratep $RATEP"                    # pps target 
 
   echo "dst_min $DST_IP"
@@ -2261,7 +2293,7 @@ I added the screenshots `after-ddos-protection-fix-nym-node-spectre-explorer-avo
 
 ##### Update 2026-01-28
 
-I published a short field report about installing and operating a Nym node in 2026 on the Nym forum: [Nym Mixnet & dVPN: A Node Operator’s Guide (2026) + `nym-node-cli.py`](https://forum.nym.com/t/nym-mixnet-dvpn-a-node-operators-guide-2026-nym-node-cli-py/2115).
+I published a short field report about installing and operating a Nym node in 2026 on the Nym forum: [Nym Mixnet & dVPN: A Node Operator's Guide (2026) + `nym-node-cli.py`](https://forum.nym.com/t/nym-mixnet-dvpn-a-node-operators-guide-2026-nym-node-cli-py/2115).
 
 At the time of writing, my main open issue was that one server still behaved noticeably worse than the others, even though the setup was the same:
 
