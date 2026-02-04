@@ -112,6 +112,7 @@
 
     <link rel="canonical" href="{{ absoluteUrl }}">
 
+{% if (env.node_env == "production") and metadata.analytics %}
     <!--
     <script>
         const performance_standalone = 'https://www.gstatic.com/firebasejs/6.6.1/firebase-performance-standalone.js';
@@ -131,6 +132,7 @@
         })(performance_standalone, firebaseConfig);
     </script>
 -->
+{% endif %}
 {% if metadata.mastodonSharing %}
     <script src="/js/bootstrap.bundle.min.js"></script>
 {% endif  %}
