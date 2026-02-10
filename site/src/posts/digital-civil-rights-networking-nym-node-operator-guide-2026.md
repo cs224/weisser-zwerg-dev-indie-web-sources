@@ -1778,6 +1778,41 @@ To make the tracker useful, run it periodically. Hourly is a common choice.
 
 > If you want hands off collection, run it from a scheduler such as cron or a systemd timer, and store the `data` directory on persistent disk.
 
+#### Upgrade: `nym-node-reward-tracker` (CSV/XLSX exports + deep reward forensics)
+
+If you like the idea of the official CMD Reward Tracker but want something you can **audit, reproduce, and extend**, I've published a much more capable successor: [nym-node-reward-tracker](https://github.com/cs224/nym-node-reward-tracker).
+
+The CMD Reward Tracker is a useful starting point - but it comes with a fundamental limitation that becomes painful the moment you care about accuracy, auditing, or missed runs:
+The snapshot-style approach only works well if you continuously build your own local history.
+You have to run it regularly and store the results yourself - otherwise you end up with gaps and you can't reliably answer questions like "what happened last epoch?", or "how do operator vs delegator rewards break down over time?".
+
+To solve that, I built **nym-node-reward-tracker**: a toolkit that still supports quick snapshots (implemented two ways via different APIs), but crucially goes further and leans into what the chain already provides:
+*on-chain transactions and epoch-by-epoch reward mechanics*, reconstructed in detail and exported for analysis.
+
+What you get:
+
+- `snapshot` (operator rewards + uptime) is a clone of the official CMD Reward Tracker, implemented two ways via different APIs
+  - Fast path: Spectre balance API parsing (quick and convenient).
+  - Chain-native path: Cosmos REST + mixnet contract smart queries (bank / wasm) for a more canonical snapshot.
+  - Exports CSV or XLSX, and keeps rolling history so you can compute deltas and trends.
+- `reward-transactions` (withdrawn rewards → fiat for accounting / taxes)
+  - Scans your on-chain tx history for reward-withdrawal transactions, extracts the actual amounts, and attaches fiat pricing (e.g. EUR) so you can track *withdrawn* earnings in a currency.
+  - Exports CSV or XLSX ready for spreadsheets or pandas.
+- `epoch-by-epoch` (full operator + delegator reward reconstruction)
+  - Builds a local *SQLite event cache* and then performs an *epoch-by-epoch replay* that breaks rewards down in detail - including delegator attribution - into an Excel workbook (multiple sheets).
+  - This is the "I want to understand / verify everything" mode.
+
+**Don't skip the "Manual epoch-by-epoch reward walkthrough (didactic cache replay)" in the docs.**  
+
+The [Manual epoch-by-epoch reward walkthrough](https://cs224.github.io/nym-node-reward-tracker/#manual-epoch-by-epoch-reward-walkthrough-didactic-cache-replay) is a guided tour through the rewarding mechanics in detail:
+starting from the naive "pro-rata per epoch" mental model, showing exactly where it breaks, and then rebuilding the real on-chain accounting model step by step - finishing with a *cache-only replay* from the SQLite cache.
+It's basically a hands-on explanation of *why* reward accounting looks the way it does on-chain, not just a tool output.
+
+It's also written in a *literate-programming* style using [nbdev2](https://nbdev.fast.ai/): the narrative explains the intent in human language, then the code follows in small, verifiable chunks (a "define → use → verify" rhythm), so you don't just run the tool - you actually understand the chain's reward logic.
+
+Links:
+- Repo: https://github.com/cs224/nym-node-reward-tracker
+- Docs: https://cs224.github.io/nym-node-reward-tracker/
 
 ### Nym Mixnet: NymVPN
 
