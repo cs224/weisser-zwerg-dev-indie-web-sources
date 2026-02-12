@@ -1814,6 +1814,31 @@ Links:
 - Repo: https://github.com/cs224/nym-node-reward-tracker
 - Docs: https://cs224.github.io/nym-node-reward-tracker/
 
+##### Benchmark: APY leaderboards and over-staking penalties (interest-rate estimation notebook)
+
+If you want a *network-wide* benchmark for "what does good look like right now?", the docs include a chain-native [Node Interest Rates Walkthrough](https://cs224.github.io/nym-node-reward-tracker/node_interest_rates_estimation.html) notebook (or [here](https://github.com/cs224/nym-node-reward-tracker/blob/main/nbs/90_node_interest_rates_estimation.ipynb)) that reconstructs per-node returns from on-chain reward events (last **120 hours**) and annualizes them into APY-style metrics.
+
+APY stands for *Annual Percentage Yield* and means here an *annualized, compounded return estimate* derived from the observed per-epoch returns in the analysis window (so *0.42 ≙ ~42% APY*).
+This is a snapshot/estimation (not a promise), but it's extremely useful for comparing node performance across node types.
+
+**What you're looking at in the tables**
+
+* The key performance column is `apy_eff_total_bond_proxy` (effective APY on *total bonded stake*, using the node's *original pledge as a proxy* so the denominator isn't "delegations-only").
+* The summary tables are sorted by `apy_eff_total_bond_proxy` in descending order, so the first rows are the best-performing nodes in the sample window.
+* The most relevant "leaderboard view" is: [Top Annual Percentage Yield Quantile Nodes per Node Type](https://cs224.github.io/nym-node-reward-tracker/node_interest_rates_estimation.html#top-annual-percentage-yield-quantile-nodes-per-node-type).
+
+**What the numbers tell you (quick intuition)**
+
+* **Exit-gateway nodes** dominate the top of the leaderboard with yields **close to ~50% APY** (realistically you'll often see **>40%** in the top cohort).
+* **Mixnodes** cluster around **~30% APY** (low-to-mid 30s in the sample tables).
+* **Entry-gateway nodes** **underperform** materially, typically **~20% and below** in the sample outputs.
+
+**Also read: over-staking can crush APY**
+
+The notebook has a dedicated section [Over-Staked Nodes and Effect on Annual Percentage Yield](https://cs224.github.io/nym-node-reward-tracker/node_interest_rates_estimation.html#over-staked-nodes-and-effect-on-annual-percentage-yield).
+It highlights nodes with stake **≥ 2× the saturation point**; these can see APY fall into **single digits (and worse)**.
+In the outputs you can see examples where stake multiples >2 are associated with very low `apy_eff_total_bond_proxy` values.
+
 ### Nym Mixnet: NymVPN
 
 This section updates the NymVPN portion in [Digital Civil Rights and Privacy: Networking, VPN, Tor, Onion over VPN, I2P (Invisible Internet Project), Nym Mixnet](../digital-civil-rights-networking-i/#nym-mixnet%3A-nymvpn).
