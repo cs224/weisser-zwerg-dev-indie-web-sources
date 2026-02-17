@@ -100,7 +100,6 @@ config:
       - systemd-resolved
       - telnet
       - netcat-openbsd
-      - dnsutils
       - nano
       - emacs-nox
       - less
@@ -142,6 +141,7 @@ config:
 
     # Apply SSH config after first boot provisioning
     runcmd:
+      - [ usermod, -p, '*', admin ] # Lock password login but keep key-based SSH (set password hash to '*')
       - [ sh, -c, "systemctl reload ssh || systemctl restart ssh || service ssh restart || true" ]
 
   # Keep networking "boring": DHCP on the default interface.
