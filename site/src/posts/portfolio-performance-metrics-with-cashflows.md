@@ -312,7 +312,7 @@ However, it took me a while to trace several TeX math warnings to their source.
 Under the hood, Quarto calls Pandoc twice, once to generate HTML and once to generate Markdown.
 The warnings disappeared once I configured `commonmark: variant: +tex_math_dollars` in `_quarto.yml`.
 
-> As a side note, if you want to install Quarto without requiring root access, have a look at [How do I install Quarto without root access?](https://nbdev.fast.ai/getting_started.html?utm_source=chatgpt.com#q-why-is-nbdev-asking-for-root-access-how-do-i-install-quarto-without-root-access).
+> As a side note, if you want to install Quarto without requiring root access, have a look at [How do I install Quarto without root access?](https://nbdev.fast.ai/getting_started.html#q-why-is-nbdev-asking-for-root-access-how-do-i-install-quarto-without-root-access).
 
 It is also worth noting that `nbdev_test` does not replace `pytest`.
 Instead, it adds another testing layer next to `pytest`, with a different goal.
