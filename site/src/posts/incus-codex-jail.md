@@ -2,7 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Incus System-Container Jail for the Codex Coding Agent"
 description: "Reducing 'Supply Chain Attack' Risk from AI Coding Agents (and Shadow AI)."
-seodescription: ""
+seodescription: "Run OpenAI Codex or Claude Code inside an Incus system container jail. Learn step by step setup with network ACLs and bind mounts to limit secrets and reduce supply chain attacks."
 creationdate: 2026-02-18
 keywords: codex, claude code, ai agents, supply chain attacks, shadow ai, incus, system containers, sandboxing
 date: 2026-02-18
