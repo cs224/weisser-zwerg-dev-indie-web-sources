@@ -374,6 +374,145 @@ This is exactly what we want.
 The agent can modify project files, but it only sees what you intentionally shared into the jail.
 If you keep secrets, SSH keys, and other sensitive material out of `/workspace`, you reduce the risk that the agent can accidentally read or leak them.
 
+## Workflow Shortcuts
+
+To make the Incus system container jail pleasant to use in daily work, you can add a few small Bash helper functions to your `~/.bashrc`.
+They handle the repetitive parts for you, like pointing the container workspace to your current host directory, and starting Codex inside the container as an unprivileged user.
+
+After adding them, either open a new shell or run `source ~/.bashrc`.
+
+> These helpers assume your Incus instance has a disk device called `workspace` that mounts a host directory into the container, typically at `/workspace`.
+> In Incus terms, the device has a `source` (host path) and a `path` (mount point inside the container).
+> Your earlier setup steps created this device via a profile.
+
+```bash
+# Defaults (override per-shell or per-command):
+# export AGENTJAIL_INSTANCE=agent2
+# export AGENTJAIL_WORKDIR=/workspace
+# export AGENTJAIL_CODEX_CMD=codex   # can be an absolute path if you want
+
+agentjail-ws-here() {
+  local inst="${AGENTJAIL_INSTANCE:-agent1}"
+  if [[ $# -ge 1 ]] && incus info "$1" >/dev/null 2>&1; then
+    inst="$1"; shift
+  fi
+
+  local src
+  src="$(pwd -P)"
+
+  # Idempotent: works whether workspace is profile-inherited or already local
+  incus config device set "$inst" workspace source="$src" 2>/dev/null \
+    || incus config device override "$inst" workspace source="$src"
+}
+
+agentjail-ws() {
+  local inst="${AGENTJAIL_INSTANCE:-agent1}"
+  if [[ $# -ge 1 ]] && incus info "$1" >/dev/null 2>&1; then
+    inst="$1"; shift
+  fi
+
+  # Direct getter (works when device exists on the instance)
+  incus config device get "$inst" workspace source 2>/dev/null && return 0
+
+  # Fallback: parse expanded config (shows profile-inherited devices)
+  incus config show "$inst" --expanded 2>/dev/null | awk '
+    /^devices:$/ {in_devices=1; next}
+    in_devices && /^[^ ]/ {in_devices=0}
+    in_devices && /^  workspace:$/ {in_ws=1; next}
+    in_devices && in_ws && /^  [^ ]/ && $0 !~ /^  workspace:$/ {in_ws=0}
+    in_devices && in_ws && /^    source: / {
+      sub(/^    source: /,""); gsub(/^"|"$/,""); print; exit
+    }
+  '
+}
+
+agentjail-codex() {
+  local inst="${AGENTJAIL_INSTANCE:-agent1}"
+  if [[ $# -ge 1 ]] && incus info "$1" >/dev/null 2>&1; then
+    inst="$1"; shift
+  fi
+
+  local workdir="${AGENTJAIL_WORKDIR:-/workspace}"
+  local codex_cmd="${AGENTJAIL_CODEX_CMD:-codex}"
+
+  # Ensure instance exists
+  if ! incus info "$inst" >/dev/null 2>&1; then
+    echo "agentjail-codex: instance '$inst' not found" >&2
+    return 1
+  fi
+
+  # If host cwd != configured workspace source, repoint workspace to "here"
+  local here ws
+  here="$(pwd -P)"
+  ws="$(agentjail-ws "$inst")"
+  if [[ -n "$ws" && "$ws" != "$here" ]]; then
+    agentjail-ws-here "$inst" || return 1
+  fi
+
+  # Ensure instance is running
+  local status
+  status="$(incus list "$inst" -f csv -c s 2>/dev/null | head -n1 | tr -d '\r')"
+  case "$status" in
+    RUNNING) ;;
+    FROZEN)  incus unfreeze "$inst" || return 1 ;;
+    *)       incus start "$inst" || return 1 ;;
+  esac
+
+  # Run codex as user "agent" in /workspace, with bash so PATH from ~/.bashrc is available.
+  # Build a safely-quoted codex command line for PROMPT_COMMAND
+  local pc
+  # pc="unset PROMPT_COMMAND; cd $(printf %q "$workdir") && exec $(printf %q "$codex_cmd")"
+  pc="unset PROMPT_COMMAND; cd $(printf %q "$workdir"); $(printf %q "$codex_cmd")"
+  for a in "$@"; do
+    pc+=" $(printf %q "$a")"
+  done
+
+  # Start an interactive login shell (like the manual workflow) and auto-exec codex.
+  incus exec -t "$inst" --env "PROMPT_COMMAND=$pc" -- su -l -w PROMPT_COMMAND agent
+}
+```
+
+The command `agentjail-ws-here` updates the `workspace` disk device so that the container sees your *current host directory* mounted at the container work directory (by default `/workspace`).
+This is the key trick that lets you "bring the project you are standing in" into the jail without copying files.
+
+The command `agentjail-ws` prints the currently configured `workspace` source path, meaning the host directory that is mounted into the container as the workspace.
+
+> You can query this manually as well: `incus config device get agent1 workspace source`.
+
+> Sometimes the `workspace` device is inherited from a profile. In that case, `incus config device get` might not show what you expect, because it only reads instance local configuration.
+> The command below shows the fully expanded, merged configuration, including profile inherited devices:
+> ```bash
+> incus config show <instance> --expanded
+> ```
+>
+> If you install Mike Farah's [yq](https://github.com/mikefarah/yq), you can extract just the relevant section more comfortably.
+> ```bash
+> # Install
+> wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O "$HOME/.local/bin/yq" && chmod +x "$HOME/.local/bin/yq"
+> # Extract
+> incus config show agent1 --expanded | yq '.devices.workspace'
+> ```
+
+The command `agentjail-codex` is meant as a drop in replacement for `codex`. You run it the same way you used `codex` before. It does the following steps:
+
+1. It checks that the instance exists, and starts it if needed.
+2. It ensures the `workspace` mount points to your current host directory (like `agentjail-ws-here`).
+3. It enters the jail, changes into the workspace directory inside the container, and starts Codex there.
+
+All three functions support simple configuration:
+
+* `AGENTJAIL_INSTANCE` sets the default instance name (the default is `agent1`).
+* `AGENTJAIL_WORKDIR` sets the container path where the workspace is mounted (the default is `/workspace`).
+* `AGENTJAIL_CODEX_CMD` sets the command that starts Codex inside the container (the default is `codex`, and it may also be an absolute path).
+
+You can also pass the instance name as the first argument, as long as it matches an existing Incus instance. For example:
+
+```bash
+agentjail-codex agent2
+```
+
+This makes it easy to keep multiple jails around.
+
 ## Conclusion
 
 This concludes the tutorial.
