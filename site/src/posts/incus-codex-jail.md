@@ -1118,3 +1118,185 @@ Do not invent or assume authorization that is not documented.
 
 After delivering these, ask for the next task or proceed with the user's requested task using the discovered workflows.
 ```
+
+### MCP Servers
+
+You can improve your Codex experience by augmenting it with so-called MCP ([Model Context Protocol](https://modelcontextprotocol.io)) servers.
+MCP servers give Codex access to specialized knowledge or tooling that can improve its behavior.
+
+As two examples, I'll show you how to use the Context7 and the Sequential-Thinking MCP servers in **STDIO** mode.
+You can also integrate MCP servers as **Streamable HTTP** servers if you prefer that.
+
+Have a look at my [Sample MCP Server](https://github.com/cs224/sample-mcp-server) project if you'd like to better understand what's going on behind the scenes.
+MCP servers initially confused me because I expected something like a REST API.
+Instead, STDIO MCP servers read requests from **STDIN** and write responses to **STDOUT** (or use the HTTP streaming equivalent) and are integrated into the chat loop rather than invoked like a traditional HTTP API.
+
+Here is a quick intro to some lifecycle properties of MCP servers.
+
+* Codex loads your configured MCP servers when a session starts. For *STDIO* servers, Codex spawns a local process; for *Streamable HTTP* servers, Codex connects to the configured URL.
+* Any state an MCP server keeps (caches, counters, in-memory "history") is [scoped to the lifetime](https://modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle) of that server process/connection, i.e., *normally* the current Codex session, so you don't accumulate unbounded MCP state across unrelated sessions. 
+* If you *want* persistence across sessions, that's a property of the MCP server you run (typically a long-lived remote HTTP server), not something Codex "magically" carries over.
+* If you ever see MCP processes lingering after you exit Codex, treat it as a tooling/version issue: update Codex and kill strays.
+
+You add MCP servers to Codex either via the `codex mcp add ...` command line or by editing `~/.codex/config.toml` directly.  
+Either way, the configuration will end up in `~/.codex/config.toml` by default (unless you override `CODEX_HOME`).
+
+#### Context7: Version-Aware Library Documentation (Hosted)
+
+Context7 is useful when the task depends on *current* or *version-specific* library/tool behavior (API signatures, config flags, migrations, breaking changes).
+
+##### Setup (Free Plan + API Key)
+
+1) Create a (free) [Context7 account](https://context7.com/plans) and generate an API key in the dashboard.
+2) Add Context7 to Codex (global config):
+   ```bash
+   codex mcp add context7 -- npx -y @upstash/context7-mcp --api-key YOUR_KEY
+   ```
+   This writes MCP configuration to your Codex `config.toml` (default: `~/.codex/config.toml`).  
+   If you bind-mount `~/.codex` into the jail (as described in this post), the same configuration is available inside the container.
+3) Verify it's active: In the Codex TUI: `/mcp`
+
+##### Standing Instructions (Global) via `~/.codex/AGENTS.md`
+
+Codex reads `AGENTS.md` before doing work and merges global + project instructions.
+Use the global file for "always-on" behavior you want in every repo.
+
+Create `~/.codex/AGENTS.md`:
+```txt
+# ~/.codex/AGENTS.md
+## Documentation policy (Context7)
+
+- When a task depends on library/tool documentation (APIs, configuration, migrations, breaking changes),
+  use Context7 instead of relying on memory.
+- Prefer version-specific docs:
+  - Infer the version from the repo (lockfiles / toolchain config) and include it in the doc query.
+  - If the version is unclear, ask for it or state the assumption explicitly.
+- Keep doc retrieval targeted:
+  - Query only what's needed (specific API, option, or behavior).
+  - Prefer short excerpts and cite the exact version/feature in the explanation.
+```
+
+> If you prefer keeping guidance in TOML rather than markdown files, Codex has `developer_instructions` in `~/.codex/config.toml`: "Additional developer instructions injected into the session."
+>
+> Example:
+> ```toml
+> # ~/.codex/config.toml
+> developer_instructions = """
+> For ...
+> 
+> """
+> ```
+
+Practical Usage Note: If you know the exact library, specify its Context7 library ID in the prompt to skip fuzzy matching (e.g. "use library /vercel/next.js …").
+
+##### Optional Hardening / Improvements
+
+- Pin the MCP package version for repeatability:
+  ```bash
+  codex mcp add context7 -- npx -y @upstash/context7-mcp@<VERSION> --api-key YOUR_KEY
+  ```
+- If you want to avoid `npx` in the jail entirely, configure Context7 as a remote HTTP MCP server in `~/.codex/config.toml` and pass the API key via headers (prefer env-based headers so the key isn't stored in plaintext in the file).
+
+
+#### Sequential Thinking: Structured Planning (via a Skill)
+
+[Sequential Thinking](https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking) is an MCP tool (`sequentialthinking`) that helps Codex keep multi-step work organized (with revisions and branching) without you re-prompting structure every time.
+
+##### Install the MCP server (global)
+
+1) Add Sequential Thinking to Codex (global config):
+   ```bash
+   codex mcp add sequential-thinking --env DISABLE_THOUGHT_LOGGING=true -- npx -y @modelcontextprotocol/server-sequential-thinking
+   ```
+   `DISABLE_THOUGHT_LOGGING=true` prevents the server from printing each thought to stderr (useful in jailed / logged environments).
+2) Verify it's active: In the Codex TUI: `/mcp`
+
+##### Create a *user* skill (global)
+
+Create a new skill folder:
+
+```bash
+mkdir -p ~/.agents/skills/sequential-plan
+```
+
+Create `~/.agents/skills/sequential-plan/SKILL.md`:
+
+```md
+---
+name: sequential-plan
+description: Use when the user asks for planning, complex debugging, refactors, migrations, or multi-step tasks where a structured plan and revisions help. Do NOT use for small one-step edits.
+---
+
+When this skill is active:
+
+1. Use the `sequentialthinking` tool to break the task into steps, revise if needed, then present a concise plan and execute safely.
+   - Keep each tool thought short (1-3 lines).
+   - Use revisions/branches when assumptions change.
+2. Expose only the a concise, actionable plan + decisions to the user:
+   - bullets, ordered
+   - include commands to run and files to touch
+   - call out any version-specific assumptions
+3. Do not paste internal reasoning; only present decisions, steps, and checks.
+```
+
+If you bind-mount `~/.agents` into the jail (as described in this post), the same configuration is available inside the container.
+
+##### Use the skill
+
+In Codex (CLI/IDE/app), invoke it explicitly:
+
+* `/skills` and pick `sequential-plan`, or type `$sequential-plan` in your prompt.
+
+##### Example workflow (recommended)
+
+1. Start a new prompt line with the skill:
+   ```text
+   $sequential-plan
+   ```
+2. Immediately follow with the actual task:
+   ```text
+   $sequential-plan Plan a safe migration from ESLint v8 to v9 for this repo.
+   Constraints:
+   - Keep CI green.
+   - Identify breaking config changes for our current plugins.
+   - Provide the exact steps/commands and files to edit.
+   ```
+
+If you already wrote the prompt, then you don't need a separate step.
+Include `$sequential-plan` somewhere in the prompt (usually at the top for clarity).
+
+##### Optional: prevent implicit activation
+
+If you only want Sequential Thinking when explicitly requested, add `~/.agents/skills/sequential-plan/agents/openai.yaml`:
+
+```yaml
+policy:
+  allow_implicit_invocation: false
+```
+
+#### When not to use an MCP Server
+
+Not every tool benefits from being agent-controlled via MCP.
+If a tool's main job is to *select and package local code/context*[^claudecontext], I prefer to run it as a human-in-the-loop CLI step so I can review exactly what gets included before it ever reaches the model.
+
+Typical examples are repository/context packers such as [repomix](https://github.com/yamadashy/repomix) and Context Generator ([ctx](https://github.com/context-hub/generator)).
+Both can collect large amounts of code and documentation, and both support fine-grained inclusion/exclusion.
+Used manually, they become deterministic and auditable: you decide what goes into the prompt, rather than letting the agent discover and export context ad hoc.
+
+**Rule of thumb:** use an MCP server when you want the agent to *query a tool interactively*; avoid MCP when you want *tight control and reproducibility* over what code/text is exported into the prompt (security, cost, token discipline, or just reviewability).
+
+##### Manual "prompt hydration" workflow
+
+For context injection I use a small script `0000-hydrate_prompt.py` that replaces `{ { include:... } }` placeholders in a Markdown prompt by inlining the referenced files.
+It writes a new `*.hydrated.md` prompt and annotates inserted blocks with `BEGIN/END include` comments, which makes it easy to audit what was injected.
+
+The accompanying [gist](https://gist.github.com/cs224/5121cb292a239db8406622c89c444154) contains:
+- the hydrator script,
+- a minimal example prompt with an `{ { include:... } }` placeholder,
+- optional helpers to generate context via `ctx` or a repo bundle via `repomix`.
+
+See the full example here: <https://gist.github.com/cs224/5121cb292a239db8406622c89c444154>
+
+## Footnotes
+
+[^claudecontext]: If you really insist on using an MCP-based context server, have a look at [Claude Context](https://github.com/zilliztech/claude-context). Despite the name, it isn't Claude-specific-the documentation includes instructions for using it with Codex.
