@@ -20,9 +20,17 @@ If you're working on projects that require more computational power, this guide 
 ## Before You Begin: Exploring API Services
 
 
-If your main goal is to use LARGE Large Language Models for inference, you might want to consider using API services first, for example platforms like:
-* [Groq](https://groq.com) or
-* [together.ai](https://www.together.ai)
+If your main goal is to use LARGE Large Language Models for inference, you might want to consider using API services first, for example platforms like[^okaraai]:
+* [Groq](https://groq.com)[^grok],
+* [together.ai](https://www.together.ai),
+* Google's [Vertex AI Model Garden](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/model-garden/explore-models),
+* Amazon [Bedrock](https://aws.amazon.com/de/bedrock/),
+* Azure AI [Foundry Models](https://ai.azure.com/catalog/models/),
+* [Databricks](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/supported-models),
+* [OpenRouter](https://openrouter.ai/),
+* [Fireworks AI](https://fireworks.ai/),
+* [Replicate](https://replicate.com/),
+* [Hugging Face Inference Providers](https://huggingface.co/docs/inference-providers/en/index) or [Hugging Face Inference Endpoints](https://huggingface.co/docs/huggingface_hub/en/guides/inference_endpoints)
 
 These services provide access to state-of-the-art models through an OpenAI API, with a cost-effective, pay-per-million tokens approach.
 They're great options if you're looking for convenience and scalability without managing hardware yourself.
@@ -80,7 +88,7 @@ It is advertised to be able to run AI models up to 200 billion parameters and wh
 
 ### NVIDIA GPUs
 
-To get started with running large language models locally, understanding your GPU's capabilities is crucial. Visit NVIDIA’s [GPU Compute Capability](https://developer.nvidia.com/cuda-gpus#compute) page to learn more about their current lineup and specifications.
+To get started with running large language models locally, understanding your GPU's capabilities is crucial. Visit NVIDIA's [GPU Compute Capability](https://developer.nvidia.com/cuda-gpus#compute) page to learn more about their current lineup and specifications.
 
 For example, my older GeForce GTX 1080 runs on [Compute Capability](https://en.wikipedia.org/wiki/CUDA) 6.1.
 However, modern architectures like [Ampere](https://en.wikipedia.org/wiki/Ampere_(microarchitecture)), [Ada Lovelace](https://en.wikipedia.org/wiki/Ada_Lovelace_(microarchitecture)), and [Hopper](https://en.wikipedia.org/wiki/Hopper_(microarchitecture)) boast Compute Capability 8.0+.
@@ -418,7 +426,7 @@ And here you can see the performance in the RunPod web console:<br>
 ## Multi-GPU Text Generation Inference (TGI)
 
 Although I haven't personally tried TGI, online comments suggest that vLLM is currently the top choice.
-For those interested in exploring TGI, I recommend checking out the blog post [Best Llama 3 Inference Endpoint – Part 2](https://massedcompute.com/best-llama-3-inference-endpoint-part-2/) on the Massed Compute blog, dated 2024-04-26, or visiting the official [Text Generation Inference (TGI)](https://huggingface.co/docs/text-generation-inference/index) documentation directly.
+For those interested in exploring TGI, I recommend checking out the blog post [Best Llama 3 Inference Endpoint - Part 2](https://massedcompute.com/best-llama-3-inference-endpoint-part-2/) on the Massed Compute blog, dated 2024-04-26, or visiting the official [Text Generation Inference (TGI)](https://huggingface.co/docs/text-generation-inference/index) documentation directly.
 
 
 ## Detours
@@ -502,7 +510,40 @@ Bottom Line: you can run a large model on one GPU in a "sequential" or partially
 
 As far as I am aware there is at the moment no execution environment available like `vLLM` or any other which implements a built-in CPU offload or "ZeRO"-style sharding.
 
+### OpenCode: The open-source AI coding agent.
+
+As a side remark, I also want to mention [OpenCode](https://opencode.ai/): the open-source AI coding agent.
+OpenCode is built around a [tool-calling loop](https://opencode.ai/docs/tools/) and can use background models that support custom tool calling, such as [Llama 3.1](https://huggingface.co/blog/llama31) 405B (not that this would be a good idea due to slower speed and higher costs, but it works as an example).
+
+[Tool-calling](https://docs.nvidia.com/nim/large-language-models/1.7.0/function-calling.html)[^vllmtoolcalling] (often called function calling or tool use) is a protocol that lets an LLM request that your application run an external action (a "tool") and then continue reasoning with the tool's result.
+The canonical loop is:
+
+1. You send the model a message plus a list of tools it is allowed to call.
+2. The model responds with a structured tool call (tool name + JSON arguments).
+3. Your app (or OpenCode as the agent framework) executes that tool (e.g., read a file, run tests, call a REST API).
+4. You send the tool output back to the model.
+5. The model either returns a final answer or requests another tool call.
+
+An "API endpoint that supports tool/function calling" means the endpoint does at least the following:
+
+1. Accepts tool definitions in a first-class request field (`tools`, `functions`, etc.).
+2. Returns tool calls in a machine-readable field (`tool_calls`, `function_call` blocks, etc.).
+3. Provides a way to send tool results back so the model can continue (e.g., "tool" messages/parts).
+
+There isn't a formal standards body for this. OpenAI documents (1) and (2) directly in its tools/function-calling guides and API reference. "OpenAI standard" usually means the de facto schema and field names used by OpenAI's API, which many other providers/servers implement as "OpenAI-compatible".
+
+So tool-calling is a feature of both the model and the endpoint:
+
+* **Model capability:** The model must be able to decide when to use a tool and reliably produce valid structured arguments. Some models are explicitly tuned for this; others are flaky and need heavier prompting.
+* **Endpoint/protocol support:** The serving layer must implement the tool-calling protocol (request fields, response fields, and how tool results are fed back). Otherwise your agent framework can't "see" the tool call or can't feed results back in the expected format.
+
+OpenCode notes that only a subset of models are good at both coding and tool calling, and [lists](https://opencode.ai/docs/models/)[^modeldev] these as commonly working well: GPT 5.2, GPT 5.1 Codex, Claude Opus 4.5, Claude Sonnet 4.5, Minimax M2.1, Gemini 3 Pro.
+
 ## Footnotes
 
 [^dockernetworknamespace]: This means it will run in a separate [network namespace](https://blog.kubesimplify.com/docker-networking-demystified).
 [^fewertoolslargerversatility]: Personally, I prefer to use a limited set of tools and learn them thoroughly, rather than relying on a large collection of tools that I only know superficially.
+[^okaraai]: While Groq / Together / Vertex AI (Model Garden) are ways to consume and deploy foundation models via APIs, [Okara.ai](https://okara.ai/)'s core product is a private multi-model chat + team workspace (encrypted chats, file workflows, "switch models without losing context," integrated search, etc.).
+[^grok]: Not to be confused with Grok, the chatbot/model from xAI, integrated into X.
+[^vllmtoolcalling]: Also see [vLLM Tool Calling](https://docs.vllm.ai/en/stable/features/tool_calling/).
+[^modeldev]: [models.dev](https://github.com/anomalyco/models.dev) is not a model host and not an inference API. It's an open-source catalog (database) of AI model metadata, covering model specs, capabilities, limits, and pricing across many providers.
