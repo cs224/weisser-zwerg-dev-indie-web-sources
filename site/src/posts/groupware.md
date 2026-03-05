@@ -2,7 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Groupware: replacing Microsoft Exchange at home (on-prem)"
 description: 'Or how a small family can run an "Exchange alternative" with open standards.'
-# seodescription: "Run OpenAI Codex or Claude Code inside an Incus system container jail. Learn step by step setup with network ACLs and bind mounts to limit secrets and reduce supply chain attacks."
+seodescription: "Groupware mental model: Guide to self-hosted on-prem standards-based Exchange alternative: mail, calendar and contacts, plus meeting-invite processing."
 creationdate: 2026-02-26
 keywords: groupware, Microsoft Exchange, Outlook, personal information management, PIM, SOGo, grommunio, iMIP (RFC 6047), iTIP (RFC 5546), CalDAV Scheduling (RFC 6638), iCalendar, processcalendar (RFC 9671)
 date: 2026-02-26
