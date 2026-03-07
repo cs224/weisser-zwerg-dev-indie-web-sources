@@ -543,7 +543,7 @@ OpenCode notes that only a subset of models are good at both coding and tool cal
 
 [^dockernetworknamespace]: This means it will run in a separate [network namespace](https://blog.kubesimplify.com/docker-networking-demystified).
 [^fewertoolslargerversatility]: Personally, I prefer to use a limited set of tools and learn them thoroughly, rather than relying on a large collection of tools that I only know superficially.
-[^okaraai]: While Groq / Together / Vertex AI (Model Garden) are ways to consume and deploy foundation models via APIs, [Okara.ai](https://okara.ai/)'s core product is a private multi-model chat + team workspace (encrypted chats, file workflows, "switch models without losing context," integrated search, etc.).
+[^okaraai]: While Groq / Together / Vertex AI (Model Garden) are primarily ways to consume and deploy foundation models via APIs, [Okara.ai](https://okara.ai/) - and, more loosely, [Mammouth.ai](https://mammouth.ai/) - are better described as private multi-model chat + team workspace: chat-first products with projects/files, model switching, search, and team features, even though Mammouth also exposes an OpenAI-compatible API.
 [^grok]: Not to be confused with Grok, the chatbot/model from xAI, integrated into X.
 [^vllmtoolcalling]: Also see [vLLM Tool Calling](https://docs.vllm.ai/en/stable/features/tool_calling/).
 [^modeldev]: [models.dev](https://github.com/anomalyco/models.dev) is not a model host and not an inference API. It's an open-source catalog (database) of AI model metadata, covering model specs, capabilities, limits, and pricing across many providers.
