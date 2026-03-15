@@ -1297,6 +1297,643 @@ The accompanying [gist](https://gist.github.com/cs224/5121cb292a239db8406622c89c
 
 See the full example here: <https://gist.github.com/cs224/5121cb292a239db8406622c89c444154>
 
+### The Better Full Replacement: `agent-jail-recursive-profile.yaml`
+
+The original article described a useful first-generation jail based on `agent-jail-profile.yaml`, but practical day-to-day use exposed several shortcomings that matter once the jail becomes a real development environment.
+
+The biggest issues were:
+
+- passwordless SSH workflows were awkward because the jail did not yet have a host SSH-agent forwarding path,
+- projects that need Docker and/or Incus inside the jail were not properly supported,
+- the primary purpose of the jail is to protect host integrity and reduce accidental host exposure so fixed resource limits were not the main problem to solve here
+
+That is why `agent-jail-recursive-profile.yaml` should be read as the better version and intended as full replacement for the earlier profile, not as a small optional overlay.
+
+The recursive profile changes the design goal from "a constrained shell inside a container" to "a constrained outer container that still feels host-like from the inside."
+That is a materially better fit for coding-agent work:
+
+- the outer jail still narrows host exposure to a dedicated workspace mount and a controlled network posture
+- the in-container `agent` user gets all the tooling needed for real project work
+- nested incus and/or docker runtimes are treated as first-class use cases
+- the profile avoids artificial CPU, memory, or process caps by default
+- `direnv` support is now zero-touch for `/workspace`
+
+In other words, the new profile is strict where host protection matters and looser where developer throughput matters.
+
+You create the profile and load the YAML file into it:
+```bash
+incus profile create agent-jail-recursive
+incus profile edit agent-jail-recursive < agent-jail-recursive-profile.yaml
+```
+
+Then launch a new instance using that profile:
+```bash
+# Use a cloud image so cloud-init actually runs.
+incus launch images:debian/trixie/cloud agent1 --profile default --profile agent-jail-recursive
+```
+
+Otherwise follow the instructions in the main body of this blog post.
+
+Here are some additional tests to perform after the incus container is up and running:
+```bash
+incus exec agent1 -- bash -lc 'systemctl status incus --no-pager'
+incus exec agent1 -- bash -lc 'incus network list'
+incus exec agent1 -- bash -lc 'incus storage list'
+incus exec agent1 -- su -l agent -c '/usr/local/bin/agent-env incus list'
+incus exec agent1 -- su -l agent -c '/usr/local/bin/agent-env incus launch images:alpine/edge/cloud smoke'
+incus exec agent1 -- su -l agent -c '/usr/local/bin/agent-env incus delete --force smoke'
+
+incus exec agent1 -- systemctl status docker --no-pager
+incus exec agent1 -- su -l agent -c '/usr/local/bin/agent-env docker info'
+incus exec agent1 -- su -l agent -c '/usr/local/bin/agent-env docker run --rm hello-world'
+```
+
+#### Deltas In `agent-jail-helpers.sh`
+
+Only the notable deltas matter here:
+
+- new `agentjail-ssh-agent-attach` helper: attaches the host `SSH_AUTH_SOCK` into the jail as an Incus `proxy` device with the correct UID/GID mapping for `agent`
+- new `agentjail-ssh-agent-detach` helper: removes that forwarded SSH-agent device cleanly
+- `agentjail-codex` is a  complete session helper:
+  - it repoints the workspace mount to the current host directory when needed
+  - it starts or unfreezes the instance automatically
+  - it injects a one-shot startup command through `AGENTJAIL_AUTO_CMD`
+  - it runs `direnv` immediately before starting Codex
+  - when Codex exits, the user remains inside the container shell at `/workspace`
+- `agentjail-ws` and `agentjail-ws-here` are written to work whether the workspace device is profile-inherited or already overridden on the instance
+
+Together they turn the recursive profile into "you can work there comfortably."
+
+You can add a the following small Bash helper functions to your `~/.bashrc` to make the Incus system container jail pleasant to use in daily work:
+```bash
+agentjail-ssh-agent-attach() {
+  local inst="${AGENTJAIL_INSTANCE:-agent1}"
+  if [[ $# -ge 1 ]] && incus info "$1" >/dev/null 2>&1; then
+    inst="$1"
+    shift
+  fi
+
+  if [[ -z "${SSH_AUTH_SOCK:-}" || ! -S "${SSH_AUTH_SOCK:-}" ]]; then
+    echo "agentjail-ssh-agent-attach: SSH_AUTH_SOCK is not set to a live socket" >&2
+    return 1
+  fi
+
+  local host_uid host_gid agent_uid agent_gid
+  host_uid="$(id -u)"
+  host_gid="$(id -g)"
+  agent_uid="$(incus exec "$inst" -- id -u agent)"
+  agent_gid="$(incus exec "$inst" -- id -g agent)"
+
+  incus config device remove "$inst" ssh-agent >/dev/null 2>&1 || true
+  incus config device add "$inst" ssh-agent proxy \
+    bind=container \
+    listen=unix:/run/host-services/ssh-auth.sock \
+    connect="unix:${SSH_AUTH_SOCK}" \
+    uid="${agent_uid}" \
+    gid="${agent_gid}" \
+    mode=0600 \
+    security.uid="${host_uid}" \
+    security.gid="${host_gid}"
+}
+
+agentjail-ssh-agent-detach() {
+  local inst="${AGENTJAIL_INSTANCE:-agent1}"
+  if [[ $# -ge 1 ]] && incus info "$1" >/dev/null 2>&1; then
+    inst="$1"
+    shift
+  fi
+
+  incus config device remove "$inst" ssh-agent
+}
+
+# Take agentjail-ws-here() from earlier
+
+# Take agentjail-ws() from earlier
+
+# agentjail-codex needs to be replaced with this version
+agentjail-codex() {
+  local inst="${AGENTJAIL_INSTANCE:-agent1}"
+  if [[ $# -ge 1 ]] && incus info "$1" >/dev/null 2>&1; then
+    inst="$1"
+    shift
+  fi
+
+  local workdir="${AGENTJAIL_WORKDIR:-/workspace}"
+  local codex_cmd="${AGENTJAIL_CODEX_CMD:-codex}"
+
+  if ! incus info "$inst" >/dev/null 2>&1; then
+    echo "agentjail-codex: instance '$inst' not found" >&2
+    return 1
+  fi
+
+  local here ws
+  here="$(pwd -P)"
+  ws="$(agentjail-ws "$inst")"
+  if [[ -n "$ws" && "$ws" != "$here" ]]; then
+    agentjail-ws-here "$inst" || return 1
+  fi
+
+  local status
+  status="$(incus list "$inst" -f csv -c s 2>/dev/null | head -n1 | tr -d '\r')"
+  case "$status" in
+    RUNNING) ;;
+    FROZEN) incus unfreeze "$inst" || return 1 ;;
+    *) incus start "$inst" || return 1 ;;
+  esac
+
+  # Start a login shell for user "agent" and auto-run Codex in the workspace.
+  # The one-shot startup command is injected via AGENTJAIL_AUTO_CMD so that
+  # exiting Codex leaves the user in the container shell at /workspace.
+  local auto_cmd
+  auto_cmd="cd $(printf %q "$workdir")"
+  auto_cmd+="; if declare -F _direnv_hook >/dev/null 2>&1; then _direnv_hook; fi"
+  auto_cmd+="; $(printf %q "$codex_cmd")"
+  for a in "$@"; do
+    auto_cmd+=" $(printf %q "$a")"
+  done
+
+  incus exec -t "$inst" --env "AGENTJAIL_AUTO_CMD=$auto_cmd" -- su -l -w AGENTJAIL_AUTO_CMD agent
+}
+```
+
+#### `agent-jail-recursive-profile.yaml`
+
+```yaml
+name: agent-jail-recursive
+description: "Incus system-container jail for coding agents (workspace mount + toolchains + resource limits + non-root) with nested Incus and Docker support"
+
+config:
+  boot.autostart: "false"
+
+  security.privileged: "false"
+  security.nesting: "true"
+
+  # Needed for nested container workloads that rely on overlayfs whiteouts.
+  security.syscalls.intercept.mknod: "true"
+  security.syscalls.intercept.setxattr: "true"
+
+  # The container cannot load modules itself, so ask the host to pre-load the common ones.
+  linux.kernel_modules: overlay,br_netfilter,nf_nat,ip_tables,ip6_tables
+
+  # Strongly recommended when you run multiple agent containers:
+  security.idmap.isolated: "true"
+  # Optional per-instance escape hatch if isolated idmap auto-allocation fails
+  # before boot with newuidmap/newgidmap. Do not hardcode this casually in a
+  # shared profile. See README.md for when to set it and how to choose a value.
+  # security.idmap.base: "1458752"
+
+  # Tune to taste
+  # limits.cpu: "2"
+  # limits.memory: 4GiB
+  # limits.memory.enforce: "hard"
+  # limits.processes: "2048"
+
+  cloud-init.user-data: |
+    #cloud-config
+    output:
+      all: "| tee -a /var/log/cloud-init-output.log"
+
+    package_update: true
+    package_upgrade: false
+
+    apt:
+      conf: |
+        APT::Install-Recommends "0";
+        APT::Install-Suggests "0";
+
+    # IMPORTANT: set uid/gid to your host user's UID/GID if you want "host IDE continues smoothly".
+    # If your host user is not 1000, change this.
+    users:
+      - name: agent
+        gecos: "Coding Agent"
+        shell: /bin/bash
+        lock_passwd: true
+        uid: 1000
+        groups: [users]
+
+    ssh_pwauth: false
+    disable_root: true
+
+    packages:
+      - ca-certificates
+      - curl
+      - git
+      - jq
+      - unzip
+      - zip
+      - build-essential
+      - pkg-config
+      - libssl-dev
+      - python3
+      - python3-venv
+      - iproute2
+      - systemd-resolved
+      - telnet
+      - netcat-openbsd
+      - nano
+      - emacs-nox
+      - less
+      - wajig
+      - tree
+      - bash-completion
+      - direnv
+      - iputils-ping
+      - libcap2-bin
+      - openssh-client
+      - acl
+      - dnsmasq-base
+      - docker.io
+      - docker-cli
+      - docker-compose
+      - fuse-overlayfs
+      - incus-base
+      - incus-client
+      - iptables
+      - uidmap
+
+    write_files:
+      - path: /etc/tmpfiles.d/agent-jail.conf
+        owner: root:root
+        permissions: "0644"
+        content: |
+          d /run/host-services 0755 root root -
+
+      # Environment wrapper (so automation can reliably load nvm/sdkman functions)
+      - path: /usr/local/bin/agent-env
+        owner: root:root
+        permissions: "0755"
+        content: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          export HOME=/home/agent
+          export USER=agent
+          export LOGNAME=agent
+          export PATH="$HOME/.local/bin:$PATH"
+
+          if [ -S /run/host-services/ssh-auth.sock ]; then
+            export SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock
+          fi
+
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+          export SDKMAN_DIR="$HOME/.sdkman"
+          if [ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]; then
+            # sdkman-init.sh may reference unset vars; relax nounset while sourcing
+            set +u
+            . "$SDKMAN_DIR/bin/sdkman-init.sh"
+            set -u
+          fi
+
+          cd /workspace 2>/dev/null || cd "$HOME"
+          exec "$@"
+
+      # Patch agent's bash init files without overwriting them wholesale.
+      - path: /usr/local/sbin/agent-bashrc-patch
+        owner: root:root
+        permissions: "0755"
+        content: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          AGENT_HOME=/home/agent
+          BRC="$AGENT_HOME/.bashrc"
+          BPR="$AGENT_HOME/.bash_profile"
+          PROF="$AGENT_HOME/.profile"
+
+          # 1) Ensure baseline dotfiles exist (copy from /etc/skel only if missing)
+          if [[ ! -f "$BRC" && -f /etc/skel/.bashrc ]]; then
+            cp /etc/skel/.bashrc "$BRC"
+            chown agent:agent "$BRC"
+            chmod 0644 "$BRC"
+          fi
+          if [[ ! -f "$PROF" && -f /etc/skel/.profile ]]; then
+            cp /etc/skel/.profile "$PROF"
+            chown agent:agent "$PROF"
+            chmod 0644 "$PROF"
+          fi
+
+          # If we still don't have a bashrc, create a minimal one.
+          if [[ ! -f "$BRC" ]]; then
+            cat >"$BRC" <<'EOF'
+          # ~/.bashrc (minimal fallback)
+          export EDITOR=emacs
+          export PAGER=less
+          alias ll='ls -alF'
+          alias la='ls -A'
+          alias l='ls -CF'
+          alias gs='git status'
+          alias ls='ls --color=auto'
+          EOF
+            chown agent:agent "$BRC"
+            chmod 0644 "$BRC"
+          fi
+
+          # 2) Sed-based patching: enable common Debian goodies if present
+          # Enable force_color_prompt=yes if present as commented line
+          sed -i -E "s/^[[:space:]]*#[[:space:]]*(force_color_prompt=yes)/\1/" "$BRC"
+
+          # Uncomment common alias lines if present (Debian ships them commented)
+          sed -i -E "s/^[[:space:]]*#[[:space:]]*(alias (ll|la|l)=)/\1/" "$BRC"
+
+          # Uncomment the dircolors block if it exists (range from 'if [ -x /usr/bin/dircolors ]' to 'fi')
+          sed -i -E \
+            "/^[[:space:]]*#?[[:space:]]*if[[:space:]]+\\[[[:space:]]+-x[[:space:]]+\\/usr\\/bin\\/dircolors[[:space:]]+\\];[[:space:]]*then/,/^[[:space:]]*#?[[:space:]]*fi[[:space:]]*$/{
+              s/^[[:space:]]*#[[:space:]]?//
+            }" "$BRC"
+
+          # 3) Ensure a few practical defaults exist (append only if missing)
+          grep -qE "^[[:space:]]*export[[:space:]]+EDITOR=" "$BRC" || echo "export EDITOR=emacs" >>"$BRC"
+          grep -qE "^[[:space:]]*export[[:space:]]+PAGER="  "$BRC" || echo "export PAGER=less"  >>"$BRC"
+          grep -qE "^[[:space:]]*alias[[:space:]]+gs="       "$BRC" || echo "alias gs='git status'" >>"$BRC"
+          grep -qE "^[[:space:]]*alias[[:space:]]+ls=.*--color=auto" "$BRC" || echo "alias ls='ls --color=auto'" >>"$BRC"
+
+          # Enable bash-completion (append only if missing and file exists)
+          if [[ -f /usr/share/bash-completion/bash_completion ]]; then
+            if ! grep -q "/usr/share/bash-completion/bash_completion" "$BRC"; then
+              cat >>"$BRC" <<'EOF'
+
+          if [ -f /usr/share/bash-completion/bash_completion ]; then
+            . /usr/share/bash-completion/bash_completion
+          fi
+          EOF
+            fi
+          fi
+
+          if ! grep -q "/run/host-services/ssh-auth.sock" "$BRC"; then
+            cat >>"$BRC" <<'EOF'
+
+          if [ -S /run/host-services/ssh-auth.sock ]; then
+            export SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock
+          fi
+          EOF
+          fi
+
+          # One-shot auto-command hook used by agentjail-codex.
+          if ! grep -q "AGENTJAIL_AUTO_CMD" "$BRC"; then
+            cat >>"$BRC" <<'EOF'
+
+          if [ -n "${AGENTJAIL_AUTO_CMD:-}" ]; then
+            __agentjail_auto_cmd_once() {
+              local cmd="${AGENTJAIL_AUTO_CMD:-}"
+              unset AGENTJAIL_AUTO_CMD
+
+              PROMPT_COMMAND="${PROMPT_COMMAND//;__agentjail_auto_cmd_once/}"
+              PROMPT_COMMAND="${PROMPT_COMMAND//__agentjail_auto_cmd_once;/}"
+              PROMPT_COMMAND="${PROMPT_COMMAND//__agentjail_auto_cmd_once/}"
+
+              eval "$cmd"
+            }
+
+            case ";${PROMPT_COMMAND:-};" in
+              *";__agentjail_auto_cmd_once;"*) ;;
+              ";") PROMPT_COMMAND="__agentjail_auto_cmd_once" ;;
+              *) PROMPT_COMMAND="__agentjail_auto_cmd_once;${PROMPT_COMMAND}" ;;
+            esac
+          fi
+          EOF
+          fi
+
+          # direnv should be hooked last in bashrc.
+          if ! grep -q "direnv hook bash" "$BRC"; then
+            cat >>"$BRC" <<'EOF'
+
+          if command -v direnv >/dev/null 2>&1; then
+            eval "$(direnv hook bash)"
+          fi
+          EOF
+          fi
+
+          chown agent:agent "$BRC"
+
+          # 4) Make sure login shells source ~/.bashrc
+          if [[ ! -f "$BPR" ]]; then
+            cat >"$BPR" <<'EOF'
+          if [ -f "$HOME/.bashrc" ]; then
+            . "$HOME/.bashrc"
+          fi
+          EOF
+            chown agent:agent "$BPR"
+            chmod 0644 "$BPR"
+          else
+            if ! grep -q "\.bashrc" "$BPR"; then
+              cat >>"$BPR" <<'EOF'
+
+          if [ -f "$HOME/.bashrc" ]; then
+            . "$HOME/.bashrc"
+          fi
+          EOF
+              chown agent:agent "$BPR"
+            fi
+          fi
+
+          # 5) Ensure agent owns its home (cheap safety net)
+          chown -R agent:agent "$AGENT_HOME"
+
+      - path: /usr/local/sbin/agent-direnv-setup
+        owner: root:root
+        permissions: "0755"
+        content: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          install -d -o agent -g agent -m 0755 /home/agent/.config/direnv
+
+          cat >/home/agent/.config/direnv/direnv.toml <<'EOF'
+          [whitelist]
+          prefix = ["/workspace"]
+          EOF
+
+          chown agent:agent /home/agent/.config/direnv/direnv.toml
+
+      - path: /usr/local/sbin/install-quarto-rootless
+        owner: root:root
+        permissions: "0755"
+        content: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          QUARTO_VERSION=1.6.0
+          INSTALL_BASE="/home/agent/.local/opt"
+          mkdir -p "$INSTALL_BASE" "/home/agent/.local/bin"
+
+          qarch="$(dpkg --print-architecture)"
+          case "$qarch" in
+            amd64|arm64) ;;
+            *) echo "Unsupported Debian arch: $qarch" >&2; exit 1 ;;
+          esac
+
+          work="$INSTALL_BASE/quarto-$QUARTO_VERSION"
+          rm -rf "$work"
+          mkdir -p "$work"
+          cd "$work"
+
+          deb="quarto-${QUARTO_VERSION}-linux-${qarch}.deb"
+          curl -fsSLo "$deb" "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/${deb}"
+
+          dpkg -x "$deb" .
+          mv opt/quarto ./quarto
+          rm -rf opt "$deb"
+
+          ln -sf "$work/quarto/bin/quarto" "/home/agent/.local/bin/quarto"
+          "/home/agent/.local/bin/quarto" --version
+
+      - path: /etc/docker/daemon.json
+        owner: root:root
+        permissions: "0644"
+        content: |
+          {
+            "bip": "172.30.0.1/24",
+            "default-address-pools": [
+              {
+                "base": "172.31.0.0/16",
+                "size": 24
+              }
+            ]
+          }
+
+      - path: /root/incus-preseed.yaml
+        owner: root:root
+        permissions: "0600"
+        content: |
+          config: {}
+          storage_pools:
+            - name: default
+              driver: dir
+          networks:
+            - name: nestedbr0
+              type: bridge
+              config:
+                ipv4.address: 10.203.0.1/24
+                ipv4.nat: "true"
+                ipv6.address: none
+          profiles:
+            - name: default
+              config:
+                security.privileged: "true"
+              devices:
+                root:
+                  type: disk
+                  path: /
+                  pool: default
+                eth0:
+                  type: nic
+                  name: eth0
+                  nictype: bridged
+                  parent: nestedbr0
+
+      - path: /usr/local/sbin/agent-recursive-setup
+        owner: root:root
+        permissions: "0755"
+        content: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          touch /.dockerenv
+          systemd-tmpfiles --create /etc/tmpfiles.d/agent-jail.conf
+
+          if systemctl list-unit-files incus.service >/dev/null 2>&1; then
+            systemctl enable --now incus
+          fi
+          if systemctl list-unit-files docker.service >/dev/null 2>&1; then
+            systemctl enable --now docker
+          fi
+
+          if [[ ! -e /var/lib/incus/database/global/db.bin ]]; then
+            incus admin init --preseed < /root/incus-preseed.yaml
+          fi
+
+          if systemctl list-unit-files docker.service >/dev/null 2>&1; then
+            systemctl restart docker
+          fi
+
+    runcmd:
+      # Lock password login but keep key-based SSH (set password hash to '*')
+      - [ usermod, -p, '*', agent ]
+      - [ usermod, -aG, docker, agent ]
+      - [ usermod, -aG, incus-admin, agent ]
+
+      # Write per-user direnv config after the agent account exists.
+      - [ bash, -lc, "/usr/local/sbin/agent-direnv-setup" ]
+
+      # Patch bash init files (idempotent)
+      - [ bash, -lc, "/usr/local/sbin/agent-bashrc-patch" ]
+      - [ bash, -lc, "/usr/local/sbin/agent-recursive-setup" ]
+
+      # uv: disable PATH/profile modifications by installer.
+      - [ su, -l, agent, -c, "env UV_NO_MODIFY_PATH=1 curl -LsSf https://astral.sh/uv/install.sh | sh" ]
+      # Install a managed Python and also provide `python` + `python3` shims (experimental).
+      - [ su, -l, agent, -c, "/usr/local/bin/agent-env uv python install 3.12 --default" ]
+      # Optional: make uv prefer that version globally for uv commands (writes a global .python-version)
+      - [ su, -l, agent, -c, "/usr/local/bin/agent-env uv python pin --global 3.12" ]
+
+      # nvm (per-user install).
+      - [ su, -l, agent, -c, "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash" ]
+      - [ su, -l, agent, -c, "bash -lc 'source \"$HOME/.nvm/nvm.sh\" && nvm install --lts && nvm alias default \"lts/*\"'" ]
+      # Install Codex CLI globally using that nvm node
+      - [ su, -l, agent, -c, "bash -lc 'source \"$HOME/.nvm/nvm.sh\" && npm install -g @openai/codex@latest'" ]
+      # Optional: sanity check (should not require auth)
+      - [ su, -l, agent, -c, "bash -lc 'source \"$HOME/.nvm/nvm.sh\" && codex --version'" ]
+
+      # sdkman install.
+      - [ su, -l, agent, -c, "curl -s https://get.sdkman.io | bash" ]
+      # install + set default JDK (Temurin 25 LTS) via SDKMAN
+      - [ su, -l, agent, -c, "bash -lc 'source \"$HOME/.sdkman/bin/sdkman-init.sh\" && yes | sdk install java 25-tem && sdk default java 25-tem'" ]
+
+      # Rust toolchain via rustup (no dotfile edits; minimal profile; stable default)
+      - [ su, -l, agent, -c, "bash -lc 'set -e;
+          curl -fsSL https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain stable;
+          mkdir -p \"$HOME/.local/bin\";
+          ln -sf \"$HOME/.cargo/bin/rustup\" \"$HOME/.local/bin/rustup\";
+          ln -sf \"$HOME/.cargo/bin/rustc\"  \"$HOME/.local/bin/rustc\";
+          ln -sf \"$HOME/.cargo/bin/cargo\"  \"$HOME/.local/bin/cargo\";
+          rustc -V; cargo -V
+        '" ]
+      - [ su, -l, agent, -c, "bash -lc 'set -e;
+          \"$HOME/.cargo/bin/rustup\" component add rustfmt clippy
+        '" ]
+
+      # Go toolchain from go.dev/dl (user-local install; symlink into ~/.local/bin)
+      - [ su, -l, agent, -c, "bash -lc 'set -e;
+          GO_VERSION=1.26.0;
+          ARCH=\"$(uname -m)\";
+          case \"$ARCH\" in
+            x86_64) GOARCH=amd64 ;;
+            aarch64|arm64) GOARCH=arm64 ;;
+            *) echo \"Unsupported arch: $ARCH\" >&2; exit 1 ;;
+          esac;
+          URL=\"https://go.dev/dl/go${GO_VERSION}.linux-${GOARCH}.tar.gz\";
+
+          rm -rf \"$HOME/.local/go\";
+          mkdir -p \"$HOME/.local\" \"$HOME/.local/bin\";
+          curl -fsSL \"$URL\" -o /tmp/go.tgz;
+          tar -C \"$HOME/.local\" -xzf /tmp/go.tgz;
+
+          ln -sf \"$HOME/.local/go/bin/go\"    \"$HOME/.local/bin/go\";
+          ln -sf \"$HOME/.local/go/bin/gofmt\" \"$HOME/.local/bin/gofmt\";
+          go version
+        '" ]
+
+      # Rootless Quarto install (pinned version): download .deb, extract with dpkg -x, symlink into ~/.local/bin
+      # https://nbdev.fast.ai/getting_started.html#q-why-is-nbdev-asking-for-root-access-how-do-i-install-quarto-without-root-access
+      - [ su, -l, agent, -c, "/usr/local/sbin/install-quarto-rootless" ]
+
+devices:
+  # Attach to a dedicated jail bridge network (you create agentbr0 separately).
+  eth0:
+    type: nic
+    name: eth0
+    network: agentbr0
+
+  # Workspace mount (override 'source' per container so one jail can't see another jail's work).
+  workspace:
+    type: disk
+    source: /srv/agent-jails/default-workspace
+    path: /workspace
+    shift: "true"
+```
+
 ## Footnotes
 
 [^claudecontext]: If you really insist on using an MCP-based context server, have a look at [Claude Context](https://github.com/zilliztech/claude-context). Despite the name, it isn't Claude-specific-the documentation includes instructions for using it with Codex.
