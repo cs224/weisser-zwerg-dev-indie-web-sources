@@ -605,7 +605,10 @@ config:
       - tree
       - bash-completion
       - iputils-ping
-      - libcap2-bin      
+      - libcap2-bin
+      - bubblewrap
+      - ripgrep
+      - pandoc
 
     write_files:
       # Environment wrapper (so automation can reliably load nvm/sdkman functions)
@@ -1539,6 +1542,9 @@ config:
       - direnv
       - iputils-ping
       - libcap2-bin
+      - bubblewrap
+      - ripgrep
+      - pandoc
       - openssh-client
       - acl
       - dnsmasq-base
