@@ -66,5 +66,8 @@
   "resolutions": {
     "minimist": "^1.2.7",
     "http-proxy": "^1.18.1"
+  },
+  "overrides": {
+    "liquidjs": "10.25.0"
   }
 }
