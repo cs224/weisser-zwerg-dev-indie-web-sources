@@ -86,6 +86,22 @@ Apple isn't the only one leveraging shared memory between the CPU and GPU anymor
 **\[Addendum 2025-04-30\]**: Another system to consider is [NVIDIA DGX Spark](https://www.nvidia.com/en-us/products/workstations/dgx-spark): A Grace Blackwell AI supercomputer on your desk. It is also based on 128 GB of Coherent Unified System Memory.
 It is advertised to be able to run AI models up to 200 billion parameters and when connecting two NVIDIA DGX Spark systems together to work with AI models up to 405 billion parameters.
 
+**\[Addendum 2026-03-26\]**: 
+If you want fast, reliable [tool calling + repo-scale context](https://opencode.ai/docs/models/#recommended-models), you generally end up in the "~0.6TB to ~1.1TB VRAM class" for the 600-750GB-weight models ([Kimi](https://docs.vllm.ai/projects/recipes/en/latest/moonshotai/Kimi-K2.5.html)/DeepSeek/GLM-5-FP8).
+MiniMax M2.x is the outlier: it's much smaller on disk (~230GB FP8) and explicitly documented to launch on 4 GPUs in vLLM, which makes it the most "workstation-ish" option of this group.
+Mac Studio clustering is currently the only "consumer-ish UMA cluster" path that's been shown to run 600GB+ class models at genuinely usable interactive speeds, because of RDMA over Thunderbolt 5 + a stack (MLX/Exo) built around it.
+Doing the same thing with Ryzen AI Max / Intel iGPU shared-DRAM boxes is theoretically possible, but you'll usually need too many nodes and you won't have a comparably good low-latency RDMA fabric by default, so speed tends to fall off a cliff.
+
+* Jeff Geerling: [1.5 TB of VRAM on Mac Studio - RDMA over Thunderbolt 5](https://www.jeffgeerling.com/blog/2025/15-tb-vram-on-mac-studio-rdma-over-thunderbolt-5/) The stack of Macs I tested, with 1.5 TB of unified memory, costs just shy of **$40,000**, ...
+* Malcolm Owen: [AI calculations on Mac cluster get big boosts from new RDMA support on Thunderbolt 5](https://appleinsider.com/articles/25/12/20/ai-calculations-on-mac-cluster-gets-a-big-boost-from-new-rdma-support-on-thunderbolt-5)
+
+Alternative: 
+
+* 8 × NVIDIA H200 (≈1.13TB HBM total): Example class: an [8-GPU server like Dell PowerEdge XE9680 w/ eight H200s](https://www.dell.com/en-us/blog/breaking-the-multiphysics-simulation-bottleneck) (Dell explicitly calls out "over 1.1TB of total GPU memory").
+* AMD Instinct MI300X servers; more total HBM than H200 nodes; MI300X is 192GB HBM3 per GPU. 8 × MI300X gives 1,536GB (1.5TB) HBM; Lenovo documents 8-GPU MI300X boards in servers like the [ThinkSystem SR685a V3](https://lenovopress.lenovo.com/lp1943-thinksystem-amd-mi300x-192gb-750w-8-gpu-board).
+* [Dell PowerEdge XE9680 Rack Server - AI/ML/HPC Server](https://www.newegg.com/p/N82E16859155927) **≈ $400k**
+
+
 ### NVIDIA GPUs
 
 To get started with running large language models locally, understanding your GPU's capabilities is crucial. Visit NVIDIA's [GPU Compute Capability](https://developer.nvidia.com/cuda-gpus#compute) page to learn more about their current lineup and specifications.
