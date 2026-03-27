@@ -22,6 +22,8 @@ This difference between client-driven and server-driven is one of the key concep
 
 I plan two follow-up posts: first, implement [SOGo](https://www.sogo.nu) as an add-on to our existing [Mailu](../digital-civil-rights-mailu/) installation with client-driven meeting-request processing; second, add [grommunio](https://docs.grommunio.com/admin/introduction.html) for selected users to support server-side meeting-request processing.
 
+> * [Groupware: Implementing SOGo beside Mailu behind Traefik](../groupware-sogo/)
+
 This two-step approach is necessary because grommunio has a 5 user limit, and the solution I am aiming at is a known pattern ("split delivery" / "mailhub with multiple backends"):
 treat Mailu's Postfix as the MX/gateway and routing authority, and treat grommunio as an internal delivery backend for a subset of recipients.
 More on that in the follow-up posts.
