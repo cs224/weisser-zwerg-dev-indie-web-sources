@@ -298,3 +298,75 @@ This will create the virtual environment, install the tool, run the extractor, a
 
 I hope this quick tip nugget is useful to you and improves the way you work with your ChatGPT chat history.
 With Markdown exports plus a local desktop search engine, your past conversations become a searchable knowledge base that you fully control on your own machine.
+
+## Appendix
+
+### Privacy Portal flow and changed export format
+
+At the time of writing this appendix, the older in-product export flow via `ChatGPT -> Settings -> Data Controls -> Export Data` appears to have an issue, at least for some accounts.
+In my case, this older flow used to send a confirmation email first and a later email with the download link, but then stopped doing so.
+The request looked like it was accepted in the UI, but no export-related email arrived anymore.
+
+The currently documented alternative is the Privacy Portal flow described here in the OpenAI Help Center:
+
+* [How do I export my ChatGPT history and data?](https://help.openai.com/en/articles/7260999-how-do-i-export-my-chatgpt-history-and-data)
+
+That documentation points to the Privacy Portal at:
+
+* <https://privacy.openai.com/>
+
+For me, this newer Privacy Portal flow did eventually work, but the export format had changed compared with the older `conversations.json` based export that this post originally described.
+
+The older export format looked roughly like this:
+
+* top-level `chat.html`
+* top-level `conversations.json`
+
+The newer Privacy Portal export looked more like this:
+
+* top-level `report.html`
+* category folders such as `Contact Info/`, `Financial/`, `User Profile/`, `User Online Activity/`
+* inside `User Online Activity/`, the chat data was split across files such as:
+  * `conversations-000.json`
+  * `conversations-001.json`
+  * `conversations-002.json`
+  * `conversations-003.json`
+
+So the chat content was still there, but it was no longer packaged as one simple top-level `conversations.json`.
+
+There was a second complication:
+
+* the original `slyubarskiy/chatgpt-conversation-extractor` did not fully extract source-link data from the newer export format
+* many source URLs had moved into message-level metadata structures such as `safe_urls`, `search_result_groups`, and `content_references`
+
+To recover that data more faithfully, I prepared a fork here:
+
+* <https://github.com/cs224/chatgpt-conversation-extractor>
+
+You can use it in the same general way as before, but now run it once for each split `conversations-*.json` file and write into the same output directory.
+
+Example:
+
+```bash
+# Inside the "User Online Activity" directory of the Privacy Portal export
+git clone https://github.com/cs224/chatgpt-conversation-extractor.git
+cd chatgpt-conversation-extractor
+
+uv venv .venv
+source .venv/bin/activate
+
+uv pip install -r requirements.txt
+uv pip install -e .
+
+mkdir -p output
+
+uv run python -m chatgpt_extractor ../conversations-000.json ./output --output-format markdown
+uv run python -m chatgpt_extractor ../conversations-001.json ./output --output-format markdown
+uv run python -m chatgpt_extractor ../conversations-002.json ./output --output-format markdown
+uv run python -m chatgpt_extractor ../conversations-003.json ./output --output-format markdown
+```
+
+The important part is that all runs use the same output directory so that, in the end, you get one combined Markdown tree under `./output/md`.
+
+In my tests this recovered much more of the source-link information from the newer Privacy Portal export than the unpatched upstream extractor did.
+So if you are using the new Privacy Portal export format, I recommend using that fork until the corresponding changes are available upstream.
