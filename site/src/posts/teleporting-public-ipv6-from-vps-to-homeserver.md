@@ -473,6 +473,64 @@ In addition, one single run of consecutive `:0:` blocks can be collapsed to `::`
 The same rules apply to prefixes such as `2001:db8:dead:beef::/64`.  
 If you want to see these addresses fully written out or experiment with different notations, an online helper like [IPv6 Subnet Calculator](https://www.vultr.com/resources/subnet-calculator-ipv6/) can show you the expanded form.
 
+#### Special IPv6 Ranges (Unique Local Address (ULA), Link Local, ...)
+
+The main special IPv6 ranges are these:
+
+* **Local segment only:** `fe80::/10`
+* **Private internal network:** `fc00::/7` (usually `fd00::/8`)
+* **Public Internet:** `2000::/3`
+* **Group traffic:** `ff00::/8`
+* **Host itself:** `::1`
+
+A more complete list is the following:
+
+* `::/128` — **Unspecified address**  
+  Means “no address assigned yet”. It is only used as a source address during initialization and must not be assigned to an interface.
+
+* `::1/128` — **Loopback**  
+  Equivalent to IPv4 `127.0.0.1`. Refers to the local host itself.
+
+* `fe80::/10` — **Link-local**  
+  Used automatically on a local Layer-2 segment. Not routed across routers. Required for neighbor discovery, router discovery, SLAAC, and often used even when a device also has global addresses.
+
+* `fc00::/7` — **Unique Local Address (ULA)**  
+  Private internal addressing, similar in purpose to IPv4 private ranges like `10.0.0.0/8`. In practice almost all ULA deployments use `fd00::/8`, with a 40-bit pseudo-random Global ID to reduce collision risk when networks merge. Not intended for public Internet routing.
+
+* `2000::/3` — **Global unicast**  
+  Normal public IPv6 space. Publicly routable on the Internet.
+
+* `ff00::/8` — **Multicast**  
+  One-to-many or one-to-group traffic. Replaces IPv4 broadcast in most cases; IPv6 does not have general broadcast. Scope is encoded in the address, for example link-local or site/local-scope multicast groups.
+
+* `::ffff:0:0/96` — **IPv4-mapped IPv6**  
+  Represents IPv4 addresses inside IPv6 APIs and stacks, for example `::ffff:192.0.2.1`. Mostly used internally by software, not as ordinary interface addresses.
+
+* `64:ff9b::/96` — **Well-known NAT64 prefix**  
+  Used by NAT64 systems to represent IPv4 destinations inside IPv6.
+
+* `2001:db8::/32` — **Documentation prefix**  
+  Reserved for examples, books, and documentation. Should not appear on real networks.
+
+* `2002::/16` — **6to4**  
+  Historic transition mechanism. Obsolete in practice; not used for new designs.
+
+* `::/96` and `::ffff:0:0/96`-related old compatibility forms  
+  Some older IPv4-compatible transition formats exist historically, but they are obsolete.
+
+Two details matter in real networks:
+
+1. A single interface usually has more than one IPv6 address at the same time, commonly a link-local address plus a global or ULA address.
+2. Link-local addresses are valid only on one link, so tools often need an interface/zone index, such as `fe80::1%eth0`.
+
+Common examples:
+
+* `fe80::1234` → link-local
+* `fd12:3456:789a::1` → ULA
+* `2001:db8::1` → documentation/example only
+* `2001:4860:4860::8888` → global unicast
+* `ff02::1` → all nodes on the local link
+
 ## Step 3: WireGuard tunnel between VPS and home
 
 The basic idea is simple.
