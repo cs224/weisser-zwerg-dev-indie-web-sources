@@ -2,7 +2,7 @@
 layout: "layouts/post-with-toc.njk"
 title: "Incus Recursive Jail for Codex Coding Agent"
 description: "A system for recursive Incus-based host-like environments, motivated by safer AI-agent jails, reducing 'Supply Chain Attack' risk, but also acting as a broader infrastructure pattern for isolated development and operations environments."
-seodescription: "Use recursive Incus as an infrastructure pattern for safer AI-agent jails, lower supply chain attack risk, and reproducible isolated hosts."
+seodescription: "Give every coding agent a disposable Linux workspace in seconds without risking your host, leaking secrets, or manually managing DNS, TLS, and port forwarding."
 creationdate: 2026-05-12
 keywords: codex, claude code, ai agents, ai coding agents, supply chain attacks, shadow ai, incus, system containers, sandboxing, recursive containers, ipv6, ipv4, dns, mkcert
 date: 2026-05-12
