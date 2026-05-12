@@ -20,14 +20,14 @@ The first and second versions mainly focused on reducing security risk by runnin
 That is still one of the key goals of the version described here, but I now think this goal is too narrow.
 
 If I can build a recursive Incus structure, the same idea becomes useful for many other scenarios.
-For example, it could support blue green deployments, backup and restore testing, and the segmentation of services on a [home server](../home-server-infrastructure/) into related groups.
+For example, it could support blue-green deployments, backup and restore testing, and the segmentation of services on a [home server](../home-server-infrastructure/) into related groups.
 Each group could then be managed almost like an independent machine.
 
 By "recursive Incus structure", I mean a setup where one Incus container can run Incus again and can start its own child containers.
 In other words, the outer host starts a container, and that container becomes a smaller host for more containers below it.
 
 One concrete problem appeared when I used the improved second profile, `agent-jail-recursive-profile.yaml`, while developing [Web Application Architecture Experiment: FastHTML Plus](../software-engineering-fasthtml-plus).
-I could do the development work inside the jail, but the setup broke when I used the Incus based integration test environment.
+I could do the development work inside the jail, but the setup broke when I used the Incus-based integration test environment.
 
 That integration test environment starts an Incus child container inside the `agent-jail` container.
 The child container is named `itest`.
@@ -49,7 +49,7 @@ This makes sure that the integration works for general network protocols, not on
 
 > SSH is a good test here because it checks routing, name resolution, port access, and identity handling in a way that is independent from the web application stack.
 
-As mentioned above, this structure could also help when Codex manages a blue green deployment.
+As mentioned above, this structure could also help when Codex manages a blue-green deployment.
 In that scenario, the outer `agent-jail` container is the root of the hierarchy, and Codex runs inside it.
 Below that root, there are two containers, `green` and `blue`.
 One of them, for example `green`, runs the production environment.
@@ -136,7 +136,7 @@ So as a summary:
 > We are building a system for recursive Incus-based host-like environments, originally motivated by safer AI-agent jails, but intended as a broader infrastructure pattern for isolated yet practical development and operations environments.
 > The success condition is that workloads deployed deep in the hierarchy still feel reachable and usable exactly like workloads on a normal host.
 >
-> It is meant to be a infrastructure model where each recursive node can:
+> It is meant to be an infrastructure model where each recursive node can:
 >
 >  - launch child containers
 >  - provide host-like networking to them
@@ -163,6 +163,17 @@ A container should be able to behave like a small host.
 > It means that the container should provide enough host behavior for practical development and operations work.
 > This includes process isolation, local services, child containers, routing, DNS names, certificates, and access through normal tools such as `ssh`, `curl`, and a browser.
 
+> For orientation, the recurring terms in this post are:
+>
+> * **Outer host**: the real machine above the recursive hierarchy
+> * **Helper**: the supporting infrastructure surface that publishes forest DNS state and brokers certificate signing
+> * **Root hierarchy-aware container**: the first recursive host below the outer host
+> * **Non-root hierarchy-aware container**: a recursive host deeper in the hierarchy
+> * **Plain workload**: an ordinary application or service container at the leaves
+> * **Forest view**: the merged naming and node-identity view assembled upward across the hierarchy
+> * **CLAT sidecar**: the local per-node translator that lets node-local IPv4-only workloads enter the recursive IPv6 transport
+> * **Trust anchor**: the singular host `mkcert` root from which certificate trust ultimately flows
+
 ### Recursive Host Model
 
 This system distinguishes between three container roles:
@@ -186,6 +197,21 @@ Within the group of hierarchy-aware containers, the **root hierarchy-aware conta
 It is the interface to the outside world and therefore has additional boundary responsibilities.
 For example, it may need to connect the recursive hierarchy to the outer network, provide translation services such as NAT64 and DNS64, and publish selected names or routes upward.
 The **non-root hierarchy-aware containers** reuse the same basic model, but they do not own the outer boundary of the whole hierarchy.
+
+> A minimal concrete shape looks like this:
+>
+> ```text
+> outer host
+> ├─ helper infrastructure
+> │  ├─ forest-dns.incus
+> │  ├─ forest-ca.incus
+> │  ├─ apt-cache.incus
+> │  └─ images-cache.incus
+> └─ c0                                        root hierarchy-aware container
+>    └─ c0-2                                   non-root hierarchy-aware container
+>       └─ c0-2-1                              non-root hierarchy-aware container
+>          └─ fasthtml-plus-integration-test   plain workload
+> ```
 
 ### Host-Like Reachability
 
@@ -220,7 +246,7 @@ In that sense, recursion here is not "everything knows everything", but a chain 
 > This is similar to how many networked systems scale.
 > A router does not need to know every process behind the next router.
 > A DNS parent zone does not need to know every implementation detail of a delegated child zone.
-> The same idea appies here.
+> The same idea applies here.
 > Each level should provide enough information to make the next hop work, while keeping its internal structure mostly local.
 
 ## Isolation And Controlled Sharing
@@ -269,7 +295,7 @@ This keeps one source of truth while exposing only a selected interface to that 
 It also makes it easier to remove access again.
 If a container should no longer be able to use a capability, the delegated interface can be removed without searching for copied secrets inside the container filesystem.
 
-> Delegation is still not risk free.
+> Delegation is still not risk-free.
 > A process that can access an SSH agent socket can ask the agent to sign authentication requests.
 > That means the socket itself must be treated as sensitive.
 > The benefit is that the private key material stays outside the container, and the exposed interface can be controlled more directly than copied key files.
@@ -378,7 +404,7 @@ when an application already performs AAAA lookups and can speak IPv6, the root c
 
 #### On The Root Hierarchy-Aware Container
 
-At the **root hierarchy-aware container**, the system provides the PLAT side of the design through DNS64 and NAT64.
+At the **root hierarchy-aware container**, the system provides the overall provider-side translation role of the design through DNS64, root-edge NAT64 translation, and stateful IPv4 egress.
 This is what allows descendants to reach an IPv4-only destination while the recursive transport itself stays IPv6-only.
 
 > That was one of the practical bootstrap motivations here: if a dependency endpoint such as [GitHub](https://github.com/orgs/community/discussions/10539) is only reachable through IPv4 from the recursive hierarchy's point of view, the root must still make it reachable without forcing every lower level to become dual-stack.
@@ -390,6 +416,7 @@ The concrete root-edge roles are currently:
 * [`dnsmasq`](https://dnsmasq.org/doc.html) as the lightweight node-local DNS/DHCP/RA layer on the root's local LAN surfaces and as the first DNS hop seen by local clients
 * [`Unbound`](https://nlnetlabs.nl/projects/unbound/about/) as the DNS64-capable resolver that synthesizes AAAA records from A records when no usable AAAA exists
 * [`TAYGA`](https://github.com/apalrd/tayga) as the root-edge translator component that takes traffic sent to those synthetic IPv6 destinations and translates it back toward IPv4 at the edge
+* stateful IPv4 masquerading on the external egress path, so that translated traffic can actually leave the root toward the public IPv4 network
 * root-owned forwarding and firewall policy around that translator so that internal recursive traffic and true external egress are kept distinct
 
 Conceptually, the root-side path is:
@@ -405,6 +432,12 @@ Conceptually, the root-side path is:
 
 So DNS64 rewrites the naming view so that an IPv6-side client can treat an IPv4-only destination as if it had an IPv6 address.
 NAT64 is the piece that then makes that synthetic address actually usable.
+
+> The `64:ff9b::/96` prefix here is just the standard well-known example.
+> If NAT64 must also reach private IPv4 ranges in a lab or home-server setup, a network-specific NAT64 prefix should be used instead.
+> TAYGA's own documentation calls out the same caveat in its discussion of RFC 6052 and the well-known prefix:
+> [TAYGA README: Mapping IPv4 into IPv6](https://github.com/openthread/tayga#readme).
+
 Which IPv4 destinations are allowed is then a firewall and policy question at the root edge, not a DNS64 question.
 
 #### Why Root DNS64/NAT64 Is Not Enough
@@ -437,7 +470,7 @@ Only after that does the root-edge NAT64 step come into play when the final dest
 
 #### On Other Hierarchy-Aware Containers
 
-On every **non-root hierarchy-aware container**, the accepted design is not same-namespace CLAT on the main recursive uplink path.
+On every **non-root hierarchy-aware container**, the accepted design does not use same-namespace CLAT on the main recursive uplink path.
 It is one dedicated CLAT sidecar per node in a separate routing namespace.
 In other words, the node is split into its normal main namespace, which keeps the recursive IPv6 uplink and router path clean, and one separate CLAT sidecar namespace, which takes over the local IPv4 compatibility work.
 
@@ -520,7 +553,7 @@ The helper-side DNS does not become useful to the host automatically.
 The host still needs to be taught that `.incus` belongs to that recursive DNS view.
 In practice this means integrating the helper container's DNS service into the host resolver configuration, for example through `systemd-resolved`.
 
-Conceptually, the host keeps using its normal resolver for everything else, but sends `.incus` lookups to the helper container instead.
+Conceptually, the goal is to steer `.incus` lookups toward the helper-side DNS without replacing the host's whole resolver path.
 
 An example `systemd-resolved` configuration can look like this:
 
@@ -532,6 +565,8 @@ Domains=~incus
 
 In that example, `10.227.241.53` would be the helper container's address from the host's point of view.
 The important idea is that the host resolver is explicitly told: "for `.incus`, ask the helper-side recursive DNS."
+This is a simple global drop-in example, not the only possible `systemd-resolved` shape.
+If stricter per-link scoping is required, the same intent can also be expressed through link-specific resolver configuration rather than through one global `DNS=` entry.
 
 #### Naming Objects And Stable Identities
 
@@ -711,6 +746,22 @@ The trust anchor is singular: the host [`mkcert`](https://github.com/FiloSottile
 The helper side may broker signing behavior, but it must not invent a second independent forest CA.
 Instead, the helper-side signer consumes host-derived trust material staged into its state and exposes only a narrow signing and root-CA retrieval interface downward through the same stable helper API surface, currently `http://forest-ca.incus:9080`.
 
+> That distinction matters operationally as well.
+> The public `rootCA.pem` can be distributed downward so nodes can install trust, but the private `rootCA-key.pem` is the actual signing authority and should not be copied into ordinary workload containers.
+> If the helper-side signer holds that private signing material, then helper compromise must be treated as compromise of the local `mkcert` CA itself.
+> In this design that trade-off is accepted, because the helper stays outside the plain workload hierarchy and the whole stack is intended to run on one trusted host.
+
+For the main materials in that flow, the rough boundary is:
+
+| Material | Where it normally lives | What compromise means |
+| --- | --- | --- |
+| host `rootCA.pem` | helper API responses and node-local trust stores | trust can be extended downward, but this alone does not allow signing |
+| host `rootCA-key.pem` or equivalent staged signing material | helper-side signer state only | compromise of the local `mkcert` CA itself |
+| service private key | hierarchy-aware node, and plain workload only if that workload terminates TLS | impersonation of that service within the issued SAN family |
+| CSR | hierarchy-aware node and helper signing request path | requested names and public key are exposed, but not the private key |
+| issued certificate | hierarchy-aware node and plain workload deploy path | usable only together with the matching private key |
+| published DNS names | helper-side publication state and resolvers | clients may be directed to the wrong target, but DNS alone does not grant the private key |
+
 That creates a split between naming authority and signing authority:
 
 * the naming view is assembled recursively through local registration and upward merge
@@ -726,6 +777,10 @@ Conceptually, the downward certificate flow is:
 * DNS publication stays stricter than certificate overlap: short aliases must still be globally unambiguous to be published in DNS, but this implementation deliberately tolerates some SAN overlap, so the certificate SAN family may be broader than the currently published DNS alias set
 * the helper-side signer returns a certificate chained to the same host trust root
 * the node then deploys that certificate downward into the actual workload that needs it
+
+> That means published DNS and certificate SANs do not carry the same exclusivity guarantee in this local lab model.
+> Published DNS remains authoritative for which short names are currently live and globally unambiguous, while SANs are allowed to remain broader and may overlap across certificates.
+> So a SAN entry by itself should not be read here as a strong multi-tenant ownership claim over a host-visible `.incus` name.
 
 This is why certificate trickle-down is a real protocol rather than just ordinary resolver use.
 The trust root and the signing decision actually move through a controlled interface.
@@ -765,13 +820,13 @@ The node fetches the root CA for `mkcert -install`, submits CSRs upward, and rec
 >
 > * the hierarchy-aware node receives the signed certificate
 > * it keeps the host-like `mkcert` workflow for itself
-> * and it copies the resulting cert/key files downward into the plain workload that actually terminates TLS
+> * and, if a plain workload actually terminates TLS, it deploys the resulting cert/key files downward into that workload
 >
 > So the recursive certificate flow is asymmetric by design:
 >
 > * trust roots and issued certs travel downward
 > * CSRs and signing requests travel upward
-> * the private key stays local to the hierarchy-aware node that requested the certificate
+> * the private key is generated on the hierarchy-aware node and is never sent to the helper-side signer, even if it is later deployed into a plain workload that terminates TLS
 
 #### Host-Like Node Versus Plain Workload
 
@@ -827,14 +882,15 @@ If something should become part of the product, it should either live on the gen
 
 ### Separation Of Static Intent And Dynamic Runtime State: Code-Only Runtime Packages
 
-Generator-first does not mean that everything is frozen into static YAML; it has also dynamic runtime behavior.
+Generator-first does not mean that everything is frozen into static YAML; the system also has dynamic runtime behavior.
 Some parts of the system are inherently dynamic:
 helper-side DNS and certificate handling, node-local child discovery and reconciliation, root-edge NAT64 and CLAT actions, and local child-profile materialization all need software that runs inside the live hierarchy.
 
 The durable declared shape and the live evolving state are treated as different things.
 
 * The static side contains the intended configuration: templates, metadata, rendered provisioning files, profile blobs, and versioned runtime artifacts with known hashes.
-* The dynamic side consists of: recursive naming merges, helper publication state, node-local child registries, local topology discovery, installed runtime release directories, and per-instance launch scratch are all live runtime products.
+* The dynamic side consists of recursive naming merges, helper publication state, node-local child registries, local topology discovery, installed runtime release directories, and per-instance launch scratch.
+  These are all live runtime products.
   > Concretely, these are things such as:
   >
   > - recursive naming merges: the currently merged naming view a node computes from its own local records and the exported views of its children
@@ -884,6 +940,16 @@ The important modularity should therefore be visible in the generated artifact t
 The broader point is reproducibility.
 If a generated incus profile (cache, helper, root, or recursive-child) behaves differently, the first question should be whether the generated artifacts differ.
 That is a much clearer debugging model than having to guess which live mutation or implicit host state changed last time.
+
+### Success Checklist
+
+At a practical level, the concepts above are only successful if they produce outcomes like these:
+
+* the host-equivalent environment can `ssh c0-2-1.incus`
+* the host-equivalent environment can open `https://auth.fasthtml-plus-integration-test.incus`
+* a deep plain workload can still reach IPv4-only package or service endpoints through the CLAT and root-edge translation path
+* short DNS aliases become visible only after the local registration, upward merge, and helper publication path has completed
+* generated artifacts can be inspected and diffed before deployment instead of being hidden inside long-lived host mutation
 
 ## Conclusion
 
