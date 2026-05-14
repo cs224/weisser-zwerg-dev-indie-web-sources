@@ -144,6 +144,44 @@ So as a summary:
 >  - participate in a certificate/trust model
 >  - be reachable from above by normal tools like ssh, curl, browsers, and deployment scripts
 
+### Code Repository
+
+The code for this blog-post series lives in the public GitHub repository:
+
+- https://github.com/cs224/recursive-incus-stack-generator
+
+The blog-post series explains the concepts and design decisions, while the repository contains the generator-first implementation and runtime packages that make those ideas work.
+
+### Unique Value Proposition
+
+While the ideas elaborated in this blog-post series go beyond "coding agent jails", this is still one of the main driving factors behind it.
+In a single sentence, the unique value proposition could be stated as:
+
+> Give every coding agent a disposable Linux workspace in seconds without risking your host, leaking secrets, or manually managing DNS, TLS, and port forwarding.
+
+The best target audience is teams adopting terminal-based AI coding agents who need stronger isolation than "run it on my laptop" but still want a normal Linux development feel.
+
+> For platform teams rolling out AI coding agents: give every agent a disposable Linux workspace that feels local, supports child services, and exposes results through DNS/TLS without touching the developer's real machine.
+
+Who might want to use this solution first?
+
+* teams evaluating Codex-like agents for real code changes
+* teams using Docker/Incus/LXC already
+* teams with integration-test environments
+* teams building self-hosted software
+
+It might work well for teams that say:
+
+> We want AI agents with command execution and network access, but we do not want them running freely on developer laptops or shared servers; we need a bounded environment with auditable setup and limited blast radius.
+
+> We want to let AI agents do real engineering work, but we do not trust them directly on developer laptops or production-like internal networks.
+
+This gives AI coding assistants a separate, disposable computer-like workspace where they can work almost as if they were on your real laptop, but without being able to damage your real laptop or access things they should not touch.
+
+It is:
+
+> Recursive Linux workspaces for AI agents that need to run, test, spawn services, and expose results safely.
+
 ### Different Readers and Different Levels of Prior Knowledge
 
 Different readers have different levels of prior knowledge, so it is hard to write one guide that fits everyone.
@@ -568,6 +606,10 @@ The important idea is that the host resolver is explicitly told: "for `.incus`, 
 This is a simple global drop-in example, not the only possible `systemd-resolved` shape.
 If stricter per-link scoping is required, the same intent can also be expressed through link-specific resolver configuration rather than through one global `DNS=` entry.
 
+> This host-facing IPv4 bootstrap detail should not be confused with the address family used for shared infrastructure identities inside the recursive hierarchy.
+> The outer host may use the helper's host-visible IPv4 to find the helper-side DNS surface, but hierarchy-aware nodes deeper in the tree should consume names such as `forest-ca.incus`, `forest-dns.incus`, `apt-cache.incus`, and `images-cache.incus` through recursively reachable IPv6 answers instead.
+> The intended direction is to keep the managed bridge in its normal automatic mode for ordinary containers while giving the helper and cache one extra stable IPv6 each, derived at launch from the bridge's current `/64`, for example at `...::53` and `...::54`.
+
 #### Naming Objects And Stable Identities
 
 There are two main naming object types in this system:
@@ -905,7 +947,7 @@ They should be thought of like ordinary software projects that are deployed onto
 The important boundary is that these runtime packages consume generated metadata, rendered configuration, and current local runtime state, but they do not own the generator's templating surface.
 That separation keeps the system easier to reason about: static intent is regenerated, dynamic state is reconciled, and neither should quietly become the other.
 
-> In the current design, runtime-derived launch state belongs in machine-local areas such as `/var/lib/recursive-incus-profile-runtime/...`, while steady-state software is installed under versioned runtime paths such as `/opt/recursive-forest-runtime/releases/...` and activated through stable `current` links.
+> In the current design, runtime-derived launch state belongs in machine-local areas such as `/var/lib/recursive-incus-stack-runtime/...`, while steady-state software is installed under versioned runtime paths such as `/opt/recursive-forest-runtime/releases/...` and activated through stable `current` links.
 
 Static intent stays generator-owned.
 Dynamic behavior lives in explicit runtime software.
@@ -965,3 +1007,471 @@ That is why this rewrite uses a generator-first model, explicit runtime packages
 The goal is not only to make the hierarchy work, but to make it inspectable, reproducible, and operable without turning it into an opaque pile of host-bound mutations.
 
 The next posts will move from these concepts into the actual technical backbone.
+
+## Appendix
+
+### Spin It Up
+
+You start by running the generator with a name for the generated materialization, such as `rip-slim`, which stands for recursive-incus-profile-slim:
+
+```bash
+uv run recursive-incus-profile generate rip-slim --enable-cache
+# generated materialization rip-slim
+# profiles: rip-slim-helper-profile, rip-slim-root-profile, rip-slim-cache-profile
+```
+
+This will destructively regenerate the whole contents of `./rip-slim/content`.
+
+> When you run the generated host-side helper scripts as a normal user instead of root, their local runtime scratch does not go into `/var/lib/recursive-incus-stack-runtime/...`, but instead into a user-writable state directory such as `~/.local/state/recursive-incus-stack-runtime/...`.
+>
+> The same idea also applies to the staged static bootstrap payloads used by live helper and root instances. See below for details.
+
+
+The content in `./rip-slim/content` is meant for human inspection, but that will be the topic of future blog posts.
+Here we only want to make use of the generated environment.
+
+Next, launch a root hierarchy-aware container directly from the generated host-side helper scripts.
+Here I use the root name `agent1`:
+
+```bash
+bash ./rip-slim/content/scripts/launch.sh agent1 --recreate
+# {
+#   "launched": {
+#     "edge_mode": "routed-static",
+#     "instance_name": "agent1",
+#     "node_name": "agent1",
+#     "owned_subtree": "fd00:1000::/20",
+#     "root_slot": 1,
+#     "routed_ipv6": "fd42:5e3a:818a:46d7::101/128",
+#     "uplink_interface": "eth0",
+#     "uplink_ipv4": "10.227.241.201",
+#     "uplink_ipv6": "fd42:5e3a:818a:46d7::101"
+#   },
+#   "profile": "rip-slim-agent1-root-profile"
+# }
+```
+
+> If you like you can watch the install process by:
+> ```bash
+> incus exec agent1 -- tail -f /var/log/cloud-init-output.log
+> incus exec agent1 -- cloud-init status --long
+> ```
+>
+> And later inspect the container:
+> ```bash
+> incus config show agent1 --expanded
+> incus config show agent1 --expanded | yq '.devices.workspace'
+> ```
+
+
+This host-side step should ensure the generated helper and cache infrastructure first and then create the root hierarchy-aware container `agent1`.
+With the current materialization name, the expected instance names are `rip-slim-helper`, `rip-slim-cache`, and `agent1`.
+
+> Behind the scenes, `launch.sh` delegates to the generated `rip_runtime.py` helper and then performs a sequence roughly like this:
+>
+> * create or update the generated Incus profiles with commands such as `incus profile create ...` and `incus profile edit ...`
+> * create the cache and helper containers with commands such as `incus init <image> rip-slim-cache --no-profiles --profile rip-slim-cache-profile --storage default` and `incus init <image> rip-slim-helper --no-profiles --profile rip-slim-helper-profile --storage default`
+> * start those containers with `incus start ...`
+> * wait for first-boot cloud-init with `incus exec <name> -- cloud-init status --wait`
+> * wait for the generated bootstrap services with checks such as `incus exec rip-slim-cache -- systemctl is-active rip-cache-bootstrap.service` and `incus exec rip-slim-helper -- systemctl is-active rip-helper-bootstrap.service`
+> * push runtime artifacts and cache TLS files where needed with helper calls that boil down to `incus exec <name> -- install -d ...` and `incus file push ...`
+> * install and activate the generated runtime software inside the helper with `incus exec rip-slim-helper -- /usr/local/sbin/rip-install-recursive-forest-runtime ...`
+> * publish the stable helper/cache infrastructure records into the helper-side forest view before any root starts, so names such as `forest-ca.incus`, `forest-dns.incus`, `apt-cache.incus`, and `images-cache.incus` are already resolvable from the root
+> * stage the root bootstrap runtime artifacts into stable host runtime state, for example under `~/.local/state/recursive-incus-stack-runtime/rip-slim/bootstrap/...` when running as a normal user
+> * stage a stable per-instance host workspace source, for example under `~/.local/state/recursive-incus-stack-runtime/rip-slim/instances/agent1/workspace/`, and mount that into the root as `/workspace`
+> * create the derived root profile for that concrete root name and then create the root container with a command such as `incus init <image> agent1 --no-profiles --profile rip-slim-agent1-root-profile --storage default`
+> * mount those staged bootstrap artifacts into the root at the stable in-container path `/opt/incus-agent-jail/artifacts`
+> * start `agent1`, wait again for `cloud-init status --wait`, and install the same runtime software inside it with `incus exec agent1 -- /usr/local/sbin/rip-install-recursive-forest-runtime ...`
+>
+> After that, the launched root is ready for the next recursive steps and can also publish its own merged naming view upward into the helper-side forest state.
+
+You can confirm that with:
+
+```bash
+incus list
+```
+
+For example, on my machine at this point it looks like this:
+
+```txt
++---------------------+---------+-----------------------+------------------------------------------------+-----------------+-----------+
+|        NAME         |  STATE  |         IPV4          |                      IPV6                      |      TYPE       | SNAPSHOTS |
++---------------------+---------+-----------------------+------------------------------------------------+-----------------+-----------+
+| agent1              | RUNNING | 192.0.2.1 (nat64)     | fd42:5e3a:818a:46d7::101 (eth0)                | CONTAINER       | 0         |
+|                     |         | 10.227.241.201 (eth0) | fd00:1000::1 (recbr0)                          |                 |           |
+|                     |         | 10.203.0.1 (incusbr0) | fd00:1000:0:3::1 (incusbr0)                    |                 |           |
+|                     |         |                       | fd00:1000:0:1::1 (nat64)                       |                 |           |
++---------------------+---------+-----------------------+------------------------------------------------+-----------------+-----------+
+```
+
+> The exact addresses will vary from host to host, but the interface roles should look the same.
+> In that root row:
+>
+> * `eth0` is the parent-facing uplink of the root hierarchy-aware node
+>   * its IPv6 address such as `fd42:...::101` is the routed `/128` by which the root is reached from above
+>   * its IPv4 address such as `10.227.241.201` is the companion routed IPv4 host address on that same uplink
+> * `recbr0` is the root's own recursive local bridge
+>   * its IPv6 address such as `fd00:1000::1` is the router-style anchor of the root's local recursive `/64`
+> * `incusbr0` is the nested Incus workload bridge inside the root
+>   * its IPv4 address such as `10.203.0.1` is the plain workload-side IPv4 gateway
+>   * its IPv6 address such as `fd00:1000:0:3::1` is the plain workload-side IPv6 gateway
+> * `nat64` is the root-edge translation interface used by the TAYGA-based NAT64 step
+>   * its IPv4 address such as `192.0.2.1` is the translator-side IPv4 address from the synthetic NAT64 IPv4 pool
+>   * its IPv6 address such as `fd00:1000:0:1::1` is the translator-side IPv6 anchor used together with the configured NAT64 prefix
+>
+> So the short reading is:
+> `eth0` reaches upward, `recbr0` is the root's own recursive local realm, `incusbr0` serves plain nested workloads, and `nat64` provides the root-edge IPv6-to-IPv4 translation surface.
+
+#### SSH Test Drive
+
+For a quick SSH test drive, the generated materialization already records which recursive admin private key path it selected for the root and deeper recursive descendants.
+You can inspect that first and then use it directly against the root's recursive IPv6 address:
+
+```bash
+jq -r '.recursive_admin_key_kind, .recursive_admin_private_key_path' ./rip-slim/content/rip-slim.json
+
+SSH_KEY="$(jq -r '.recursive_admin_private_key_path' ./rip-slim/content/rip-slim.json)"
+
+ssh -6 \
+  -F /dev/null \
+  -o BatchMode=yes \
+  -o IdentitiesOnly=yes \
+  -o UserKnownHostsFile=/dev/null \
+  -o StrictHostKeyChecking=no \
+  -i "$SSH_KEY" \
+  admin@fd00:1000::1
+```
+
+> For the root, both the parent-facing `eth0` IPv6 and the recursive root address on `recbr0` can work.
+> For this appendix it is nicer to use the recursive address such as `fd00:1000::1`, because that stays more consistent with the later recursive addressing model.
+> The `incusbr0` and `nat64` addresses are not the intended normal SSH surface here.
+>
+> The recursive admin SSH contract applies to the root hierarchy-aware container and deeper recursive descendants, not to the helper or cache containers.
+>
+> The current generator prefers the local key material from `uv run recursive-incus-profile init` when that exists and falls back to the Vagrant insecure key only when no local key is available.
+>
+> The active recursive admin key always uses the same canonical locations:
+>
+> * public key: `~/.local/state/recursive-incus-stack-runtime/ssh/id_key_recursive_admin.pub`
+> * private key: `~/.local/state/recursive-incus-stack-runtime/ssh/id_key_recursive_admin`
+>
+> So on a machine with local key material, `recursive_admin_key_kind` will typically be `local-generated` and the selected private key path will point at `~/.local/state/recursive-incus-stack-runtime/ssh/id_key_recursive_admin`.
+> On a machine without any local key yet, `generate` fetches the published Vagrant fallback key material from `https://raw.githubusercontent.com/hashicorp/vagrant/main/keys` and installs it into those same canonical paths, so `recursive_admin_key_kind` becomes `vagrant-fallback` while the active key paths stay the same.
+> That Vagrant key is intentionally not a secret and is only meant as a convenient bootstrap/test-drive fallback.
+
+> If you want to opt into a local host-specific recursive admin key explicitly, run:
+>
+> ```bash
+> uv run recursive-incus-profile init
+> ```
+>
+> In the current implementation, `init` only makes sure that canonical local key material exists:
+>
+> * the public key at `~/.local/state/recursive-incus-stack-runtime/ssh/id_key_recursive_admin.pub`
+> * the matching private key at `~/.local/state/recursive-incus-stack-runtime/ssh/id_key_recursive_admin`
+>
+> On a clean machine, `init` generates a new host-specific local key pair there.
+>
+> If you want to steer that state explicitly, the current CLI also supports:
+>
+> * `uv run recursive-incus-profile init --reinit`
+>   force a fresh generated local key into the canonical paths
+> * `uv run recursive-incus-profile init --vagrant`
+>   force the published Vagrant fallback key material into the canonical paths
+> * `uv run recursive-incus-profile init --clean`
+>   remove the canonical recursive admin key files again
+>
+> The important relationship between `init` and `generate` is:
+>
+> * `init` is optional
+> * if `init` was run before, `generate` prefers that local key for the recursive root and deeper recursive descendants
+> * if `init` was not run and no canonical local key exists, `generate` fetches the published Vagrant fallback key material and installs it into those same canonical paths instead
+> * that means the rest of the generated system only ever has to look at one active-key location contract, regardless of whether the current key came from `init` or from the Vagrant fallback
+>
+> If you prefer your own key instead, you can override the recursive admin public key during generation, for example with `--recursive-admin-authorized-key-file ...`.
+
+#### DNS Integration
+
+Once the helper is up, the host still has to be taught that `.incus` belongs to the helper-side DNS view.
+For a quick test drive on a host using `systemd-resolved`, first inspect the helper's host-visible IPv4 address:
+
+```bash
+incus list rip-slim-helper
+```
+
+Then add a small persistent resolver drop-in on the host, for example at `/etc/systemd/resolved.conf.d/50-incus.conf`:
+
+```txt
+[Resolve]
+DNS=10.227.241.53
+Domains=~incus
+```
+
+In that example, `10.227.241.53` is simply the helper container's IPv4 address from the host's point of view.
+If you do not want to write that file by hand, the same drop-in can be generated directly from the current helper state like this:
+
+```bash
+sudo install -d /etc/systemd/resolved.conf.d && printf '[Resolve]\nDNS=%s\nDomains=~incus\n' "$(incus list rip-slim-helper -f json | jq -r '.[0].state.network.eth0.addresses[] | select(.family=="inet" and .scope=="global").address')" | sudo tee /etc/systemd/resolved.conf.d/50-incus.conf >/dev/null
+```
+
+After writing that file, restart the resolver:
+
+```bash
+sudo systemctl restart systemd-resolved
+```
+
+> The important mechanics are:
+>
+> * `DNS=...` points the host resolver at the helper-side DNS service
+> * `Domains=~incus` tells `systemd-resolved` that `.incus` is a routing-only domain handled there
+> * this is persistent across reboots, unlike one-off `resolvectl dns ...` commands
+>
+> In the current host-facing bootstrap path, the helper is intentionally pinned to host ID `53` on the parent bridge, so on the common `10.227.241.0/24` host bridge it becomes `10.227.241.53`.
+> The cache is likewise pinned to host ID `54`, which is why the corresponding host-visible bridge IPv4 becomes `10.227.241.54`.
+>
+> The intended in-hierarchy contract is different:
+> names such as `forest-ca.incus`, `forest-dns.incus`, `apt-cache.incus`, and `images-cache.incus` should ideally resolve for deeper hierarchy-aware nodes to recursively reachable IPv6 answers instead of to those top-level host-bridge IPv4 addresses.
+> The direction for that is to keep the managed bridge in its normal automatic mode for ordinary containers while giving the helper and cache one extra stable IPv6 each, derived dynamically at launch from the bridge's current `/64`, for example at `...::53` and `...::54`.
+>
+> If you recreate the helper container and host-side `.incus` names do not appear immediately afterwards, force the root to republish its merged registration view upward once:
+>
+> ```bash
+> incus exec agent1 -- bash -lc '/usr/local/bin/recursive-host-runtime full-sync-children --meta /etc/incus-agent-jail/meta.json --observe-live --apply-routes --prune-missing'
+> ```
+>
+> That is the same primitive the hierarchy-aware node normally uses internally for child discovery, local state recomputation, and root-to-helper publication. Running it manually from the host is therefore a simple way to trigger a refresh after helper-side churn.
+
+You can then test the integration directly from the host with:
+
+```bash
+resolvectl query agent1.incus
+resolvectl query apt-cache.incus
+resolvectl query images-cache.incus
+ping agent1.incus
+ssh -6 -F /dev/null -o BatchMode=yes -o IdentitiesOnly=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $HOME/.local/state/recursive-incus-stack-runtime/ssh/id_key_recursive_admin admin@agent1.incus
+```
+
+#### Recursive Containers
+
+Now you can let the root act like a smaller host and create the first recursive child below it.
+Here I use the names:
+
+* `agent1-1`
+* `agent1-1-1`
+
+Start by creating the first recursive child from inside `agent1` (you can also use SSH and execute it locally there):
+
+```bash
+incus exec agent1 -- bash -lc 'recursive-host-runtime launch-recursive-child --child-name agent1-1 --recreate --timeout 900'
+```
+
+> You can watch the install from another shell in the host:
+> ```bash
+> incus exec agent1 -- incus exec agent1-1 -- tail -f /var/log/cloud-init-output.log
+> incus exec agent1 -- incus exec agent1-1 -- cloud-init status --long
+> ```
+
+Then create the next recursive level from inside `agent1-1`:
+
+```bash
+incus exec agent1 -- incus exec agent1-1 -- bash -lc 'recursive-host-runtime launch-recursive-child --child-name agent1-1-1 --recreate --timeout 900'
+```
+
+> You can watch the install from another shell in the host:
+> ```bash
+> incus exec agent1 -- incus exec agent1-1 -- incus exec agent1-1-1 -- tail -f /var/log/cloud-init-output.log
+> incus exec agent1 -- incus exec agent1-1 -- incus exec agent1-1-1 -- cloud-init status --long
+> ```
+
+
+> `launch-recursive-child` is the finite local child-bootstrap path.
+> It allocates the child metadata, creates the child instance locally, pushes the runtime artifacts it needs, waits for first boot, and leaves the child in the same host-like role as its parent.
+>
+> After those launches, the normal product path is that the installed child watcher notices the new instances automatically.
+> That watcher runs as `incus-agent-jail-child-watch.service` and listens to the local Incus lifecycle stream through `incus monitor --type=lifecycle --format=json`.
+> A periodic `incus-agent-jail-child-sync.timer` also exists as a repair path.
+>
+> The direct parent usually notices a freshly launched recursive child quickly, because it watches its own local Incus daemon.
+> But a deeper child does not generate one magical event that updates every ancestor at once.
+> A node such as `agent1-1-1` first has to be merged into `agent1-1`.
+> Only after that does `agent1` learn about the updated child state and republish its own merged root view upward to the helper.
+> So for deeper hierarchies there can be a propagation delay until the next higher-level sync cycle runs.
+>
+> In other words, each hierarchy-aware node only watches its own local Incus daemon and only publishes its own merged view upward.
+> That is why first-level names may appear almost immediately, while deeper recursive names can show up a little later in the normal steady state.
+>
+> So in the intended steady state you should not need to start the sync service manually after every child launch.
+> If you do not want to wait for that higher-level propagation while testing, you can still force it explicitly like this:
+>
+> ```bash
+> incus exec agent1 -- incus exec agent1-1 -- bash -lc 'systemctl start incus-agent-jail-child-sync.service'
+> incus exec agent1 -- bash -lc 'systemctl start incus-agent-jail-child-sync.service'
+> ```
+
+At that point the canonical recursive names should be:
+
+* `agent1.incus`
+* `agent1-1.agent1.incus`
+* `agent1-1-1.agent1-1.agent1.incus`
+
+And because this small hierarchy is still globally unambiguous, the shorter aliases will typically also work:
+
+* `agent1-1.incus`
+* `agent1-1-1.agent1-1.incus`
+* `agent1-1-1.incus`
+
+You can test the published names from the host with:
+
+```bash
+resolvectl query agent1-1.agent1.incus
+resolvectl query agent1-1.incus
+resolvectl query agent1-1-1.agent1-1.agent1.incus
+resolvectl query agent1-1-1.agent1-1.incus
+resolvectl query agent1-1-1.incus
+```
+
+And then verify that SSH works there too:
+
+```bash
+ssh -6 -F /dev/null -o BatchMode=yes -o IdentitiesOnly=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $HOME/.local/state/recursive-incus-stack-runtime/ssh/id_key_recursive_admin admin@agent1-1.agent1.incus
+ssh -6 -F /dev/null -o BatchMode=yes -o IdentitiesOnly=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $HOME/.local/state/recursive-incus-stack-runtime/ssh/id_key_recursive_admin admin@agent1-1-1.agent1-1.agent1.incus
+```
+
+If those SSH commands work, then the recursive host-like contract is already visible in practice:
+the outer host can now reach not only the root, but also deeper hierarchy-aware nodes by normal `.incus` names and the same recursive admin key.
+
+> If you ever want to start from scratch you can use the following commands:
+> 
+> - `bash ./rip-slim/content/scripts/launch.sh agent1 --recreate`
+> - `bash ./rip-slim/content/scripts/teardown.sh agent1`
+> - `bash ./rip-slim/content/scripts/teardown.sh --all`
+> 
+> The `launch.sh agent1 --recreate` will recreate the hierarchy-root container.  
+> The `teardown.sh agent1` will delete the container and its profile.  
+> The `teardown.sh --all` will delete all hierarchy-root containers, the helper, and the cache container if it exists and their profiles.  
+> So after that you can start from scratch to test the whole hierarchy creation.
+
+#### Incus Codex Jail
+
+At this point `agent1` is ready for the same root-level incus codex jail workflow described in the earlier [Incus System-Container Jail for the Codex Coding Agent](https://weisser-zwerg.dev/posts/incus-codex-jail/) article.
+
+> For the following steps, go directly to the later [`Deltas In agent-jail-helpers.sh`](../incus-codex-jail/#deltas-in-agent-jail-helpers.sh) section there and add those helper functions to your local `~/.bashrc`.  
+> That section already points out the one additional detail you need here: `agentjail-ws-here()` and `agentjail-ws()` should still be taken from the earlier [`Workflow Shortcuts`](../incus-codex-jail/#workflow-shortcuts) section.
+
+The important helper functions to add to your local `~/.bashrc` are:
+
+* `agentjail-ws-here`
+* `agentjail-ws`
+* `agentjail-codex`
+
+If you also want to forward your host SSH agent into the jail later, add these too:
+
+* `agentjail-ssh-agent-attach`
+* `agentjail-ssh-agent-detach`
+
+Those helpers are what make the next commands work naturally:
+`agentjail-codex` repoints the `/workspace` mount to your current host directory when needed,
+starts `agent1` if necessary,
+and then logs you into the root container as the `agent` user with Codex starting inside `/workspace`.
+
+> In the current default setup it also starts Codex in the "the jail itself is the sandbox" mode while still keeping interactive approvals enabled.
+
+For a first real test drive, clone `fasthtml-plus` next to this materialization and ignore that scratch checkout locally in this repo:
+
+```bash
+printf '\n/fasthtml-plus/\n' >> .gitignore
+git clone https://github.com/cs224/fasthtml-plus.git
+cd fasthtml-plus
+```
+
+Then start Codex inside the jail from that directory:
+
+```bash
+agentjail-codex
+```
+
+At that point Codex will see the checked-out `fasthtml-plus` tree at `/workspace`.
+The current preferred shape is to treat the Incus jail itself as the real sandbox boundary and run Codex in `agent1` without its own extra inner shell [bubblewrap](https://github.com/containers/bubblewrap) sandbox while still keeping approval prompts, using:
+
+* `--sandbox danger-full-access`
+* `--ask-for-approval on-request`
+
+`agentjail-codex` already wires that mode in for you.
+That keeps the interactive approval model, but avoids having to teach every toolchain in the jail how to survive a second nested sandbox layer.
+
+> The main issue here is that we use `shift: "true"` for file-system id mapping so that in-container and outer-host file-system permissions work hand in hand.
+> But in that setup, nested sandboxed writes can leak awkward ownership such as `nobody:nogroup` back onto the host.  
+> 
+> The default path going forward is therefore to let the Incus jail itself be the sandbox and to run Codex inside `agent1` without its own extra inner shell sandbox, while still keeping approval prompts.
+> That avoids the "double sandbox" file-system permission issues.
+>
+> For completeness: I also experimented with an alternative approach that tried to keep that second inner sandbox layer, but it quickly became quite complex.
+> In that experiment, `/workspace` was effectively used as a "double" mount.
+> The main `/workspace` mount pointed at the real host checkout, so Codex still saw and edited the project exactly where you would expect.
+> But mutable tool state was also kept under `/workspace`, for example via the `UV_PYTHON_INSTALL_DIR` variable for `uv`, so that Codex could freely mutate files there, while that path was actually backed by a second dedicated runtime-state mount instead of by the real checkout itself, basically one mount shadowing the other.
+> The main idea behind that was to keep tool state that tended to be generated inside the additional Codex `bubblewrap` sandbox, and that caused these `nobody:nogroup` permission hassles, out of the main `/workspace` directory.
+> I gave up on that path because one complication led to another, and because the approach is tooling-specific: even if I had made it work for `python` and `uv`, I would still have had to adapt it again for every other development tooling environment.
+
+
+It is worthwhile giving Codex a short jail-specific header, so that it uses the provided shims and helper commands instead of dropping down to low-level workarounds.
+For example, you can paste the following prompt into the running Codex session:
+
+```txt
+[Environment: agent1 recursive Incus Codex jail]
+
+You are running inside the top-level incus coding jail `agent1`.
+
+Important environment contracts:
+- `incus` is a jail-provided shim to the nested Incus daemon inside `agent1`. Use it normally for local workload containers in this jail.
+- `mkcert` is a jail-provided shim. Use normal `mkcert -install` and `mkcert -cert-file ... -key-file ...` commands instead of calling lower-level helper APIs directly.
+- The jail already provides `.incus` DNS and certificate integration. Use the provided interfaces; do not work around them by editing low-level DNS/network settings.
+- Codex is already running here in the intended default mode where the Incus jail is the sandbox boundary. Do not invent extra `/tmp` workarounds for `uv` or managed Python state unless you hit a real concrete failure first.
+- Base workload names are auto-published from the local container name. So if you create a workload container called `fasthtml-plus-integration-test`, the base name `fasthtml-plus-integration-test.incus` should appear automatically.
+- Extra service aliases such as `auth.fasthtml-plus-integration-test.incus` need explicit publication. Use:
+  `register-service-alias auth.fasthtml-plus-integration-test.incus fasthtml-plus-integration-test.incus`
+- If you need a quick reminder of these jail affordances, run:
+  `codex-jail-help`
+- Do not try to gain root access.
+- Do not attempt host-only setup such as host DNS integration under `/etc/systemd/resolved*`, host AppArmor/sysctls, or other outer-host configuration.
+- Do not mutate low-level bridge DNS or `raw.dnsmasq` from inside this jail.
+- If a provided jail interface seems broken, stop and report the exact failure instead of bypassing it with a lower-level workaround.
+
+Read the README.md in this repository and follow its documented setup instructions for the integration-test environment.
+
+The goal is to get the fasthtml-plus integration environment running cleanly in this machine so that I can open the app in a normal browser via:
+
+https://fasthtml-plus-integration-test.incus
+
+Please use the repository's documented workflow as the main source of truth.
+If something is unclear, inspect the repo and choose the smallest reasonable next step.
+Do not assume any special custom environment beyond what is already available here.
+
+Do not try to gain root access with `sudo` or otherwise. If root access would be needed for some steps just summarize them at the end for the user to execute them manually.
+
+The final result should be:
+
+1. the integration-test app is up and reachable by `.incus` DNS name
+2. the HTTPS certificate is valid in the host browser
+3. both the public and authenticated/private paths work
+
+When you are done, summarize the exact commands you ran, any files you changed, and how I should test the result from the host browser.
+```
+
+Once Codex reports success, test the result from the host in a normal browser.
+Start with:
+
+* `https://fasthtml-plus-integration-test.incus`
+
+Then verify both kinds of application paths:
+
+* the public path, for example:
+  - `https://fasthtml-plus-integration-test.incus/public`
+* the authenticated/private path, for example by using the app's login flow and then following the private pages described by the project itself
+
+The important part for this appendix is that you should be able to use the app from the outer host like a normal service:
+
+* the `.incus` DNS name resolves on the host
+* the browser sees a valid HTTPS certificate
+* the application behaves as expected on both its public and private sides
+
+That is the point where the recursive hierarchy-aware Incus root really starts to feel like the earlier Incus Codex jail, but now with the recursive naming, DNS, and certificate machinery behind it.
