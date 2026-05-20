@@ -443,3 +443,17 @@ These methods are usually fast enough to run locally without GPU support, althou
 
 The `officeconvert-cpu/` folder contains the setup for converting other office documents such as `.docx` or `.pptx` to Markdown.
 Apart from the input format, the general workflow is similar to the one used in the other two folders.
+
+### "prompt hydration" workflow
+
+Once you have the markdown files available you often will want to make use of them in an AI workflow.
+
+For context injection I use a small script `0000-hydrate_prompt.py` that replaces `{ { include:... } }` placeholders in a Markdown prompt by inlining the referenced files.
+It writes a new `*.hydrated.md` prompt and annotates inserted blocks with `BEGIN/END include` comments, which makes it easy to audit what was injected.
+
+The accompanying [gist](https://gist.github.com/cs224/5121cb292a239db8406622c89c444154) contains:
+- the hydrator script,
+- a minimal example prompt with an `{ { include:... } }` placeholder,
+- optional helpers to generate context via `ctx` or a repo bundle via `repomix`.
+
+See the full example here: <https://gist.github.com/cs224/5121cb292a239db8406622c89c444154>
