@@ -47,6 +47,16 @@ This platform offers independent evaluations of AI models and API providers, hel
 Additionally, the [Open LLM Leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard#/) is another valuable resource to explore.
 It provides comprehensive insights and rankings of various LLMs, assisting you in making an informed decision.
 
+For software-engineering use cases, [FrontierCode](https://benchlm.ai/benchmarks/frontierCode) is also worth considering.
+The benchmark, introduced by [Cognition](https://cognition.ai/blog/frontier-code), evaluates whether models can produce code that meets the standards of production codebases.
+It focuses on practical mergeability, including correctness, test quality, scope control, style, and adherence to existing codebase conventions.
+
+> One detail to keep in mind when reading FrontierCode results is that it should be read as a comparison of the best reported coding-agent configurations, not as a comparison where every model is forced to use the same inference setting.  
+> As an example consider the comparison between Claude Opus 4.8 and GPT-5.5 on FrontierCode.
+> Claude Opus 4.8 is shown with `xhigh` effort, while GPT-5.5 is shown with `medium` effort.
+> This means that the leaderboard shows the best published result for each model-agent setup.
+> In this case, GPT-5.5 performed better at `medium` than at higher effort settings, so the `medium` result is the one displayed.
+
 ## The Hardware
 
 ### Bare-Metal GPU Providers
