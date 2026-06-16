@@ -565,6 +565,23 @@ So tool-calling is a feature of both the model and the endpoint:
 
 OpenCode notes that only a subset of models are good at both coding and tool calling, and [lists](https://opencode.ai/docs/models/)[^modeldev] these as commonly working well: GPT 5.2, GPT 5.1 Codex, Claude Opus 4.5, Claude Sonnet 4.5, Minimax M2.1, Gemini 3 Pro.
 
+#### pi.dev
+
+As another side remark, I also want to mention [Pi](https://pi.dev/): a minimal terminal coding harness.
+Compared with more product-like coding agents, Pi keeps the core small and moves workflow-specific behavior into TypeScript extensions, skills, prompt templates, themes, and Pi packages.
+
+Like OpenCode Pi does support different providers and local or private LLM setups.
+
+Pi's default built-in tools are the usual coding-agent primitives: read files, search files, edit files, write files, and run shell commands.
+The interesting part is that these primitives can be extended or intercepted.
+For example, an extension can add a custom tool, block dangerous shell commands, protect paths such as `.env`, add project-specific commands, or inject dynamic context before each turn.
+
+One important caveat: Pi does not include a built-in sandbox.
+It runs with the permissions of the user account that starts it.
+For untrusted repositories or unattended agent work, isolation has to come from the operating system level, for example a container, VM, remote sandbox, or similar boundary.
+
+> See [Incus System-Container Jail for the Codex Coding Agent](../incus-codex-jail) or [Incus Recursive Jail for Codex Coding Agent](../incus-agent-jail-recursive-ii-1-concepts) for details.
+
 ## Footnotes
 
 [^dockernetworknamespace]: This means it will run in a separate [network namespace](https://blog.kubesimplify.com/docker-networking-demystified).
