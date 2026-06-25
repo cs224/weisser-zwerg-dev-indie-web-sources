@@ -2374,6 +2374,321 @@ On netcup, the node works smoothly.
 > My goal was to build a small preflight test suite of standard tools you can run on a VPS before installing a Nym node,
 > so you can quickly check whether the server and its network are a good fit for stable Nym node operation.
 
+### Handling abuse reports for an exit gateway
+
+If you run a Nym node in exit-gateway mode, your VPS IP address is the public source IP for traffic forwarded through the gateway.
+That is the point of the service, but it also means that abuse desks and destination networks will see the VPS IP, not the original NymVPN user.
+
+In June 2026, my netcup VPS was temporarily disabled after an upstream abuse report from CSIRT-MU / Masaryk University classified forwarded TCP traffic as "Active scanning".
+The report showed:
+
+* source IP: `152.53.122.46`
+* detection window: `2026-06-18 20:25-20:30 Europe/Berlin`
+* target IP count: `130`
+* target ports: `443`, `2053`, `8443`
+* first visible target examples in `147.251.0.0/16`
+
+The process that I followed was:
+
+1. Communicate with netcup to get the service temporarily enabled again.
+2. Analyse whether the traffic matches your exit-gateway configuration.
+3. Add concrete countermeasures that prevent repeat traffic to the reported targets.
+4. Send the provider a short, technical statement with evidence and mitigation.
+
+#### Step 1: get safe access
+
+If the provider has disabled the server, ask for rescue-system access or a maintenance window.
+
+Check at least the service configuration, systemd units, auth logs, listening sockets, cron/systemd timers, recently changed files, and firewall state to make sure the server was uncompromised.
+
+In my case, the relevant facts were:
+
+* `nym-node` was running as an exit gateway.
+* The configured exit policy allowed the reported ports `443`, `2053`, and `8443`.
+* The visible target examples were in `147.251.0.0/16`, registered to Masaryk University.
+
+#### Step 2: decide what to block
+
+The abuse report only showed the first few target IPs, not the full list of 130.
+Without connection logging, which would be against the operator terms and conditions, you cannot reconstruct the hidden targets afterwards.
+
+For my case, all disclosed examples were in `147.251.0.0/16`.
+RIPE data identifies that prefix as Masaryk University (`MUNI-TCZ`), announced via AS2852 / CESNET2.
+I therefore blocked the specific `147.251.0.0/16` prefix, not the whole AS2852.
+Blocking an entire AS would have been much broader than the report.
+
+The same mechanism can also hold other destination blocks, for example sensor IPs reported by other operators.
+Keep those entries separate and commented, so you can later explain why each block exists.
+
+#### Step 3: implement a maintainable extra blocklist
+
+The following setup adds a local blocklist for Nym exit traffic.
+It uses `ipset`, `ipset-persistent`, `iptables`, and `netfilter-persistent`.
+The design is:
+
+* keep a human-readable list in `/etc/nym/extra-destination-blocks.v4`
+* load that list into an ipset named `nym_extra_blocks_v4`
+* insert one early rule at the top of `NYM-EXIT`
+* persist the ipset and iptables rule across reboots
+* reassert the rule after future `nym-node` starts
+
+Install the persistence helper:
+
+```bash
+apt-get update
+apt-get install -y ipset ipset-persistent netfilter-persistent iptables-persistent
+```
+
+Create the local blocklist:
+
+```bash
+install -d -m 0755 /etc/nym
+
+cat >/etc/nym/extra-destination-blocks.v4 <<'EOF'
+# Extra destination blocks for Nym exit traffic.
+# Format: IPv4 address or CIDR, optional trailing comment after '#'.
+# Apply with: /usr/local/sbin/nym-extra-blocks-apply --save
+
+# CSIRT-MU / Masaryk University abuse report.
+# The disclosed examples were in 147.251.0.0/16, registered as MUNI-TCZ
+# and announced via AS2852/CESNET2. This blocks the Masaryk prefix, not all AS2852.
+147.251.0.0/16 # CSIRT-MU / Masaryk University MUNI-TCZ
+
+# Example: Skhron / AS215467 sensor destinations shared by another NymVPN exit operator (wunderbaer // Hermes Stakepool Germany).
+# Keep entries like these separate from the incident-specific block above.
+185.195.236.172 # Skhron AS215467 sensor
+88.218.206.43 # Skhron AS215467 sensor
+144.79.58.196 # Skhron AS215467 sensor
+144.79.59.63 # Skhron AS215467 sensor
+EOF
+```
+
+Install the apply script:
+
+```bash
+cat >/usr/local/sbin/nym-extra-blocks-apply <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+LIST_FILE="${LIST_FILE:-/etc/nym/extra-destination-blocks.v4}"
+SET_NAME="${SET_NAME:-nym_extra_blocks_v4}"
+TMP_SET="${SET_NAME}_new"
+CHAIN="${CHAIN:-NYM-EXIT}"
+RULE_COMMENT="NYM-EXTRA-BLOCKS"
+IPV4_CIDR_RE='^([0-9]{1,3}\.){3}[0-9]{1,3}(/[0-9]{1,2})?$'
+
+usage() {
+    echo "usage: $0 [--save]" >&2
+}
+
+SAVE=0
+case "${1:-}" in
+    "") ;;
+    --save) SAVE=1 ;;
+    -h|--help) usage; exit 0 ;;
+    *) usage; exit 2 ;;
+esac
+
+[ -r "$LIST_FILE" ] || { echo "missing readable blocklist: $LIST_FILE" >&2; exit 1; }
+command -v ipset >/dev/null || { echo "ipset not found" >&2; exit 1; }
+command -v iptables >/dev/null || { echo "iptables not found" >&2; exit 1; }
+
+iptables -w -nL "$CHAIN" >/dev/null 2>&1 || { echo "iptables chain $CHAIN not found" >&2; exit 1; }
+
+ipset destroy "$TMP_SET" 2>/dev/null || true
+ipset create "$SET_NAME" hash:net family inet hashsize 1024 maxelem 65536 comment -exist
+ipset create "$TMP_SET" hash:net family inet hashsize 1024 maxelem 65536 comment -exist
+ipset flush "$TMP_SET"
+
+count=0
+lineno=0
+while IFS= read -r raw || [ -n "$raw" ]; do
+    lineno=$((lineno + 1))
+    entry="${raw%%#*}"
+    entry="$(printf '%s' "$entry" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+    [ -n "$entry" ] || continue
+
+    if [[ ! "$entry" =~ $IPV4_CIDR_RE ]]; then
+        echo "invalid IPv4/CIDR entry at $LIST_FILE:$lineno: $entry" >&2
+        exit 1
+    fi
+
+    if [[ "$raw" == *"#"* ]]; then
+        note="$(printf '%s' "$raw" | sed -e 's/^[^#]*#//')"
+        note="$(printf '%s' "$note" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+    else
+        note="extra Nym exit destination block"
+    fi
+    [ -n "$note" ] || note="extra Nym exit destination block"
+
+    ipset add "$TMP_SET" "$entry" comment "$note" -exist
+    count=$((count + 1))
+done < "$LIST_FILE"
+
+ipset swap "$TMP_SET" "$SET_NAME"
+ipset destroy "$TMP_SET" 2>/dev/null || true
+
+while iptables -w -D "$CHAIN" -m set --match-set "$SET_NAME" dst \
+    -m comment --comment "$RULE_COMMENT" \
+    -j REJECT --reject-with icmp-port-unreachable 2>/dev/null; do
+    :
+done
+
+iptables -w -I "$CHAIN" 1 -m set --match-set "$SET_NAME" dst \
+    -m comment --comment "$RULE_COMMENT" \
+    -j REJECT --reject-with icmp-port-unreachable
+
+if [ "$SAVE" -eq 1 ]; then
+    netfilter-persistent save
+fi
+
+echo "applied $count entries from $LIST_FILE to ipset $SET_NAME and chain $CHAIN"
+EOF
+
+chmod +x /usr/local/sbin/nym-extra-blocks-apply
+```
+
+Add a `nym-node` drop-in so the rule is reasserted after the node starts:
+
+```bash
+install -d -m 0755 /etc/systemd/system/nym-node.service.d
+
+cat >/etc/systemd/system/nym-node.service.d/20-extra-blocks.conf <<'EOF'
+[Service]
+ExecStartPost=/usr/local/sbin/nym-extra-blocks-apply
+EOF
+
+systemctl daemon-reload
+```
+
+Apply and persist:
+
+```bash
+/usr/local/sbin/nym-extra-blocks-apply --save
+```
+
+Verify:
+
+```bash
+ipset list nym_extra_blocks_v4
+iptables -L NYM-EXIT -n -v --line-numbers | head -n 20
+grep -n 'nym_extra_blocks_v4\|NYM-EXTRA-BLOCKS' /etc/iptables/rules.v4 /etc/iptables/ipsets
+
+iptables-restore --test < /etc/iptables/rules.v4
+ip6tables-restore --test < /etc/iptables/rules.v6
+```
+
+The important property is that the `NYM-EXTRA-BLOCKS` rule must appear before the normal allowlist rules:
+
+```text
+Chain NYM-EXIT (2 references)
+num  target  prot opt source       destination
+1    REJECT  all  --  0.0.0.0/0    0.0.0.0/0    match-set nym_extra_blocks_v4 dst /* NYM-EXTRA-BLOCKS */ reject-with icmp-port-unreachable
+2    ACCEPT  udp  --  0.0.0.0/0    0.0.0.0/0    udp dpt:53
+3    ACCEPT  tcp  --  0.0.0.0/0    0.0.0.0/0    tcp dpt:53
+...
+```
+
+If you later receive more target IPs, add them to `/etc/nym/extra-destination-blocks.v4` and rerun:
+
+```bash
+/usr/local/sbin/nym-extra-blocks-apply --save
+```
+
+#### Optional: temporary logging for blocked destinations
+
+If you want evidence that blocked destinations are being hit after the mitigation, add a rate-limited `LOG` rule before the reject rule.
+Do not enable broad logging without a limit.
+
+```bash
+iptables -I NYM-EXIT 1 \
+  -m set --match-set nym_extra_blocks_v4 dst \
+  -m limit --limit 6/min --limit-burst 20 \
+  -j LOG --log-prefix "NYM-EXTRA-BLOCK " --log-level 4
+```
+
+On a system using `systemd-journald`, inspect those logs with:
+
+```bash
+journalctl -k -g 'NYM-EXTRA-BLOCK'
+journalctl -k -f -g 'NYM-EXTRA-BLOCK'
+```
+
+Real forwarded Nym traffic should show `IN=nymwg` or `IN=nymtun0` and `OUT=eth0`.
+
+Remove the temporary logging rule again when you no longer need it:
+
+```bash
+iptables -D NYM-EXIT \
+  -m set --match-set nym_extra_blocks_v4 dst \
+  -m limit --limit 6/min --limit-burst 20 \
+  -j LOG --log-prefix "NYM-EXTRA-BLOCK " --log-level 4
+```
+
+#### Step 4: communicate with the provider
+
+Keep the message short and technical.
+For netcup, all abuse communication had to go through the `Stellungnahme` field in the CCP abuse notice; normal email, tickets, and phone replies were not considered for this process.
+
+A safe statement is that the observed traffic is consistent with forwarded Nym exit-gateway traffic and that you have no evidence of a separate local scanner or compromise.
+
+Here is the draft I used as a template:
+
+```text
+Subject: Statement and mitigation report for abuse notice concerning [SERVER_IP]
+
+Dear [PROVIDER] Abuse Team,
+
+I am responding to the abuse notice for my VPS [PRODUCT], source IP [SERVER_IP] ([HOSTNAME]).
+
+The server runs a Nym privacy-infrastructure node in exit-gateway mode, including WireGuard/dVPN exit functionality.
+This means the VPS forwards third-party user traffic to the public Internet, so destination systems see [SERVER_IP] as the source IP.
+I did not manually run a port scan from the server.
+
+Technically, the service is designed as a transit service for user traffic.
+Where the legal requirements are met, this corresponds to the general idea of mere conduit under Article 4 of the Digital Services Act, formerly comparable to the concept under § 8 TMG.
+I mention this only to explain my technical operator role; it is not intended to bypass or dispute the abuse review.
+
+The report concerns TCP traffic on [DATE/TIME WINDOW], to [TARGET COUNT] target IPs on ports [PORTS].
+The local firewall policy for the Nym exit path allowed these ports, so the reported traffic is consistent with forwarded Nym exit traffic.
+I also understand that forwarded exit traffic can still be classified as scan-like by destination networks and must be handled operationally.
+
+I have implemented the following mitigation:
+
+- added a local, auditable extra destination blocklist for Nym exit traffic,
+- installed and enabled ipset-persistent so the blocklist survives reboots,
+- added an early NYM-EXIT firewall rule that rejects blocked destinations before the normal Nym exit allowlist,
+- persisted the rule via netfilter-persistent,
+- added a nym-node systemd drop-in so the block rule is reasserted after future nym-node starts.
+
+The blocklist currently blocks:
+
+- [PREFIX OR IP] - [REASON]
+- [PREFIX OR IP] - [REASON]
+
+The abuse report only showed part of the target-IP list.
+The disclosed target examples are in [PREFIX], registered as [NETWORK OWNER].
+I blocked this specific prefix rather than a broader autonomous system, because blocking the full AS would be broader than the reported evidence.
+
+At this point I have no evidence that the report was caused by a separate compromise of the VPS; the configuration is consistent with Nym exit-gateway forwarding.
+
+Please keep the VPS active / permanently reactivate it with the implemented mitigation.
+If you or the reporting party can provide the complete target-IP list, I will add the remaining exact destinations or more precise prefixes to the maintained blocklist.
+
+For continued operation I will keep the following measures in place:
+
+- maintain the local extra destination blocklist for Nym exit traffic,
+- add further reported destinations when the provider, reporting party, or another reliable source provides them,
+- review logs after abuse reports or suspicious events,
+- add stricter outbound rate limits or further destination blocks if required for continued operation.
+
+Kind regards,
+[NAME]
+```
+
+The legal paragraph is deliberately cautious.
+`§ 8 TMG` is old wording; in current EU law the more relevant reference is Article 4 of the Digital Services Act, which covers the "mere conduit" concept for intermediary services under defined conditions.
+Use it to explain your technical role, not as a reason to ignore provider rules or abuse handling.
 
 ## Footnotes
 
