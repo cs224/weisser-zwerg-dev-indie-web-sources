@@ -2430,6 +2430,7 @@ The design is:
 * load that list into an ipset named `nym_extra_blocks_v4`
 * insert one early rule at the top of `NYM-EXIT`
 * persist the ipset and iptables rule across reboots
+* start `nym-node` after `netfilter-persistent` has restored the saved firewall state
 * reassert the rule after future `nym-node` starts
 
 Install the persistence helper:
@@ -2548,10 +2549,16 @@ EOF
 chmod +x /usr/local/sbin/nym-extra-blocks-apply
 ```
 
-Add a `nym-node` drop-in so the rule is reasserted after the node starts:
+Add `nym-node` drop-ins so the node starts after the saved firewall state has been restored, and so the rule is reasserted after the node starts:
 
 ```bash
 install -d -m 0755 /etc/systemd/system/nym-node.service.d
+
+cat >/etc/systemd/system/nym-node.service.d/10-ordering.conf <<'EOF'
+[Unit]
+Wants=network-online.target netfilter-persistent.service
+After=network-online.target netfilter-persistent.service
+EOF
 
 cat >/etc/systemd/system/nym-node.service.d/20-extra-blocks.conf <<'EOF'
 [Service]
