@@ -342,7 +342,7 @@ Working together is a task that requires a lot of coordination. Words are used, 
 
 > Just as a side remark:
 > The psychoanalyst [Elliott Jaques](https://en.wikipedia.org/wiki/Elliott_Jaques) coined the terms Engaged Direct Awareness and Disengaged Conscious Languaging in the book [The Life and Behavior of Living Organisms: A General Theory](https://www.amazon.com/Life-Behavior-Living-Organisms-General/dp/0275975010) to describe two different activities: in the moment coordination, and conscious thinking in the mind.  
-> Engaged Direct Awareness (EDA) is the immediate, embodied, nonverbal “felt” awareness while acting in the world.  
+> Engaged Direct Awareness (EDA) is the immediate, embodied, nonverbal "felt" awareness while acting in the world.  
 > Disengaged Conscious Languaging (DCL) is a reflective, language based, distancing mode that names, represents, and reasons about experience.
 
 
@@ -417,6 +417,22 @@ Another line that fits here is the saying, "My pencil and I are more clever than
 All of this underlines the importance of language in the thinking process.
 Nevertheless, I argue that those effects are additions to the raw thinking process in *concepts*, which is pre-linguistic and does not require language.
 
+### Addendum 2026-06-27: Haidt/Tomasello - Shared Intentionality
+
+In Jonathan Haidt's [*The Righteous Mind*](https://www.amazon.com/Righteous-Mind-Divided-Politics-Religion/dp/0307455777), Haidt discusses Michael Tomasello, one of the world's foremost experts on chimpanzee cognition.
+Tomasello's basic claim is that shared intentionality came before language: humans first had to be able to hold a joint mental representation of a shared activity, object, goal, or convention before language could develop.
+
+Here is an excerpt from chapter 9, "Why Are We So Groupish?":
+
+> According to Tomasello, human cognition veered away from that of other primates when our ancestors developed shared intentionality.
+> At some point in the last million years, a small group of our ancestors developed the ability to share mental representations of tasks that two or more of them were pursuing together.
+> For example, while foraging, one person pulls down a branch while the other plucks the fruit, and they both share the meal. Chimps never do this.  
+> ...  
+> Many people assume that language was our Rubicon, but language became possible only after our ancestors got shared intentionality.
+> Tomasello notes that a word is not a relationship between a sound and an object.
+> It is an agreement among people who share a joint representation of the things in their world, and who share a set of conventions for communicating with each other about those things.
+
+I have never seen a clearer statement or stronger support for the pre-linguistic nature of concepts elsewhere.
 
 ## Additivity of Jumps: Religion, Free Will, ...
 
