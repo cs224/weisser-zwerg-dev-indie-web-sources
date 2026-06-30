@@ -1,5 +1,5 @@
 {
-  "lastFetched": "2025-02-20T04:04:58.355Z",
+  "lastFetched": "2026-06-30T01:54:00.957Z",
   "children": [
     {
       "type": "entry",
@@ -270,6 +270,28 @@
       "mention-of": "https://weisser-zwerg.dev/posts/webmention-test/",
       "wm-property": "mention-of",
       "wm-private": false
+    },
+    {
+      "type": "entry",
+      "author": {
+        "type": "card",
+        "name": "",
+        "photo": "",
+        "url": ""
+      },
+      "url": "https://lemmy.world/post/44773575",
+      "published": null,
+      "wm-received": "2026-03-26T15:08:09Z",
+      "wm-id": 1986559,
+      "wm-source": "https://lemmy.world/post/44773575",
+      "wm-target": "https://weisser-zwerg.dev/posts/software-engineering-fasthtml-plus/",
+      "wm-protocol": "webmention",
+      "mention-of": "https://weisser-zwerg.dev/posts/software-engineering-fasthtml-plus/",
+      "wm-property": "mention-of",
+      "wm-private": false,
+      "rels": {
+        "canonical": "https://lemmy.world/post/44773575"
+      }
     }
   ]
 }
