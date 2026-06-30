@@ -16,7 +16,7 @@ The visible document may look fine to a human reader, but an AI system still has
 That is why prompting directly from a PDF can fail even on simple tasks such as summarizing terms and conditions or extracting specific clauses.
 
 The better workflow is to convert the PDF into Markdown first.
-In this quick-tip nugget, I will show how to do that with [Runpod](https://www.runpod.io/) and the [marker-pdf](https://github.com/datalab-to/marker) library.
+In this quick-tip nugget, I will show how to do that with [Runpod](https://www.runpod.io/) and the [marker-pdf](https://github.com/datalab-to/marker)[^omnidocbench] library.
 Runpod gives us an easy way to run GPU-backed jobs in the cloud, and marker-pdf gives us fast, accurate conversion into Markdown and JSON.
 The combination is practical, reproducible, and accessible for technical hobbyists who want better inputs for AI.
 
@@ -457,3 +457,7 @@ The accompanying [gist](https://gist.github.com/cs224/5121cb292a239db8406622c89c
 - optional helpers to generate context via `ctx` or a repo bundle via `repomix`.
 
 See the full example here: <https://gist.github.com/cs224/5121cb292a239db8406622c89c444154>
+
+## Footnotes
+
+[^omnidocbench]: See the [OmniDocBench](https://github.com/opendatalab/OmniDocBench) for alternatives that might work even better.
