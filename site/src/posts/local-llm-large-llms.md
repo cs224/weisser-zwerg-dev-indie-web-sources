@@ -112,6 +112,42 @@ Alternative:
 * [Dell PowerEdge XE9680 Rack Server - AI/ML/HPC Server](https://www.newegg.com/p/N82E16859155927) **≈ $400k**
 
 
+
+**\[Addendum 2026-07-11\]**:  
+[ServeTheHome](https://www.servethehome.com) has published an article: [BIG AI Cluster Little Power the 8x NVIDIA GB10 Cluster](https://www.servethehome.com/big-cluster-little-power-the-8x-nvidia-gb10-cluster-marvell-cisco-ubiquiti-qnap-arm/).
+It documents an eight-node cluster built from desktop systems based on the [NVIDIA GB10 Grace Blackwell Superchip](https://www.nvidia.com/en-us/products/workstations/dgx-spark/), the platform also used by [NVIDIA DGX Spark](https://www.nvidia.com/en-us/products/workstations/dgx-spark/) and corresponding systems from ASUS, Dell, Lenovo, HP, Acer, Gigabyte, and MSI.
+Each node provides 128GB of LPDDR5X unified memory, a 20-core Arm CPU, a Blackwell GPU, and [ConnectX-7](https://www.nvidia.com/en-us/networking/ethernet/connectx-7/) 200GbE networking.
+The complete cluster therefore has 1TB of aggregate memory across eight nodes and 160 Arm CPU cores.
+
+The nodes are connected through a [MikroTik CRS804 DDQ](https://mikrotik.com/product/crs804_ddq) 400GbE switch using RoCE and [NCCL](https://github.com/NVIDIA/nccl), while a separate 10GbE network handles management and access to shared storage.
+[vLLM](https://github.com/vllm-project/vllm) is used to serve models including [Kimi K2.5](https://huggingface.co/moonshotai/Kimi-K2.5) and [Kimi K2.6](https://huggingface.co/moonshotai/Kimi-K2.6), as well as Qwen3.5-397B and GPT-OSS-120B.
+
+One important result is that memory capacity scales more easily than inference speed.
+Distributing a model over additional nodes introduces network communication and `all-reduce` overhead, even with 200GbE networking.
+A model should therefore normally run on the smallest number of nodes that can hold its weights, KV cache, and required context.
+For example, ServeTheHome found that a model that fits on four nodes should generally run on four rather than eight.
+The additional nodes are more useful for running separate model instances or testing several configurations in parallel.
+
+The storage design is also relevant for local agent systems.
+A shared NAS stores the model files and provides separate working directories for agents.
+[ZFS snapshots](https://openzfs.github.io/openzfs-docs/man/master/8/zfs-snapshot.8.html) allow the operator to recover files after destructive or incorrect tool calls.
+A small GPU installed in the NAS runs embedding models and agent-memory services without consuming resources on the GB10 nodes.
+ServeTheHome divides the cluster into two four-node groups: one group can serve a model for [OpenCode](https://opencode.ai/), [OpenClaw](https://github.com/openclaw/openclaw), [Hermes Agent](https://github.com/NousResearch/hermes-agent), or [Turnstone](https://github.com/turnstonelabs/turnstone), while the second group is used for model and configuration tests.
+
+The complete system is estimated to cost approximately **$23,000–$35,000**.
+The eight compute nodes and the 400GbE switch consumed less than 400W at idle; adding the 10GbE switch increased this to approximately 430W.
+Model workloads such as Kimi K2.5 typically consumed approximately 900–950W including both switches.
+ServeTheHome explicitly notes that the GB10 cluster is not particularly fast compared with higher-memory-bandwidth workstation or data-center GPUs.
+Its advantages are the ability to run models with several hundred gigabytes of weights locally, keep private data on premises, operate below approximately 1.2kW, and evaluate complete agent workflows instead of only tokens-per-second benchmarks.
+
+NVIDIA's [Cluster Assistant](https://docs.nvidia.com/sync/latest/cluster-assistant.html) currently documents validated topologies for two to four GB10 nodes.
+The eight-node installation should therefore be treated as a community-engineered reference rather than a supported turnkey configuration.
+Smaller starting points and related projects include:
+
+* A community recipe for [full GLM-5.2 on four DGX Spark systems at 128K context](https://forums.developer.nvidia.com/t/fitting-a-high-quality-reap-less-glm-5-2-onto-4x-dgx-spark/374832).
+* The reproducible [GLM-5.2 QuantTrio 200K four-node configuration](https://github.com/tonyd2wild/GLM-5.2-QuantTrio-200K-4x-DGX-Spark) and the benchmarks collected by [Spark Arena](https://spark-arena.com/).
+* [ClawSpark](https://github.com/theshiphq/claw-spark), which installs a private OpenClaw-based agent stack on DGX Spark, RTX, Mac, or Jetson hardware.
+
 ### NVIDIA GPUs
 
 To get started with running large language models locally, understanding your GPU's capabilities is crucial. Visit NVIDIA's [GPU Compute Capability](https://developer.nvidia.com/cuda-gpus#compute) page to learn more about their current lineup and specifications.
@@ -581,6 +617,22 @@ It runs with the permissions of the user account that starts it.
 For untrusted repositories or unattended agent work, isolation has to come from the operating system level, for example a container, VM, remote sandbox, or similar boundary.
 
 > See [Incus System-Container Jail for the Codex Coding Agent](../incus-codex-jail) or [Incus Recursive Jail for Codex Coding Agent](../incus-agent-jail-recursive-ii-1-concepts) for details.
+
+#### Other Agent Platforms
+
+[OpenCode](https://opencode.ai/) and [Pi](https://pi.dev/) are primarily coding-agent tools.
+Their default workflows focus on source-code repositories, file editing, shell commands, and interaction with a developer.
+In contrast, tools such as [Hermes Agent](https://hermes-agent.nousresearch.com/) and [OpenClaw](https://openclaw.ai/) are persistent assistant platforms.
+They are designed to remain available across sessions, messaging applications, scheduled jobs, memories, and broader personal or operational workflows.
+
+There is some overlap between these categories.
+Hermes Agent and OpenClaw can write and modify code, while OpenCode and Pi can be embedded into larger systems.
+The main difference is their default architecture and intended operating model: coding agents start with a repository and a development task, whereas persistent assistants start with a user, communication channels, and long-running context.
+
+[OpenHands](https://openhands.dev/) sits between these groups, although it is closer to OpenCode and Pi.
+It is a software-development agent platform for delegating engineering tasks, running agents in isolated workspaces, integrating them with repositories, and automating work such as code changes, pull-request reviews, dependency upgrades, and issue resolution.
+Compared with the interactive workflows of OpenCode and Pi, OpenHands places more emphasis on autonomous, end-to-end execution and running agents locally, in the cloud, or across a team.
+Unlike Hermes Agent and OpenClaw, its primary domain remains software engineering.
 
 ## Footnotes
 
