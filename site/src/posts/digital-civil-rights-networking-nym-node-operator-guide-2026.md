@@ -2395,6 +2395,8 @@ The process that I followed was:
 3. Add concrete countermeasures that prevent repeat traffic to the reported targets.
 4. Send the provider a short, technical statement with evidence and mitigation.
 
+> When you as an operator receive a complaint, you can use these templates: <https://nym.com/docs/operators/community-counsel/templates>
+
 #### Step 1: get safe access
 
 If the provider has disabled the server, ask for rescue-system access or a maintenance window.
