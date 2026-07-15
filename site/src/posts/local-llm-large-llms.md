@@ -116,7 +116,7 @@ Alternative:
 **\[Addendum 2026-07-11\]**:  
 [ServeTheHome](https://www.servethehome.com) has published an article: [BIG AI Cluster Little Power the 8x NVIDIA GB10 Cluster](https://www.servethehome.com/big-cluster-little-power-the-8x-nvidia-gb10-cluster-marvell-cisco-ubiquiti-qnap-arm/).
 It documents an eight-node cluster built from desktop systems based on the [NVIDIA GB10 Grace Blackwell Superchip](https://www.nvidia.com/en-us/products/workstations/dgx-spark/), the platform also used by [NVIDIA DGX Spark](https://www.nvidia.com/en-us/products/workstations/dgx-spark/) and corresponding systems from ASUS, Dell, Lenovo, HP, Acer, Gigabyte, and MSI.
-Each node provides 128GB of LPDDR5X unified memory, a 20-core Arm CPU, a Blackwell GPU, and [ConnectX-7](https://www.nvidia.com/en-us/networking/ethernet/connectx-7/) 200GbE networking.
+Each node provides 128GB of LPDDR5X unified memory, a 20-core Arm CPU, a Blackwell GPU, and [ConnectX-7](https://www.nvidia.com/en-us/networking/ethernet-adapters) 200GbE networking.
 The complete cluster therefore has 1TB of aggregate memory across eight nodes and 160 Arm CPU cores.
 
 The nodes are connected through a [MikroTik CRS804 DDQ](https://mikrotik.com/product/crs804_ddq) 400GbE switch using RoCE and [NCCL](https://github.com/NVIDIA/nccl), while a separate 10GbE network handles management and access to shared storage.
@@ -134,9 +134,9 @@ A shared NAS stores the model files and provides separate working directories fo
 A small GPU installed in the NAS runs embedding models and agent-memory services without consuming resources on the GB10 nodes.
 ServeTheHome divides the cluster into two four-node groups: one group can serve a model for [OpenCode](https://opencode.ai/), [OpenClaw](https://github.com/openclaw/openclaw), [Hermes Agent](https://github.com/NousResearch/hermes-agent), or [Turnstone](https://github.com/turnstonelabs/turnstone), while the second group is used for model and configuration tests.
 
-The complete system is estimated to cost approximately **$23,000–$35,000**.
+The complete system is estimated to cost approximately **$23,000-$35,000**.
 The eight compute nodes and the 400GbE switch consumed less than 400W at idle; adding the 10GbE switch increased this to approximately 430W.
-Model workloads such as Kimi K2.5 typically consumed approximately 900–950W including both switches.
+Model workloads such as Kimi K2.5 typically consumed approximately 900-950W including both switches.
 ServeTheHome explicitly notes that the GB10 cluster is not particularly fast compared with higher-memory-bandwidth workstation or data-center GPUs.
 Its advantages are the ability to run models with several hundred gigabytes of weights locally, keep private data on premises, operate below approximately 1.2kW, and evaluate complete agent workflows instead of only tokens-per-second benchmarks.
 
@@ -633,6 +633,48 @@ The main difference is their default architecture and intended operating model: 
 It is a software-development agent platform for delegating engineering tasks, running agents in isolated workspaces, integrating them with repositories, and automating work such as code changes, pull-request reviews, dependency upgrades, and issue resolution.
 Compared with the interactive workflows of OpenCode and Pi, OpenHands places more emphasis on autonomous, end-to-end execution and running agents locally, in the cloud, or across a team.
 Unlike Hermes Agent and OpenClaw, its primary domain remains software engineering.
+
+### Token Efficiency for LLM Agents
+
+When using a hosted model, token consumption appears directly on the invoice.
+With a locally hosted model, the cost is less visible, but it still exists: longer contexts require more computation and memory, while longer responses occupy the inference engine for more time.
+This becomes particularly relevant for agents because tool definitions, command output, logs, retrieved documents, files, and previous messages may be sent to the model repeatedly.
+
+There are several ways to reduce this overhead, and they target different parts of the agent loop:
+
+* **Pre-compute compact context.** Elastic's [Knowledge Indicators](https://www.elastic.co/search-labs/blog/pre-computed-context-llm-agent-costs) extract structured facts from source documents before an agent needs them.
+The agent queries these facts instead of repeatedly searching and reading complete documents.
+In Elastic's 96-question experiment, the approach reduced input-token consumption from 174.8 million to 48.3 million while increasing the number of correct answers from 60 to 67.
+After adding indicators that addressed previous incorrect answers, accuracy increased to 88 out of 96 and input consumption fell to 42.6 million tokens.
+However, the authors also document cases in which missing indicators caused the agent to consume more tokens than the baseline.
+
+* **Compress context before it reaches the model.** [Headroom](https://github.com/headroomlabs-ai/headroom) compresses tool output, JSON, logs, files, conversation history, and RAG results.
+This is not "compression" in the file-compression sense! Headroom is closer to summarization plus structured reduction.
+It replaces raw context with a smaller, task-oriented representation that often contains the sufficient facts needed for the next reasoning step.
+It selects different compressors for structured data, code, and prose, while retaining the original content locally so that the agent can retrieve it when necessary.
+Cost falls because the provider processes fewer input tokens.
+Its README reports reductions of 15-20% for coding-agent workloads and 60-95% for JSON data.
+Accuracy survives only when the reducer preserves the facts needed for the question or when the model retrieves the original before answering.
+
+* **Create a reusable structural representation.** [Graphify](https://github.com/Graphify-Labs/graphify) converts code and related project material into a queryable knowledge graph.
+Code is parsed locally using tree-sitter, and the resulting `graph.json` can be queried without rereading the complete repository for every question.
+This moves part of the work from repeated context ingestion to a one-time indexing step followed by targeted graph queries.
+Graphify is therefore closer to retrieval optimization than to conventional token compression.
+
+* **Constrain the model's output.** [Caveman](https://github.com/JuliusBrussee/caveman) installs a skill that instructs coding agents to answer tersely while preserving code, commands, paths, URLs, and error messages.
+Its README reports an average reduction of 65% in output tokens across ten test prompts.
+The distinction between input and output tokens is important: the primary mode reports no input-token reduction, does not reduce reasoning tokens, and adds approximately 1,000-1,500 input tokens per turn for its own instructions.
+Consequently, total session savings can be substantially lower than 65%, and an already-terse workflow may consume more tokens rather than fewer.
+
+These approaches are complementary rather than interchangeable.
+Knowledge Indicators and Graphify try to prevent repeated searches through large sources.
+Headroom reduces the size of material added to the context.
+Caveman reduces what the model writes after processing that context.
+An agent could use all three categories at the same time.
+
+Token counts should also not be evaluated in isolation.
+A useful comparison should measure answer correctness, input and output tokens, number of agent steps, wall-clock time, and failed or repeated tool calls.
+Removing context saves tokens only when the agent can still reach the correct result without additional searches, retries, or corrective prompts.
 
 ## Footnotes
 
