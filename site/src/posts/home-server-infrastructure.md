@@ -1152,7 +1152,7 @@ LXD/Incus is a manager for system containers, application containers, and virtua
 
 #### Introduction and History
 
-Incus is a fork of the [LXD](https://canonical.com/lxd) project, which I briefly introduced in my 2019 blog post [Local discourse: vagrant, ansible, lxd, docker, discourse-embedding](local-discourse-on-vagrant/#additional-requirement%3A-docker-in-lxd).
+Incus is a fork of the [LXD](https://canonical.com/lxd) project, which I briefly introduced in my 2019 blog post [Local discourse: vagrant, ansible, lxd, docker, discourse-embedding](../local-discourse-on-vagrant/#additional-requirement%3A-docker-in-lxd).
 
 A major governance shift in mid-to-late 2023 led to [Canonical](https://canonical.com) taking direct control of the LXD project and [moving it out of the Linux Containers (LXC) umbrella](https://linuxcontainers.org/lxd/).
 In response, the original maintainers from [LinuxContainers.org](https://linuxcontainers.org/)  created [Incus](https://linuxcontainers.org/incus/) - a community-driven fork designed to be a drop-in replacement for LXD.
