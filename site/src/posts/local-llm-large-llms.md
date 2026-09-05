@@ -41,7 +41,7 @@ Only continue reading this guide if:
 
 ## Model Selection
 
-When selecting a model for your use case, [Artificial Analysis](https://artificialanalysis.ai) is an excellent starting point.
+When selecting a model for your use case, [Artificial Analysis](https://artificialanalysis.ai) or [Arena AI](https://arena.ai/) are excellent starting points.
 This platform offers independent evaluations of AI models and API providers, helping you navigate the complex AI landscape to find the best model and provider for your specific needs.
 
 Additionally, the [Open LLM Leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard#/) is another valuable resource to explore.
