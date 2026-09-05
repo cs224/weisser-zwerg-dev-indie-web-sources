@@ -676,6 +676,18 @@ Token counts should also not be evaluated in isolation.
 A useful comparison should measure answer correctness, input and output tokens, number of agent steps, wall-clock time, and failed or repeated tool calls.
 Removing context saves tokens only when the agent can still reach the correct result without additional searches, retries, or corrective prompts.
 
+### Qwen 27B-Class Models
+
+The developer [Piotr Migdał](https://p.migdal.pl/) published the following two blog posts:
+* [Do Qwen3.6 27B quantizations break the pelican?](https://quesma.com/blog/qwen-quantization-quality/)
+* [Benchmarking Qwen3.8 27B quantizations: 4-bit holds up, 1-bit collapses](https://quesma.com/blog/qwen38-27b-quantizations-benchmarked/)
+
+The two posts reach the same central conclusion: for Qwen 27B-class models, 4-bit quantization preserves almost all measured capability while cutting model memory by roughly 3×.
+
+The degradation is nonlinear: 3-bit is format-dependent, 2-bit shows measurable losses but can remain useful, and 1-bit collapses on demanding reasoning tasks.
+
+Also worthwhile to watch in this context is the c't 3003 video [Was ich über lokale KI gelernt habe](https://www.youtube.com/watch?v=M1j_uRqKMKI).
+
 ## Footnotes
 
 [^dockernetworknamespace]: This means it will run in a separate [network namespace](https://blog.kubesimplify.com/docker-networking-demystified).
