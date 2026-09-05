@@ -2699,6 +2699,19 @@ The legal paragraph is deliberately cautious.
 `§ 8 TMG` is old wording; in current EU law the more relevant reference is Article 4 of the Digital Services Act, which covers the "mere conduit" concept for intermediary services under defined conditions.
 Use it to explain your technical role, not as a reason to ignore provider rules or abuse handling.
 
+### Fund `nym-node` Client Nyx Account
+
+In my earlier guide [Nym Mixnet & dVPN: A Node Operator's Guide](../digital-civil-rights-networking-nym-node-operator-guide) I had a section [Fund `nym-node` Client Nyx Account](../digital-civil-rights-networking-nym-node-operator-guide/#fund-nym-node-client-nyx-account) that I removed, because it seemed unnecessary.
+
+With release `2026.17-djibouti` the Nym team announced:
+
+> Starting Monday, September 7th (2026), any node with less than 1 NYM in its client Nyx account will have its config score multiplied by 0.8 (20% penalty).  
+> Please make sure your node's client account has at least 1 NYM. We recommend funding it with 10 NYM per node, which should be more than enough for a long time.
+
+You can see that in the [config-score-calculation](https://nym.com/docs/operators/tokenomics/mixnet-rewards#config-score-calculation) as `has_sufficient_tokens_factor`.
+
+You can follow the [official funding guide](https://nym.com/docs/operators/nodes/nym-node/bonding#fund-nym-node-client-nyx-account) to find your node's account address and send NYM to it.
+
 ## Footnotes
 
 [^nymtech]: Harbouermaster is only available for gateways, but not for nodes in mixnode mode. That is why I use here as a comparison reference the nymtech (mainnet-gateway2.nymte.ch) node.
