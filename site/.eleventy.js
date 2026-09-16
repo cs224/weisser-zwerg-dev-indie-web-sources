@@ -25,6 +25,7 @@ module.exports = function(eleventyConfig) {
     eleventyConfig.addPassthroughCopy({ "./src/assets": "/" });
     eleventyConfig.addPassthroughCopy({ "./node_modules/bootstrap/dist/css/bootstrap.min.css": "/css/bootstrap.min.css" });
     eleventyConfig.addPassthroughCopy({ "./node_modules/bootstrap/dist/js/bootstrap.bundle.min.js": "/js/bootstrap.bundle.min.js" });
+    eleventyConfig.addPassthroughCopy({ "./node_modules/katex/dist": "/katex" });
 
     eleventyConfig.addFilter('dateIso', date => {
         //return moment(date).toISOString();
@@ -92,7 +93,7 @@ module.exports = function(eleventyConfig) {
     let markdownItEmoji = require("markdown-it-emoji").full;
     let markdownItFootnote = require('markdown-it-footnote');
     let markdownItAnchor = require('markdown-it-anchor');
-    let markdownItKatex = require("markdown-it-katex");
+    let markdownItKatex = require("@vscode/markdown-it-katex").default;
     let markdownItInclude = require('markdown-it-include');
     let options = {
         html: true,
@@ -116,7 +117,8 @@ module.exports = function(eleventyConfig) {
                 ariaHidden: true
             })
         })
-        .use(markdownItKatex, {"throwOnError" : false, "errorColor" : " #cc0000"});
+        .use(markdownItKatex, {"throwOnError" : true})
+        .use(failOnKatexError);
 
     eleventyConfig.setLibrary("md", markdownLib);
 
@@ -133,6 +135,19 @@ module.exports = function(eleventyConfig) {
         }
     };
 };
+
+function failOnKatexError(markdownLib) {
+    for (const ruleName of ['math_inline', 'math_inline_block', 'math_block']) {
+        const render = markdownLib.renderer.rules[ruleName];
+        markdownLib.renderer.rules[ruleName] = (tokens, idx, ...args) => {
+            const output = render(tokens, idx, ...args);
+            if (output.includes('katex-error')) {
+                throw new Error(`Invalid KaTeX formula: ${tokens[idx].content}`);
+            }
+            return output;
+        };
+    }
+}
 
 function extractExcerpt(article) {
     if (!article.hasOwnProperty('templateContent')) {

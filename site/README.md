@@ -104,6 +104,7 @@ Use `npm run ncu` and `npm run ncua` to review available updates, `npm audit` to
 - Transitive dependency changes can still affect runtime behavior.
 - Eleventy 3.x requires Node.js 18 or newer.
 - `npm test` is currently a placeholder and does not validate the site.
+- Markdown math is rendered by `@vscode/markdown-it-katex`; malformed formulas fail the production build.
 - `npm run build` sets `NODE_ENV=production`, which can trigger webmention fetch logic if `WEBMENTION_IO_TOKEN` is configured.
 - Firebase deploy commands require the Firebase CLI and project access.
 
@@ -143,7 +144,7 @@ Repo-specific status:
 - The lockfile previously resolved vulnerable `liquidjs` releases through Eleventy.
 - Eleventy 3.1.6 declares `liquidjs` `^10.27.0`, which allows npm to resolve patched 10.x releases without a repository override.
 - Verification on 2026-09-16: the lockfile resolves `liquidjs` to `10.29.0`, and `npm audit` no longer reports a `liquidjs` advisory.
-- The dependency tree is not otherwise clean yet; `npm audit` still reports separate issues in packages such as `@remy/webmention`, `broken-link-checker`, and `markdown-it-katex`.
+- The dependency tree is not otherwise clean yet; `npm audit` still reports separate issues in packages such as `@remy/webmention` and `broken-link-checker`.
 
 To verify this status after dependency updates:
 
