@@ -146,7 +146,8 @@ Repo-specific status:
 - The lockfile previously resolved vulnerable `liquidjs` releases through Eleventy.
 - Eleventy 3.1.6 declares `liquidjs` `^10.27.0`, which allows npm to resolve patched 10.x releases without a repository override.
 - Verification on 2026-09-16: the lockfile resolves `liquidjs` to `10.29.0`, and `npm audit` no longer reports a `liquidjs` advisory.
-- The dependency tree is not otherwise clean yet; `npm audit` still reports separate issues in the `@remy/webmention` dependency chain.
+- `@remy/webmention` was replaced with `@aciccarello/webmention` 2.0.0 to remove its obsolete dependency chain. The scoped npm override keeps this package on Yargs 17.7.2 because its current CommonJS CLI still uses the singleton API removed in Yargs 18.
+- Verification on 2026-09-16: `npm audit` reports zero vulnerabilities.
 
 To verify this status after dependency updates:
 

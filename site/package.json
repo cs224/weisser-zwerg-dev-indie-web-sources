@@ -39,7 +39,7 @@
     "@11ty/eleventy": "^3.1.6",
     "@11ty/eleventy-plugin-rss": "^3.0.0",
     "@11ty/eleventy-plugin-syntaxhighlight": "^5.0.2",
-    "@remy/webmention": "^1.5.0",
+    "@aciccarello/webmention": "^2.0.0",
     "@vscode/markdown-it-katex": "^1.1.2",
     "bootstrap": "^5.3.8",
     "dotenv": "^17.4.2",
@@ -67,5 +67,10 @@
   "resolutions": {
     "minimist": "^1.2.7",
     "http-proxy": "^1.18.1"
+  },
+  "overrides": {
+    "@aciccarello/webmention": {
+      "yargs": "17.7.2"
+    }
   }
 }
