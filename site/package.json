@@ -22,7 +22,8 @@
     "ncu": "npm-check-updates --target minor",
     "ncu-u": "npm-check-updates --target minor -u",
     "ncua": "npm-check-updates",
-    "check-links": "npx broken-link-checker http://localhost:8080/posts/groupware-sogo/"
+    "check-links": "linkinator dist --recurse --check-fragments --check-css --skip '^(?!http://127[.]0[.]0[.]1:)https?://' --skip 'http://127[.]0[.]0[.]1:5001/$' --verbosity error",
+    "check-links:external": "linkinator dist --recurse --check-css --skip 'http://127[.]0[.]0[.]1:5001/$' --skip 'https://webmention[.]io/weisser-zwerg[.]dev/xmlrpc$' --skip 'https://indieauth[.]com/auth$' --skip 'https://aperture[.]p3k[.]io/microsub/398$' --verbosity error"
   },
   "repository": {
     "type": "git",
@@ -41,7 +42,6 @@
     "@remy/webmention": "^1.5.0",
     "@vscode/markdown-it-katex": "^1.1.2",
     "bootstrap": "^5.3.8",
-    "broken-link-checker": "^0.7.8",
     "dotenv": "^17.4.2",
     "ecstatic": ">=4.1.4",
     "eleventy-plugin-nesting-toc": "^1.3.0",
@@ -49,6 +49,7 @@
     "first-input-delay": "^0.1.3",
     "http-server": "^14.1.1",
     "jest": "^30.5.1",
+    "linkinator": "^8.1.0",
     "lodash": "^4.18.1",
     "luxon": "^3.7.2",
     "markdown-it-anchor": "^10.0.0",

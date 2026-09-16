@@ -95,6 +95,7 @@ module.exports = function(eleventyConfig) {
     let markdownItAnchor = require('markdown-it-anchor');
     let markdownItKatex = require("@vscode/markdown-it-katex").default;
     let markdownItInclude = require('markdown-it-include');
+    const slugifyHeading = value => decodeURIComponent(markdownItAnchor.defaults.slugify(value));
     let options = {
         html: true,
         breaks: false,
@@ -111,6 +112,7 @@ module.exports = function(eleventyConfig) {
         .use(markdownItEmoji)
         .use(markdownItFootnote)
         .use(markdownItAnchor, {
+            slugify: slugifyHeading,
             permalink: markdownItAnchor.permalink.linkInsideHeader({
                 symbol: link_icon,
                 placement: 'before',

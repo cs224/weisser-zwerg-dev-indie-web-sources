@@ -130,9 +130,11 @@ Then verify:
 Optional local verification:
 
 ```bash
-npm run serveht
 npm run check-links
+npm run check-links:external
 ```
+
+Both link checks use Linkinator and report only errors. Run the production build first. `check-links` is the fast, deterministic check for generated pages, URL fragments, and CSS resources; it skips external HTTP(S) URLs. `check-links:external` performs the slower network-dependent scan and excludes protocol endpoints that do not accept an unauthenticated `GET` request. External results can still depend on network availability and remote-site bot protection.
 
 ## Current LiquidJS security status
 
@@ -144,7 +146,7 @@ Repo-specific status:
 - The lockfile previously resolved vulnerable `liquidjs` releases through Eleventy.
 - Eleventy 3.1.6 declares `liquidjs` `^10.27.0`, which allows npm to resolve patched 10.x releases without a repository override.
 - Verification on 2026-09-16: the lockfile resolves `liquidjs` to `10.29.0`, and `npm audit` no longer reports a `liquidjs` advisory.
-- The dependency tree is not otherwise clean yet; `npm audit` still reports separate issues in packages such as `@remy/webmention` and `broken-link-checker`.
+- The dependency tree is not otherwise clean yet; `npm audit` still reports separate issues in the `@remy/webmention` dependency chain.
 
 To verify this status after dependency updates:
 
