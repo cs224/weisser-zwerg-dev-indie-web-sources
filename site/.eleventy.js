@@ -6,7 +6,7 @@ const shortcodes = require('./_eleventy/shortcodes.js')
 
 moment.locale('en');
 
-const pluginRss = require("@11ty/eleventy-plugin-rss");
+const { default: pluginRss } = require("@11ty/eleventy-plugin-rss");
 const pluginSyntaxHighlight = require('@11ty/eleventy-plugin-syntaxhighlight')
 
 
