@@ -76,6 +76,7 @@ This repository already includes `npm-check-updates` helper scripts:
 
 ```bash
 npm run ncu
+npm run ncua
 npm run ncu-u
 npm install
 ```
@@ -83,10 +84,17 @@ npm install
 Use:
 
 - `npm run ncu` to inspect minor upgrades
+- `npm run ncua` to inspect all available upgrades, including major versions
 - `npm run ncu-u` to rewrite `package.json` with newer allowed versions
 - `npm install` afterwards to regenerate the lockfile
 
 Do not treat major upgrades or `npm audit fix --force` as routine maintenance. Those can change runtime behavior and should be reviewed as intentional dependency changes.
+
+### Dependabot policy
+
+Dependabot alerts and automated updates are intentionally disabled for this repository. The project currently has no CI pipeline that could validate automatically generated dependency pull requests, so dependency and security maintenance remains a manual process.
+
+Use `npm run ncu` and `npm run ncua` to review available updates, `npm audit` to identify known vulnerabilities in the resolved dependency tree, and the clean-install and build checks below before accepting dependency changes. Reconsider enabling Dependabot if CI coverage is added in the future.
 
 ## What to watch out for
 
@@ -125,19 +133,19 @@ npm run serveht
 npm run check-links
 ```
 
-## Current security remediation
+## Current LiquidJS security status
 
-An advisory reported that `liquidjs` is affected by path traversal fallback vulnerability `CVE-2026-30952`.
+Security advisories have reported path traversal, arbitrary file-read, remote-code-execution, and resource-exhaustion vulnerabilities in older `liquidjs` releases.
 
 Repo-specific status:
 
 - Eleventy depends on `liquidjs` transitively.
-- The lockfile previously resolved `liquidjs` to `10.24.0`.
-- This repo now uses npm `overrides` to force `liquidjs` `10.25.0` until the upstream Eleventy dependency chain guarantees a fixed version by default.
-- Verification on 2026-03-11: `npm audit` no longer reports a `liquidjs` advisory in this repository after the override and lockfile refresh.
+- The lockfile previously resolved vulnerable `liquidjs` releases through Eleventy.
+- Eleventy 3.1.6 declares `liquidjs` `^10.27.0`, which allows npm to resolve patched 10.x releases without a repository override.
+- Verification on 2026-09-16: the lockfile resolves `liquidjs` to `10.29.0`, and `npm audit` no longer reports a `liquidjs` advisory.
 - The dependency tree is not otherwise clean yet; `npm audit` still reports separate issues in packages such as `@remy/webmention`, `broken-link-checker`, and `markdown-it-katex`.
 
-To apply and verify this remediation:
+To verify this status after dependency updates:
 
 ```bash
 npm install
@@ -145,4 +153,4 @@ npm ci
 npm run build
 ```
 
-After that, confirm the lockfile resolves `liquidjs` to `10.25.0` or newer.
+After that, confirm the lockfile resolves `liquidjs` to `10.29.0` or newer.
