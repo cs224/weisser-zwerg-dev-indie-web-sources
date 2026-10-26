@@ -112,3 +112,246 @@ The goal is not to replace convenient clients with shell commands.
 It is to make the inner workings of Nostr visible before an application hides them again.
 
 Once those pieces are visible, it becomes easier to evaluate where Nostr fits into independent publishing: not necessarily as the one permanent home of an article, but as a portable identity, a syndication mechanism, a discussion layer, and a family of possible discovery systems.
+
+### Install `nak`
+
+`nak` is a command-line tool for creating and inspecting keys, constructing and signing events, talking to relays, and encoding Nostr identifiers. Its source code and releases are available here:
+
+* https://github.com/fiatjaf/nak
+* https://github.com/fiatjaf/nak/releases
+
+The examples below were tested with `nak v0.21.2`. Pinning the version matters for a reproducible walkthrough because commands and defaults can change.
+
+The shortest installation command is the project's installer:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/fiatjaf/nak/master/install.sh | sh
+```
+
+For the exact version used here, I can instead download the official Linux x86-64 release artifact and verify the checksum before installing it:
+
+```bash
+nak_download="$(mktemp)"
+
+curl -fL https://github.com/fiatjaf/nak/releases/download/v0.21.2/nak-v0.21.2-linux-amd64 -o "$nak_download"
+
+printf '0acd56fea6ab1b9a0a68c8615670c6f8eff9e8878922442e387b94ee15266bb8  %s\n' "$nak_download" | sha256sum --check
+
+install -d -m 755 "$HOME/.local/bin"
+install -m 755 "$nak_download" "$HOME/.local/bin/nak"
+rm -f "$nak_download"
+```
+
+Finally, I check which executable the shell finds and which version it reports:
+
+```bash
+command -v nak
+nak --version
+```
+
+> If `command -v nak` finds nothing after installation, `$HOME/.local/bin` is not yet on the shell's `PATH`.
+> Add it to your PATH in your `~/.bashrc` or similar.
+
+### Create a Key Pair and Derive Its Public Identity
+
+A Nostr identity begins with a key pair, not with an account at a provider:
+
+* The **secret key** creates signatures. Anyone who has it can act as the identity.
+* The **public key** identifies the author and lets everyone verify those signatures.
+
+Both keys commonly appear in two representations.
+The protocol and command-line tools often use 64-character hexadecimal strings.
+People usually exchange the NIP-19 encodings: an `nsec1...` string for the secret key and an `npub1...` string for the public key.
+These are not four different keys.
+Hex and `nsec` represent the same secret; public-key hex and `npub` represent the same public key.
+The relevant encoding specification is [NIP-19](https://github.com/nostr-protocol/nips/blob/master/19.md).
+
+#### Generate the key locally
+
+I create a private directory, restrict its permissions, and let `nak` generate the secret directly into a file:
+
+```bash
+nostr_key_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nostr-by-foot"
+install -d -m 700 "$nostr_key_dir"
+
+(
+    umask 077
+    nak key generate > "$nostr_key_dir/identity.hex"
+    chmod 600 "$nostr_key_dir/identity.hex"
+)
+```
+
+`identity.hex` is the identity's unencrypted secret key. It should never be committed to Git, pasted into a website, included in a shell argument, or shown in a screenshot.
+Before publishing anything under the identity, I would also make a tested backup in a suitable password manager or offline store.
+If the only copy is lost, the identity is lost; if somebody copies it, the identity is compromised.
+
+The public-key hex value can be derived whenever needed:
+
+```bash
+nak key public < "$nostr_key_dir/identity.hex"
+```
+
+The more recognizable `npub` form is only one additional encoding step:
+
+```bash
+nak key public < "$nostr_key_dir/identity.hex" | nak encode npub
+```
+
+Both results are public and may be shared. I can save them without creating another secret:
+
+```bash
+nak key public < "$nostr_key_dir/identity.hex" > "$nostr_key_dir/identity.pubkey.hex"
+nak encode npub < "$nostr_key_dir/identity.pubkey.hex" > "$nostr_key_dir/identity.npub"
+```
+
+For completeness, the secret can also be displayed in its `nsec` form:
+
+```bash
+nak encode nsec < "$nostr_key_dir/identity.hex"
+```
+
+That command prints the full secret to the terminal.
+I would use it only when I deliberately need the NIP-19 form for a secure backup or a trusted signer.
+An `nsec` is not a username or login token with limited scope; it conveys the same complete authority as the hexadecimal secret.
+
+Later, after selecting relays, I can encode the public key and relay hints together as an `nprofile1...` value.
+That is a portable locator, not another identity.
+Similarly, a [NIP-05](https://github.com/nostr-protocol/nips/blob/master/05.md) name such as `author@example.org` can help people discover or verify a public key, but it is not the key itself.
+
+#### Avoid giving every application the secret
+
+The commands above are useful for seeing how the identity works, but they also expose an important operational question: which process is allowed to read the secret?
+
+The simplest automation reads the key and signs directly. A safer division gives the secret to one trusted signer and lets other applications submit signing requests. This resembles an SSH agent or a password-manager browser extension: the application receives a signature, not the private material.
+
+NIP-46 calls such a remote signer a **bunker**:
+
+https://github.com/nostr-protocol/nips/blob/master/46.md
+
+A `bunker://...` string is a connection capability. It tells a client how to reach a signer and normally includes a connection secret. It is not the original `nsec`, but it is still sensitive: a client holding an unrestricted bunker capability may ask the signer to create valid events in my name.
+
+#### Run a local single-key bunker with `nak`
+
+`nak bunker` runs a NIP-46 signer while keeping the full secret in that process. In this example, a subshell limits the lifetime of the environment variable; the key does not appear in the process's command-line arguments:
+
+```bash
+(
+  IFS= read -r NOSTR_SECRET_KEY < "$nostr_key_dir/identity.hex"
+  export NOSTR_SECRET_KEY
+
+  exec nak bunker \
+    --qrcode \
+    --persist \
+    --profile by-foot \
+    wss://relay.damus.io \
+    wss://nos.lol
+)
+```
+
+The process prints a connection URI and, with `--qrcode`, a QR code for clients that support NIP-46. I treat both as secrets and do not copy them into the article, Git, logs, or screenshots. The signer must remain running to answer requests. This setup isolates ordinary clients from the key, but the machine running `nak` still has the complete key.
+
+The relay addresses above are explicit transport choices for this example, not a claim that they are permanent or universally suitable. Relay selection is the next step of the experiment.
+
+#### Create a distributed Promenade bunker
+
+The setup I used earlier at https://start.nostr.net/ went one step further. Promenade divides the signing capability among remote FROST signers. In the chosen 2-of-3 arrangement, no single signer holds the complete key and two signers must cooperate to create a signature.
+
+The browser setup failed while subscribing for signer acknowledgements. It emitted a Nostr `REQ` whose filter was incorrectly nested inside an extra array. Relays answered `ERROR: bad req: provided filter is not an object`, even though the enrollment messages had already been sent. The bug report and the evidence are here:
+
+https://github.com/dtonon/nstart/issues/42
+
+https://github.com/dtonon/nstart/issues/42#issuecomment-6149557517
+
+The successful command-line reproduction and workaround are recorded here:
+
+https://github.com/dtonon/nstart/issues/42#issuecomment-6151638579
+
+I extracted that workaround into the standalone `nostr-bunker-setup` project accompanying this article. It pins `promenade-trusted-dealer` 0.4.3 and `@nostr/tools` 2.16.2, sends a proper filter object, records exact requests and acknowledgements, and refuses ambiguous blind retries.
+
+From the project directory, I first install the locked dependencies and run its offline tests:
+
+```bash
+npm ci --ignore-scripts
+npm test
+node bunker.mjs help
+```
+
+I then calculate the expected public identity, prepare a private state parent outside every Git checkout, and review an offline provisioning plan:
+
+```bash
+nostr_key_file="${XDG_CONFIG_HOME:-$HOME/.config}/nostr-by-foot/identity.hex"
+nostr_npub="$(nak key public < "$nostr_key_file" | nak encode npub)"
+nostr_state_parent="${XDG_CONFIG_HOME:-$HOME/.config}/nostr-bunker"
+
+install -d -m 700 "$nostr_state_parent"
+
+node bunker.mjs preview \
+  --key-file "$nostr_key_file" \
+  --expect-npub "$nostr_npub"
+```
+
+`preview` opens no network connection, creates no shares, signs nothing, and writes no state. It shows the exact coordinator, signer public keys, relays, threshold, dependency versions, and trust warnings.
+
+Provisioning is a separate, explicit external write. I run it only after backing up the key and reviewing `config.json`:
+
+```bash
+node bunker.mjs provision \
+  --key-file "$nostr_key_file" \
+  --expect-npub "$nostr_npub" \
+  --state-dir "$nostr_state_parent/attempt-1" \
+  --confirm-provision "$nostr_npub" \
+  --key-backed-up \
+  --accept-remote-signers \
+  --accept-coordinator-ack-only
+```
+
+The attempt directory must not already exist. On success, its mode-600 `connection.json` contains the private `bunker://` capability. Public output contains only a capability-free summary. If a request times out, I inspect the retained state instead of rerunning the operation blindly: a remote signer may have received a share even when its acknowledgement did not reach me.
+
+Finally, I can test the resulting bunker without publishing the test event:
+
+```bash
+node bunker.mjs sign-check \
+  --state-dir "$nostr_state_parent/attempt-1" \
+  --confirm-remote-sign "$nostr_npub"
+```
+
+The project's README documents offline status inspection, read-only acknowledgement lookup, and the two narrowly constrained recovery modes for failures proven to have happened before a share was sent.
+
+A distributed bunker changes the failure and trust model; it does not make impersonation impossible. Two of the configured signers can cooperate, and possession of the unrestricted connection capability can authorize signing requests. I therefore protect the `bunker://` value like a credential even though it is not the original key.
+
+#### Browser signers: the password-manager analogy
+
+Web clients often support NIP-07, a small browser interface exposed as `window.nostr`. Instead of asking me to paste an `nsec`, the website asks a browser extension for the public key or a signature:
+
+https://github.com/nostr-protocol/nips/blob/master/07.md
+
+There are two useful variants:
+
+* Extensions such as **nos2x** and **Alby** can act as local browser signers. The web page receives signatures through NIP-07 rather than receiving the private key.
+* **Bunker46 Extension** is a bridge: it exposes NIP-07 to the website but forwards requests to a separate NIP-46 bunker. The browser extension stores the connection and permission choices, not the identity's private key.
+
+Bunker46 is therefore a natural front end for either a signer I operate myself or another compatible bunker:
+
+https://bunker46.github.io/extension/
+
+https://github.com/dsbaars/bunker46-extension
+
+Other examples include:
+
+* nos2x for Chromium:
+
+  https://github.com/fiatjaf/nos2x
+
+* Alby for Chromium and Firefox:
+
+  https://github.com/getAlby/lightning-browser-extension
+
+* Amber, an Android signer that supports native Android signing and NIP-46:
+
+  https://github.com/greenart7c3/Amber
+
+* nsec.app, a browser-accessible key store and remote signer:
+
+  https://nsec.app/
+
+The password-manager comparison is helpful, but incomplete. A password manager normally returns a credential to a login form. A Nostr signer performs a cryptographic action with lasting consequences. I still need to inspect what a client asks me to sign, limit remembered permissions, and revoke application connections I no longer use.
