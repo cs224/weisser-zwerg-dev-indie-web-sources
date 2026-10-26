@@ -417,3 +417,57 @@ nak decode "$nostr_nprofile"
 ```
 
 An `nprofile` is a portable locator, not another identity. The embedded public key is still the identity; the relay addresses merely tell a client where it might begin looking for that identity's events. They do not prove that the relays contain anything, require a client to use them, or replace a separately published relay list.
+
+#### Publish the Profile Settings
+
+The name is slightly misleading: an `nprofile` does not contain the profile settings shown by clients such as Primal or YakiHonne. It contains the public key and optional relay hints that help a client find the identity's events.
+
+The actual profile is a signed **kind-0 metadata event**. Its `content` field contains a JSON object. [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md) defines the core `name`, `about`, and `picture` fields. [NIP-24](https://github.com/nostr-protocol/nips/blob/master/24.md) documents additional widely used fields such as `display_name`, `website`, and `banner`.
+
+Create the profile metadata as a normal JSON file:
+
+```bash
+cat > "$nostr_key_dir/profile.json" <<'EOF'
+{
+  "name": "cs224",
+  "display_name": "cs224",
+  "about": "Blogging enthusiast",
+  "website": "https://weisser-zwerg.dev/",
+  "picture": "https://weisser-zwerg.dev/android-chrome-256x256.png"
+}
+EOF
+chmod 600 "$nostr_key_dir/profile.json"
+```
+
+The image is not embedded in the event. `picture` is a URL from which clients can load it.
+
+Next, construct and sign the kind-0 event locally. As before, the subshell keeps the secret out of the command-line arguments and limits the lifetime of the environment variable:
+
+```bash
+(
+  IFS= read -r NOSTR_SECRET_KEY < "$nostr_key_dir/identity.hex"
+  export NOSTR_SECRET_KEY
+
+  nak event --kind 0 --content @"$nostr_key_dir/profile.json" < /dev/null > "$nostr_key_dir/profile.event.json"
+)
+```
+
+You can inspect both the event envelope and the JSON stored inside its `content` field before sending it anywhere:
+
+```bash
+jq . "$nostr_key_dir/profile.event.json"
+jq -r '.content | fromjson' "$nostr_key_dir/profile.event.json"
+nak verify < "$nostr_key_dir/profile.event.json"
+```
+
+`nak verify` prints nothing when the signature is valid and exits unsuccessfully when verification fails.
+
+Finally, publish this **exact signed event** to the selected relays:
+
+```bash
+nak event "${nostr_relays[@]}" < "$nostr_key_dir/profile.event.json"
+```
+
+Kind 0 is a replaceable event kind: clients normally use the newest profile event they can find for a public key. When you update the profile, publish a complete replacement containing every field you want to retain. A field omitted from the new event may disappear once clients discover it.
+
+The relays may now hold both parts needed by a client: the kind-0 event containing the profile settings and other events published by the same public key. The `nprofile` value merely packages that public key with hints about which relays the client might query first.
