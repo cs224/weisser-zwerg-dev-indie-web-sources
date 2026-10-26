@@ -263,7 +263,7 @@ A `bunker://...` string is a connection capability. It tells a client how to rea
 
 #### Run a local single-key bunker with `nak`
 
-`nak bunker` runs a NIP-46 signer while keeping the full secret in that process. In this example, a subshell limits the lifetime of the environment variable; the key does not appear in the process's command-line arguments:
+`nak bunker` runs a [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md) signer while keeping the full secret in that process. In this example, a subshell limits the lifetime of the environment variable; the key does not appear in the process's command-line arguments:
 
 ```bash
 (
@@ -274,7 +274,7 @@ A `bunker://...` string is a connection capability. It tells a client how to rea
 )
 ```
 
-The process prints a connection URI and, with `--qrcode`, a QR code for clients that support NIP-46.
+The process prints a connection URI and, with `--qrcode`, a QR code for clients that support [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md).
 I treat both as secrets and do not copy them into the article, Git, logs, or screenshots.
 The signer must remain running to answer requests.
 This setup isolates ordinary clients from the key, but the machine running `nak` still has the complete key.
@@ -337,19 +337,23 @@ node bunker.mjs provision --key-file "$nostr_key_file" --expect-npub "$nostr_npu
   --accept-coordinator-ack-only
 ```
 
-The attempt directory must not already exist. On success, its mode-600 `connection.json` contains the private `bunker://` capability. Public output contains only a capability-free summary. If a request times out, I inspect the retained state instead of rerunning the operation blindly: a remote signer may have received a share even when its acknowledgement did not reach me.
+The attempt directory must not already exist.
 
-Finally, I can test the resulting bunker without publishing the test event:
+> **On success, its mode-600 `connection.json` contains the private `bunker://` capability.**
+
+Public output contains only a capability-free summary.
+If a request times out then inspect the retained state instead of rerunning the operation blindly: a remote signer may have received a share even when its acknowledgement did not return.
+
+Finally, you can test the resulting bunker without publishing the test event:
 
 ```bash
-node bunker.mjs sign-check \
-  --state-dir "$nostr_state_parent/attempt-1" \
-  --confirm-remote-sign "$nostr_npub"
+node bunker.mjs sign-check --state-dir "$nostr_state_parent/attempt-1" --confirm-remote-sign "$nostr_npub"
 ```
 
-The project's README documents offline status inspection, read-only acknowledgement lookup, and the two narrowly constrained recovery modes for failures proven to have happened before a share was sent.
+A distributed bunker changes the failure and trust model; it does not make impersonation impossible.
+Two of the configured signers can cooperate, and possession of the unrestricted connection capability can authorize signing requests.
 
-A distributed bunker changes the failure and trust model; it does not make impersonation impossible. Two of the configured signers can cooperate, and possession of the unrestricted connection capability can authorize signing requests. I therefore protect the `bunker://` value like a credential even though it is not the original key.
+> **You should therefore protect the `bunker://` value like a credential even though it is not the original key.**
 
 #### Browser signers: the password-manager analogy
 
@@ -358,10 +362,10 @@ Instead of asking me to paste an `nsec`, the website asks a browser extension fo
 
 There are two useful variants:
 
-* Extensions such as **nos2x** and **Alby** can act as local browser signers. The web page receives signatures through NIP-07 rather than receiving the private key.
-* **Bunker46 Extension** is a bridge: it exposes NIP-07 to the website but forwards requests to a separate NIP-46 bunker. The browser extension stores the connection and permission choices, not the identity's private key.
+* Extensions such as **[nos2x](https://github.com/fiatjaf/nos2x)** and **[Alby](https://github.com/getAlby/lightning-browser-extension)** can act as local browser signers. The web page receives signatures through [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md) rather than receiving the private key.
+* **[Bunker46 Extension](https://bunker46.github.io/extension/)** is a bridge: it exposes [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md) to the website but forwards requests to a separate [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md) bunker. The browser extension stores the connection and permission choices, not the identity's private key.
 
-Bunker46 is therefore a natural front end for either a signer I operate myself or another compatible bunker:
+[Bunker46](https://bunker46.github.io/extension/) is therefore a natural front end for either a signer I operate myself or another compatible bunker:
 
 https://bunker46.github.io/extension/
 
@@ -369,19 +373,19 @@ https://github.com/dsbaars/bunker46-extension
 
 Other examples include:
 
-* nos2x for Chromium:
+* [nos2x](https://github.com/fiatjaf/nos2x) for Chromium:
 
   https://github.com/fiatjaf/nos2x
 
-* Alby for Chromium and Firefox:
+* [Alby](https://github.com/getAlby/lightning-browser-extension) for Chromium and Firefox:
 
   https://github.com/getAlby/lightning-browser-extension
 
-* Amber, an Android signer that supports native Android signing and NIP-46:
+* [Amber](https://github.com/greenart7c3/Amber), an Android signer that supports native Android signing and [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md):
 
   https://github.com/greenart7c3/Amber
 
-* nsec.app, a browser-accessible key store and remote signer:
+* [nsec.app](https://nsec.app/), a browser-accessible key store and remote signer:
 
   https://nsec.app/
 
