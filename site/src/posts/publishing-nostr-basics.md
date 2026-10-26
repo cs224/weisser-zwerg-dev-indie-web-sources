@@ -241,6 +241,16 @@ These tools follow a similar pattern, but they are not interchangeable.
 Each understands particular key types, request formats, and signing protocols.
 “Challenge-response” conveys the general intuition, although “signing request and response” is more precise: the application asks another component to sign a specific object.
 
+A signer can itself have different internal structures:
+
+* A **single-key signer**, such as a local `nak bunker`, holds the complete private key in one process or device.
+* A **distributed threshold signer** divides the signing material into `n` shares held by different participants. In a `t`-of-`n` arrangement, at least `t` participants must cooperate; fewer than `t` cannot create a signature.
+
+[FROST](https://www.rfc-editor.org/rfc/rfc9591.html), short for *Flexible Round-Optimized Schnorr Threshold*, is a protocol for the second arrangement.
+Each selected participant produces a partial Schnorr signature, which a coordinator combines into one ordinary signature under the identity's existing public key.
+To the requesting application and anyone verifying the result, the group can therefore look like a single signer.
+No individual remote participant needs the complete private key during normal signing, although a threshold of participants can still collude.
+
 The separation also does not make every request safe.
 A compromised application may abuse an unlocked or unrestricted signer without ever extracting its key.
 A useful signer therefore combines key isolation with visible approvals, narrowly scoped permissions, or enforceable policies.
@@ -274,8 +284,17 @@ The relay addresses above are explicit transport choices for this example, not a
 #### Create a distributed Promenade bunker
 
 The setup I used earlier at <https://start.nostr.net/> went one step further.
-Promenade divides the signing capability among remote FROST signers.
-In the chosen 2-of-3 arrangement, no single signer holds the complete key and two signers must cooperate to create a signature.
+[Promenade](https://pkg.go.dev/fiatjaf.com/promenade) is a Nostr-oriented system consisting of a coordinator server/relay, remote signer daemons, and key-sharding tools.
+It presents a normal [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md) bunker interface to a client, but implements that signer internally as a distributed threshold signer.
+
+During enrollment, the setup reads the existing secret locally and performs a **trusted-dealer** step: the local setup process temporarily has the complete secret and derives three distinct shares from it.
+It encrypts one share for each selected signer and registers the resulting arrangement with the coordinator.
+Promenade uses a Nostr/[BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki)-compatible variant of [FROST](https://www.rfc-editor.org/rfc/rfc9591.html) for signing.
+When a client requests a signature, the coordinator selects two available signers, collects their partial signatures, and combines them into the ordinary Schnorr signature placed on the Nostr event.
+
+This is the **2-of-3** threshold-signer case introduced above.
+No single remote signer can act alone, and one signer can be unavailable without preventing signing.
+Conversely, any two cooperating signers reach the threshold, so this distributes trust rather than eliminating it.
 
 The browser setup failed while subscribing for signer acknowledgements. It emitted a Nostr `REQ` whose filter was incorrectly nested inside an extra array. Relays answered `ERROR: bad req: provided filter is not an object`, even though the enrollment messages had already been sent. The bug report and the evidence are here:
 
