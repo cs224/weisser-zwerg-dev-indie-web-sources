@@ -302,7 +302,7 @@ The trade-off is that two colluding signers could also misuse the identity: Prom
 During the set-up process of my first Nostr identity via the <https://start.nostr.net/> web-site the browser setup failed while subscribing for signer acknowledgements.
 The bug report is here: [failed to get enough signers - ERROR: bad req: provided filter is not an object](https://github.com/dtonon/nstart/issues/42)
 
-I created a workaround as the standalone `nostr-bunker-setup` project accompanying this article.
+I created a workaround as the standalone [nostr-bunker-setup](https://github.com/cs224/nostr-bunker-setup) project accompanying this article.
 It pins `promenade-trusted-dealer` 0.4.3 and `@nostr/tools` 2.16.2.
 
 From the project directory, you should first install the dependencies and run its offline tests:
@@ -322,9 +322,7 @@ nostr_state_parent="${XDG_CONFIG_HOME:-$HOME/.config}/nostr-bunker"
 
 install -d -m 700 "$nostr_state_parent"
 
-node bunker.mjs preview \
-  --key-file "$nostr_key_file" \
-  --expect-npub "$nostr_npub"
+node bunker.mjs preview --key-file "$nostr_key_file" --expect-npub "$nostr_npub"
 ```
 
 `preview` opens no network connection, creates no shares, signs nothing, and writes no state. It shows the exact coordinator, signer public keys, relays, threshold, dependency versions, and trust warnings.
@@ -332,11 +330,8 @@ node bunker.mjs preview \
 Provisioning is a separate, explicit external write. I run it only after backing up the key and reviewing `config.json`:
 
 ```bash
-node bunker.mjs provision \
-  --key-file "$nostr_key_file" \
-  --expect-npub "$nostr_npub" \
+node bunker.mjs provision --key-file "$nostr_key_file" --expect-npub "$nostr_npub" \
   --state-dir "$nostr_state_parent/attempt-1" \
-  --confirm-provision "$nostr_npub" \
   --key-backed-up \
   --accept-remote-signers \
   --accept-coordinator-ack-only
