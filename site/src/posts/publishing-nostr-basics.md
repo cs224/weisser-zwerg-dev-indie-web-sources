@@ -36,7 +36,7 @@ While each individual concept is simple enough, I found the resulting ecosystem 
 The easiest way to misunderstand Nostr is to approach it as a replacement for X, Mastodon, Medium, or Substack.
 Those names describe services or recognizable applications.
 
-I suggest you start with understanding Nostr as a collection of protocol building blocks, so-called [NIPs](https://nips.nostr.com/), from which applications can be assembled.
+I suggest you start by understanding Nostr as a collection of protocol building blocks, so-called [NIPs](https://nips.nostr.com/), from which applications can be assembled.
 It is the technology under the hood that powers the applications, but those applications can differ wildly and may not even remotely resemble X, Mastodon, Medium, or Substack.
 
 Here are a few examples of things people have built on top of Nostr that have no obvious relationship to conventional publishing:
@@ -128,7 +128,7 @@ The shortest installation command is the project's installer:
 curl -sSL https://raw.githubusercontent.com/fiatjaf/nak/master/install.sh | sh
 ```
 
-For the exact version used here, I can instead download the official Linux x86-64 release artifact and verify the checksum before installing it:
+For the exact version used here, you can instead download the official Linux x86-64 release artifact and verify the checksum before installing it:
 
 ```bash
 nak_download="$(mktemp)"
@@ -142,7 +142,7 @@ install -m 755 "$nak_download" "$HOME/.local/bin/nak"
 rm -f "$nak_download"
 ```
 
-Finally, I check which executable the shell finds and which version it reports:
+Finally, check which executable the shell finds and which version it reports:
 
 ```bash
 command -v nak
@@ -168,7 +168,7 @@ The relevant encoding specification is [NIP-19](https://github.com/nostr-protoco
 
 #### Generate the key locally
 
-I create a private directory, restrict its permissions, and let `nak` generate the secret directly into a file:
+Create a private directory, restrict its permissions, and let `nak` generate the secret directly into a file:
 
 ```bash
 nostr_key_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nostr-by-foot"
@@ -182,7 +182,7 @@ install -d -m 700 "$nostr_key_dir"
 ```
 
 `identity.hex` is the identity's unencrypted secret key. It should never be committed to Git, pasted into a website, included in a shell argument, or shown in a screenshot.
-Before publishing anything under the identity, I would also make a tested backup in a suitable password manager or offline store.
+Before publishing anything under the identity, you should also make a tested backup in a suitable password manager or offline store.
 If the only copy is lost, the identity is lost; if somebody copies it, the identity is compromised.
 
 The public-key hex value can be derived whenever needed:
@@ -197,7 +197,7 @@ The more recognizable `npub` form is only one additional encoding step:
 nak key public < "$nostr_key_dir/identity.hex" | nak encode npub
 ```
 
-Both results are public and may be shared. I can save them without creating another secret:
+Both results are public and may be shared. You can save them without creating another secret:
 
 ```bash
 nak key public < "$nostr_key_dir/identity.hex" > "$nostr_key_dir/identity.pubkey.hex"
@@ -211,10 +211,10 @@ nak encode nsec < "$nostr_key_dir/identity.hex"
 ```
 
 That command prints the full secret to the terminal.
-I would use it only when I deliberately need the NIP-19 form for a secure backup or a trusted signer.
+Use it only when you deliberately need the NIP-19 form for a secure backup or a trusted signer.
 An `nsec` is not a username or login token with limited scope; it conveys the same complete authority as the hexadecimal secret.
 
-Later, after selecting relays, I can encode the public key and relay hints together as an `nprofile1...` value, also defined in [NIP-19](https://github.com/nostr-protocol/nips/blob/master/19.md#shareable-identifiers-with-extra-metadata).
+Later, after selecting relays, you can encode the public key and relay hints together as an `nprofile1...` value, also defined in [NIP-19](https://github.com/nostr-protocol/nips/blob/master/19.md#shareable-identifiers-with-extra-metadata).
 That is a portable locator, not another identity.
 Similarly, a [NIP-05](https://github.com/nostr-protocol/nips/blob/master/05.md) name such as `author@example.org` can help people discover or verify a public key, but it is not the key itself.
 
@@ -259,7 +259,7 @@ A useful signer therefore combines key isolation with visible approvals, narrowl
 
 In Nostr, [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md) standardizes a remote-signing boundary and calls the remote signer a **bunker**.
 
-A `bunker://...` string is a connection capability. It tells a client how to reach a signer and normally includes a connection secret. It is not the original `nsec`, but it is still sensitive: a client holding an unrestricted bunker capability may ask the signer to create valid events in my name.
+A `bunker://...` string is a connection capability. It tells a client how to reach a signer and normally includes a connection secret. It is not the original `nsec`, but it is still sensitive: a client holding an unrestricted bunker capability may ask the signer to create valid events in your name.
 
 #### Run a local single-key bunker with `nak`
 
@@ -275,7 +275,7 @@ A `bunker://...` string is a connection capability. It tells a client how to rea
 ```
 
 The process prints a connection URI and, with `--qrcode`, a QR code for clients that support [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md).
-I treat both as secrets and do not copy them into the article, Git, logs, or screenshots.
+Treat both as secrets and do not copy them into an article, Git, logs, or screenshots.
 The signer must remain running to answer requests.
 This setup isolates ordinary clients from the key, but the machine running `nak` still has the complete key.
 
@@ -283,15 +283,15 @@ The relay addresses above are explicit transport choices for this example, not a
 
 #### Create a distributed Promenade bunker
 
-I did set-up my first Nostr identity via the <https://start.nostr.net/> web-site that offers to create a [Promenade](https://pkg.go.dev/fiatjaf.com/promenade) bunker.
+I set up my first Nostr identity via the <https://start.nostr.net/> website, which offers to create a [Promenade](https://pkg.go.dev/fiatjaf.com/promenade) bunker.
 Promenade looks like a normal [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md) bunker to the application using it.
 Behind that single interface, however, it divides the signing capability among several remote signers.
 
-During the one-time setup, my computer reads the existing secret and divides it into three encrypted shares.
+During the one-time setup, my computer read the existing secret and divided it into three encrypted shares.
 Each selected signer receives one share, which is not sufficient to sign anything by itself.
 The setup component that performs this initial split is called the **trusted dealer** because it temporarily has access to the complete secret.
 
-Promenade uses [FROST](https://www.rfc-editor.org/rfc/rfc9591.html), that we already introduced above.
+Promenade uses [FROST](https://www.rfc-editor.org/rfc/rfc9591.html), which was introduced above.
 Its coordinator acts as the organizer: it receives a signing request, asks enough of the remote signers to participate, and combines their contributions into the final signature.
 The application receives an ordinary signed Nostr event and does not need to understand those internal steps.
 
@@ -299,7 +299,7 @@ In the chosen **2-of-3** arrangement, no single remote signer can act alone.
 Any two signers can cooperate to create a signature, so one signer may be unavailable without stopping the system.
 The trade-off is that two colluding signers could also misuse the identity: Promenade distributes trust rather than eliminating it.
 
-During the set-up process of my first Nostr identity via the <https://start.nostr.net/> web-site the browser setup failed while subscribing for signer acknowledgements.
+During the setup of my first Nostr identity via <https://start.nostr.net/>, the browser failed while subscribing for signer acknowledgements.
 The bug report is here: [failed to get enough signers - ERROR: bad req: provided filter is not an object](https://github.com/dtonon/nstart/issues/42)
 
 I created a workaround as the standalone [nostr-bunker-setup](https://github.com/cs224/nostr-bunker-setup) project accompanying this article.
@@ -313,7 +313,7 @@ npm test
 node bunker.mjs help
 ```
 
-I then calculate the expected public identity, prepare a private state parent outside every Git checkout, and review an offline provisioning plan:
+You can then calculate the expected public identity, prepare a private state parent outside every Git checkout, and review an offline provisioning plan:
 
 ```bash
 nostr_key_file="${XDG_CONFIG_HOME:-$HOME/.config}/nostr-by-foot/identity.hex"
@@ -327,7 +327,7 @@ node bunker.mjs preview --key-file "$nostr_key_file" --expect-npub "$nostr_npub"
 
 `preview` opens no network connection, creates no shares, signs nothing, and writes no state. It shows the exact coordinator, signer public keys, relays, threshold, dependency versions, and trust warnings.
 
-Provisioning is a separate, explicit external write. I run it only after backing up the key and reviewing `config.json`:
+Provisioning is a separate, explicit external write. Run it only after backing up the key and reviewing `config.json`:
 
 ```bash
 node bunker.mjs provision --key-file "$nostr_key_file" --expect-npub "$nostr_npub" \
@@ -358,15 +358,43 @@ Two of the configured signers can cooperate, and possession of the unrestricted 
 #### Browser signers: the password-manager analogy
 
 Web clients often support [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md), a small browser interface exposed as `window.nostr`.
-Instead of asking me to paste an `nsec`, the website asks a browser extension for the public key or a signature.
+Instead of asking you to paste an `nsec`, the website asks a browser extension for the public key or a signature.
 
 There are two useful variants:
 
 * Extensions such as [nos2x](https://github.com/fiatjaf/nos2x) and [Alby](https://github.com/getAlby/lightning-browser-extension) can act as local browser signers. The web page receives signatures through [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md) rather than receiving the private key.
 * [Bunker46 Extension](https://bunker46.github.io/extension/) is a bridge: it exposes [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md) to the website but forwards requests to a separate [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md) bunker. The browser extension stores the connection and permission choices, not the identity's private key.
 
-[Bunker46](https://bunker46.github.io/extension/) is therefore a natural front end for either a signer I operate myself or another compatible bunker.
+[Bunker46](https://bunker46.github.io/extension/) is therefore a natural front end for either a signer you operate yourself or another compatible bunker.
 
 The password-manager comparison is helpful, but incomplete. A password manager normally returns a credential to a login form.
 A Nostr signer performs a cryptographic action with lasting consequences.
-I still need to inspect what a client asks me to sign, limit remembered permissions, and revoke application connections I no longer use.
+You still need to inspect what a client asks you to sign, limit remembered permissions, and revoke application connections you no longer use.
+
+### Select a Few Relays
+
+For this first experiment you can use three public relays. `nos.lol` and `nostr.mom` currently advertise the same operator public key, so this provides three relay addresses but only two operator identities:
+
+```bash
+nostr_relays=(
+  wss://relay.damus.io
+  wss://nos.lol
+  wss://nostr.mom
+)
+```
+
+This is a practical starter set, not a permanent recommendation. Relays can change their policies, require payment or authentication, reject particular event kinds, limit message sizes, or disappear. You can inspect each relay's current information document without publishing anything:
+
+```bash
+for nostr_relay in "${nostr_relays[@]}"; do
+  printf '\n%s\n' "$nostr_relay"
+  nak relay "$nostr_relay"
+done
+```
+
+The returned JSON describes the relay, supported NIPs, software, and advertised limitations. For your own selection you can research alternatives and current availability through:
+
+* Nostr.watch: <https://nostr.watch/relays>
+* Nostr Relays: <https://nostr.co.uk/relays/>
+
+Using more than one relay gives the same signed event more than one storage and retrieval path. It does not guarantee permanent retention, universal visibility, or replication between those relays.
