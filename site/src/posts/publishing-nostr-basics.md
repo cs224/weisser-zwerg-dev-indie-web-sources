@@ -214,19 +214,40 @@ That command prints the full secret to the terminal.
 I would use it only when I deliberately need the NIP-19 form for a secure backup or a trusted signer.
 An `nsec` is not a username or login token with limited scope; it conveys the same complete authority as the hexadecimal secret.
 
-Later, after selecting relays, I can encode the public key and relay hints together as an `nprofile1...` value.
+Later, after selecting relays, I can encode the public key and relay hints together as an `nprofile1...` value, also defined in [NIP-19](https://github.com/nostr-protocol/nips/blob/master/19.md#shareable-identifiers-with-extra-metadata).
 That is a portable locator, not another identity.
 Similarly, a [NIP-05](https://github.com/nostr-protocol/nips/blob/master/05.md) name such as `author@example.org` can help people discover or verify a public key, but it is not the key itself.
 
+#### The trusted-signer pattern
+
+There are two basic ways for an application to create a signature.
+It can read the private key and sign by itself, or it can send a signing request to a separate trusted process or device and receive the resulting signature.
+The second arrangement creates a boundary around the private key:
+
+```text
+application  →  unsigned object or signing request  →  trusted signer
+application  ←  signature or signed object          ←  trusted signer
+```
+
+This idea appears under many names in different ecosystems:
+
+* SSH uses `ssh-agent`.
+* OpenPGP commonly uses `gpg-agent`.
+* Hardware wallets, smart cards, YubiKeys, HSMs, and managed signing services put the signer in a separate device or service.
+* Hive uses signers such as Beekeeper or Hive Keychain.
+* Nostr speaks of signers, browser signers, remote signers, and **bunkers**.
+
+These tools follow a similar pattern, but they are not interchangeable.
+Each understands particular key types, request formats, and signing protocols.
+“Challenge-response” conveys the general intuition, although “signing request and response” is more precise: the application asks another component to sign a specific object.
+
+The separation also does not make every request safe.
+A compromised application may abuse an unlocked or unrestricted signer without ever extracting its key.
+A useful signer therefore combines key isolation with visible approvals, narrowly scoped permissions, or enforceable policies.
+
 #### Avoid giving every application the secret
 
-The commands above are useful for seeing how the identity works, but they also expose an important operational question: which process is allowed to read the secret?
-
-The simplest automation reads the key and signs directly. A safer division gives the secret to one trusted signer and lets other applications submit signing requests. This resembles an SSH agent or a password-manager browser extension: the application receives a signature, not the private material.
-
-NIP-46 calls such a remote signer a **bunker**:
-
-https://github.com/nostr-protocol/nips/blob/master/46.md
+In Nostr, [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md) standardizes a remote-signing boundary and calls the remote signer a **bunker**.
 
 A `bunker://...` string is a connection capability. It tells a client how to reach a signer and normally includes a connection secret. It is not the original `nsec`, but it is still sensitive: a client holding an unrestricted bunker capability may ask the signer to create valid events in my name.
 
@@ -239,22 +260,22 @@ A `bunker://...` string is a connection capability. It tells a client how to rea
   IFS= read -r NOSTR_SECRET_KEY < "$nostr_key_dir/identity.hex"
   export NOSTR_SECRET_KEY
 
-  exec nak bunker \
-    --qrcode \
-    --persist \
-    --profile by-foot \
-    wss://relay.damus.io \
-    wss://nos.lol
+  exec nak bunker --qrcode --persist --profile by-foot wss://relay.damus.io wss://nos.lol
 )
 ```
 
-The process prints a connection URI and, with `--qrcode`, a QR code for clients that support NIP-46. I treat both as secrets and do not copy them into the article, Git, logs, or screenshots. The signer must remain running to answer requests. This setup isolates ordinary clients from the key, but the machine running `nak` still has the complete key.
+The process prints a connection URI and, with `--qrcode`, a QR code for clients that support NIP-46.
+I treat both as secrets and do not copy them into the article, Git, logs, or screenshots.
+The signer must remain running to answer requests.
+This setup isolates ordinary clients from the key, but the machine running `nak` still has the complete key.
 
 The relay addresses above are explicit transport choices for this example, not a claim that they are permanent or universally suitable. Relay selection is the next step of the experiment.
 
 #### Create a distributed Promenade bunker
 
-The setup I used earlier at https://start.nostr.net/ went one step further. Promenade divides the signing capability among remote FROST signers. In the chosen 2-of-3 arrangement, no single signer holds the complete key and two signers must cooperate to create a signature.
+The setup I used earlier at <https://start.nostr.net/> went one step further.
+Promenade divides the signing capability among remote FROST signers.
+In the chosen 2-of-3 arrangement, no single signer holds the complete key and two signers must cooperate to create a signature.
 
 The browser setup failed while subscribing for signer acknowledgements. It emitted a Nostr `REQ` whose filter was incorrectly nested inside an extra array. Relays answered `ERROR: bad req: provided filter is not an object`, even though the enrollment messages had already been sent. The bug report and the evidence are here:
 
@@ -321,9 +342,8 @@ A distributed bunker changes the failure and trust model; it does not make imper
 
 #### Browser signers: the password-manager analogy
 
-Web clients often support NIP-07, a small browser interface exposed as `window.nostr`. Instead of asking me to paste an `nsec`, the website asks a browser extension for the public key or a signature:
-
-https://github.com/nostr-protocol/nips/blob/master/07.md
+Web clients often support [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md), a small browser interface exposed as `window.nostr`.
+Instead of asking me to paste an `nsec`, the website asks a browser extension for the public key or a signature.
 
 There are two useful variants:
 
