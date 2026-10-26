@@ -214,8 +214,6 @@ That command prints the full secret to the terminal.
 Use it only when you deliberately need the NIP-19 form for a secure backup or a trusted signer.
 An `nsec` is not a username or login token with limited scope; it conveys the same complete authority as the hexadecimal secret.
 
-Later, after selecting relays, you can encode the public key and relay hints together as an `nprofile1...` value, also defined in [NIP-19](https://github.com/nostr-protocol/nips/blob/master/19.md#shareable-identifiers-with-extra-metadata).
-That is a portable locator, not another identity.
 Similarly, a [NIP-05](https://github.com/nostr-protocol/nips/blob/master/05.md) name such as `author@example.org` can help people discover or verify a public key, but it is not the key itself.
 
 #### The trusted-signer pattern
@@ -398,3 +396,24 @@ The returned JSON describes the relay, supported NIPs, software, and advertised 
 * Nostr Relays: <https://nostr.co.uk/relays/>
 
 Using more than one relay gives the same signed event more than one storage and retrieval path. It does not guarantee permanent retention, universal visibility, or replication between those relays.
+
+#### Add Relay Hints to the Public Identity
+
+Now that you have selected some relays, you can combine their addresses with the public key in an `nprofile1...` value. [NIP-19](https://github.com/nostr-protocol/nips/blob/master/19.md#shareable-identifiers-with-extra-metadata) defines this as a shareable identifier carrying a public key and optional relay hints:
+
+```bash
+nostr_pubkey="$(<"$nostr_key_dir/identity.pubkey.hex")"
+
+nostr_nprofile="$(
+  nak encode nprofile \
+    --relay wss://relay.damus.io \
+    --relay wss://nos.lol \
+    --relay wss://nostr.mom \
+    "$nostr_pubkey"
+)"
+
+printf '%s\n' "$nostr_nprofile"
+nak decode "$nostr_nprofile"
+```
+
+An `nprofile` is a portable locator, not another identity. The embedded public key is still the identity; the relay addresses merely tell a client where it might begin looking for that identity's events. They do not prove that the relays contain anything, require a client to use them, or replace a separately published relay list.
