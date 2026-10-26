@@ -283,32 +283,29 @@ The relay addresses above are explicit transport choices for this example, not a
 
 #### Create a distributed Promenade bunker
 
-The setup I used earlier at <https://start.nostr.net/> went one step further.
-[Promenade](https://pkg.go.dev/fiatjaf.com/promenade) is a Nostr-oriented system consisting of a coordinator server/relay, remote signer daemons, and key-sharding tools.
-It presents a normal [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md) bunker interface to a client, but implements that signer internally as a distributed threshold signer.
+I did set-up my first Nostr identity via the <https://start.nostr.net/> web-site that offers to create a [Promenade](https://pkg.go.dev/fiatjaf.com/promenade) bunker.
+Promenade looks like a normal [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md) bunker to the application using it.
+Behind that single interface, however, it divides the signing capability among several remote signers.
 
-During enrollment, the setup reads the existing secret locally and performs a **trusted-dealer** step: the local setup process temporarily has the complete secret and derives three distinct shares from it.
-It encrypts one share for each selected signer and registers the resulting arrangement with the coordinator.
-Promenade uses a Nostr/[BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki)-compatible variant of [FROST](https://www.rfc-editor.org/rfc/rfc9591.html) for signing.
-When a client requests a signature, the coordinator selects two available signers, collects their partial signatures, and combines them into the ordinary Schnorr signature placed on the Nostr event.
+During the one-time setup, my computer reads the existing secret and divides it into three encrypted shares.
+Each selected signer receives one share, which is not sufficient to sign anything by itself.
+The setup component that performs this initial split is called the **trusted dealer** because it temporarily has access to the complete secret.
 
-This is the **2-of-3** threshold-signer case introduced above.
-No single remote signer can act alone, and one signer can be unavailable without preventing signing.
-Conversely, any two cooperating signers reach the threshold, so this distributes trust rather than eliminating it.
+Promenade uses [FROST](https://www.rfc-editor.org/rfc/rfc9591.html), that we already introduced above.
+Its coordinator acts as the organizer: it receives a signing request, asks enough of the remote signers to participate, and combines their contributions into the final signature.
+The application receives an ordinary signed Nostr event and does not need to understand those internal steps.
 
-The browser setup failed while subscribing for signer acknowledgements. It emitted a Nostr `REQ` whose filter was incorrectly nested inside an extra array. Relays answered `ERROR: bad req: provided filter is not an object`, even though the enrollment messages had already been sent. The bug report and the evidence are here:
+In the chosen **2-of-3** arrangement, no single remote signer can act alone.
+Any two signers can cooperate to create a signature, so one signer may be unavailable without stopping the system.
+The trade-off is that two colluding signers could also misuse the identity: Promenade distributes trust rather than eliminating it.
 
-https://github.com/dtonon/nstart/issues/42
+During the set-up process of my first Nostr identity via the <https://start.nostr.net/> web-site the browser setup failed while subscribing for signer acknowledgements.
+The bug report is here: [failed to get enough signers - ERROR: bad req: provided filter is not an object](https://github.com/dtonon/nstart/issues/42)
 
-https://github.com/dtonon/nstart/issues/42#issuecomment-6149557517
+I created a workaround as the standalone `nostr-bunker-setup` project accompanying this article.
+It pins `promenade-trusted-dealer` 0.4.3 and `@nostr/tools` 2.16.2.
 
-The successful command-line reproduction and workaround are recorded here:
-
-https://github.com/dtonon/nstart/issues/42#issuecomment-6151638579
-
-I extracted that workaround into the standalone `nostr-bunker-setup` project accompanying this article. It pins `promenade-trusted-dealer` 0.4.3 and `@nostr/tools` 2.16.2, sends a proper filter object, records exact requests and acknowledgements, and refuses ambiguous blind retries.
-
-From the project directory, I first install the locked dependencies and run its offline tests:
+From the project directory, you should first install the dependencies and run its offline tests:
 
 ```bash
 npm ci --ignore-scripts
