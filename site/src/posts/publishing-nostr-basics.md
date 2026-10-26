@@ -466,8 +466,10 @@ nak verify < "$nostr_key_dir/profile.event.json"
 Finally, publish this **exact signed event** to the selected relays:
 
 ```bash
-nak event "${nostr_relays[@]}" < "$nostr_key_dir/profile.event.json"
+nak event --nevent wss://relay.damus.io wss://nos.lol wss://nostr.mom < "$nostr_key_dir/profile.event.json"
 ```
+
+The relay addresses are repeated deliberately. This makes the publication command self-contained and prevents a new shell with an undefined `nostr_relays` array from silently printing the event without sending it anywhere. Successful output includes a connection and publication result for each relay.
 
 Kind 0 is a replaceable event kind: clients normally use the newest profile event they can find for a public key. When you update the profile, publish a complete replacement containing every field you want to retain. A field omitted from the new event may disappear once clients discover it.
 
@@ -495,7 +497,7 @@ nprofile: nprofile1qqsraq6crl35uwng8jqqttwc96cq0c8zyjajp2y8tmtegy7zcwq2j7qpz3mhx
 njump:    https://njump.me/nprofile1qqsraq6crl35uwng8jqqttwc96cq0c8zyjajp2y8tmtegy7zcwq2j7qpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6vvahya
 ```
 
-You can open the resulting [cs224 public Nostr profile](https://njump.me/nprofile1qqsraq6crl35uwng8jqqttwc96cq0c8zyjajp2y8tmtegy7zcwq2j7qpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6vvahya) through [njump](<https://njump.me/>).
+You can open the resulting  public Nostr profile here: [cs224](https://njump.me/nprofile1qqsraq6crl35uwng8jqqttwc96cq0c8zyjajp2y8tmtegy7zcwq2j7qpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6vvahya).
 
 These outputs serve different purposes:
 
