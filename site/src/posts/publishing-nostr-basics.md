@@ -362,31 +362,11 @@ Instead of asking me to paste an `nsec`, the website asks a browser extension fo
 
 There are two useful variants:
 
-* Extensions such as **[nos2x](https://github.com/fiatjaf/nos2x)** and **[Alby](https://github.com/getAlby/lightning-browser-extension)** can act as local browser signers. The web page receives signatures through [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md) rather than receiving the private key.
-* **[Bunker46 Extension](https://bunker46.github.io/extension/)** is a bridge: it exposes [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md) to the website but forwards requests to a separate [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md) bunker. The browser extension stores the connection and permission choices, not the identity's private key.
+* Extensions such as [nos2x](https://github.com/fiatjaf/nos2x) and [Alby](https://github.com/getAlby/lightning-browser-extension) can act as local browser signers. The web page receives signatures through [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md) rather than receiving the private key.
+* [Bunker46 Extension](https://bunker46.github.io/extension/) is a bridge: it exposes [NIP-07](https://github.com/nostr-protocol/nips/blob/master/07.md) to the website but forwards requests to a separate [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md) bunker. The browser extension stores the connection and permission choices, not the identity's private key.
 
-[Bunker46](https://bunker46.github.io/extension/) is therefore a natural front end for either a signer I operate myself or another compatible bunker:
+[Bunker46](https://bunker46.github.io/extension/) is therefore a natural front end for either a signer I operate myself or another compatible bunker.
 
-https://bunker46.github.io/extension/
-
-https://github.com/dsbaars/bunker46-extension
-
-Other examples include:
-
-* [nos2x](https://github.com/fiatjaf/nos2x) for Chromium:
-
-  https://github.com/fiatjaf/nos2x
-
-* [Alby](https://github.com/getAlby/lightning-browser-extension) for Chromium and Firefox:
-
-  https://github.com/getAlby/lightning-browser-extension
-
-* [Amber](https://github.com/greenart7c3/Amber), an Android signer that supports native Android signing and [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md):
-
-  https://github.com/greenart7c3/Amber
-
-* [nsec.app](https://nsec.app/), a browser-accessible key store and remote signer:
-
-  https://nsec.app/
-
-The password-manager comparison is helpful, but incomplete. A password manager normally returns a credential to a login form. A Nostr signer performs a cryptographic action with lasting consequences. I still need to inspect what a client asks me to sign, limit remembered permissions, and revoke application connections I no longer use.
+The password-manager comparison is helpful, but incomplete. A password manager normally returns a credential to a login form.
+A Nostr signer performs a cryptographic action with lasting consequences.
+I still need to inspect what a client asks me to sign, limit remembered permissions, and revoke application connections I no longer use.
