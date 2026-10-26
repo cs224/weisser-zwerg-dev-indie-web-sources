@@ -413,6 +413,7 @@ nostr_nprofile="$(
 )"
 
 printf '%s\n' "$nostr_nprofile"
+printf '%s\n' "$nostr_nprofile" > "$nostr_key_dir/identity.nprofile"
 nak decode "$nostr_nprofile"
 ```
 
@@ -471,3 +472,37 @@ nak event "${nostr_relays[@]}" < "$nostr_key_dir/profile.event.json"
 Kind 0 is a replaceable event kind: clients normally use the newest profile event they can find for a public key. When you update the profile, publish a complete replacement containing every field you want to retain. A field omitted from the new event may disappear once clients discover it.
 
 The relays may now hold both parts needed by a client: the kind-0 event containing the profile settings and other events published by the same public key. The `nprofile` value merely packages that public key with hints about which relays the client might query first.
+
+#### Share the Public Identity
+
+After publishing the profile event, you can share the identity in several useful forms. Read the saved `npub` and `nprofile`, then construct a browser-friendly link through njump (<https://njump.me/>):
+
+```bash
+nostr_npub="$(<"$nostr_key_dir/identity.npub")"
+nostr_nprofile="$(<"$nostr_key_dir/identity.nprofile")"
+nostr_njump_url="https://njump.me/$nostr_nprofile"
+
+printf 'npub:     %s\n' "$nostr_npub"
+printf 'nprofile: %s\n' "$nostr_nprofile"
+printf 'njump:    %s\n' "$nostr_njump_url"
+```
+
+For the identity created while writing this article, the command produced:
+
+```text
+npub:     npub186p4s8lrfcaxs0yqqkkast4sqlswyf9myz5gwhkhjsfu9suq49uqj74xyc
+nprofile: nprofile1qqsraq6crl35uwng8jqqttwc96cq0c8zyjajp2y8tmtegy7zcwq2j7qpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6vvahya
+njump:    https://njump.me/nprofile1qqsraq6crl35uwng8jqqttwc96cq0c8zyjajp2y8tmtegy7zcwq2j7qpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6vvahya
+```
+
+You can open the resulting [cs224 public Nostr profile](https://njump.me/nprofile1qqsraq6crl35uwng8jqqttwc96cq0c8zyjajp2y8tmtegy7zcwq2j7qpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6vvahya) through [njump](<https://njump.me/>).
+
+These outputs serve different purposes:
+
+* The `npub1...` value is the human-readable encoding of the public key. It identifies the same identity everywhere and contains no relay information.
+* The `nprofile1...` value contains that public key plus relay hints, making it easier for a client to begin looking for the profile and other events.
+* The `https://njump.me/nprofile1...` URL makes the Nostr identifier usable in an ordinary web browser. njump reads the identifier, queries relays, and renders the profile as a web page.
+
+They are not three identities. The public key is the identity; `npub` and `nprofile` are encodings, while njump is one gateway for viewing Nostr data. If njump disappears, the `npub`, `nprofile`, signed profile event, and events stored by the relays remain usable elsewhere.
+
+You can now put the `npub`, the more informative `nprofile`, or the njump URL on a website or in another public profile. Never publish the corresponding `nsec`, hexadecimal secret key, or private `bunker://` connection.
