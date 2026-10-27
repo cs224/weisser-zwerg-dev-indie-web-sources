@@ -1,5 +1,5 @@
 {
-  "lastFetched": "2026-06-30T01:54:00.957Z",
+  "lastFetched": "2026-10-27T06:01:39.687Z",
   "children": [
     {
       "type": "entry",
@@ -292,6 +292,26 @@
       "rels": {
         "canonical": "https://lemmy.world/post/44773575"
       }
+    },
+    {
+      "type": "entry",
+      "author": {
+        "type": "card",
+        "name": "",
+        "photo": "",
+        "url": ""
+      },
+      "url": "https://originality-red.surge.sh/creadores-7.html",
+      "published": null,
+      "published_ts": null,
+      "wm-received": "2026-10-15T04:10:42Z",
+      "wm-id": 2040795,
+      "wm-source": "https://originality-red.surge.sh/creadores-7.html",
+      "wm-target": "https://weisser-zwerg.dev/",
+      "wm-protocol": "webmention",
+      "mention-of": "https://weisser-zwerg.dev/",
+      "wm-property": "mention-of",
+      "wm-private": false
     }
   ]
 }
