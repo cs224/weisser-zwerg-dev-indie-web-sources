@@ -131,15 +131,18 @@ curl -sSL https://raw.githubusercontent.com/fiatjaf/nak/master/install.sh | sh
 For the exact version used here, you can instead download the official Linux x86-64 release artifact and verify the checksum before installing it:
 
 ```bash
-nak_download="$(mktemp)"
+(
+  set -e -o pipefail
+  nak_download="$(mktemp)"
+  trap 'rm -f "$nak_download"' EXIT
 
-curl -fL https://github.com/fiatjaf/nak/releases/download/v0.21.2/nak-v0.21.2-linux-amd64 -o "$nak_download"
+  curl -fL https://github.com/fiatjaf/nak/releases/download/v0.21.2/nak-v0.21.2-linux-amd64 -o "$nak_download"
 
-printf '0acd56fea6ab1b9a0a68c8615670c6f8eff9e8878922442e387b94ee15266bb8  %s\n' "$nak_download" | sha256sum --check
+  printf '0acd56fea6ab1b9a0a68c8615670c6f8eff9e8878922442e387b94ee15266bb8  %s\n' "$nak_download" | sha256sum --check
 
-install -d -m 755 "$HOME/.local/bin"
-install -m 755 "$nak_download" "$HOME/.local/bin/nak"
-rm -f "$nak_download"
+  install -d -m 755 "$HOME/.local/bin"
+  install -m 755 "$nak_download" "$HOME/.local/bin/nak"
+)
 ```
 
 Finally, check which executable the shell finds and which version it reports:
@@ -175,6 +178,7 @@ nostr_key_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nostr-by-foot"
 install -d -m 700 "$nostr_key_dir"
 
 (
+    test ! -e "$nostr_key_dir/identity.hex" || { printf 'Refusing to overwrite existing identity.hex\n' >&2; exit 1; }
     umask 077
     nak key generate > "$nostr_key_dir/identity.hex"
     chmod 600 "$nostr_key_dir/identity.hex"
@@ -261,21 +265,22 @@ A `bunker://...` string is a connection capability. It tells a client how to rea
 
 #### Run a local single-key bunker with `nak`
 
-`nak bunker` runs a [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md) signer while keeping the full secret in that process. In this example, a subshell limits the lifetime of the environment variable; the key does not appear in the process's command-line arguments:
+`nak bunker` starts a local signer using your existing private key. The command below reads it from `identity.hex` into the `NOSTR_SECRET_KEY` environment variable:
 
 ```bash
 (
+  set -e
   IFS= read -r NOSTR_SECRET_KEY < "$nostr_key_dir/identity.hex"
+  test -n "$NOSTR_SECRET_KEY"
   export NOSTR_SECRET_KEY
 
   exec nak bunker --qrcode --persist --profile by-foot wss://relay.damus.io wss://nos.lol
 )
 ```
 
-The process prints a connection URI and, with `--qrcode`, a QR code for clients that support [NIP-46](https://github.com/nostr-protocol/nips/blob/master/46.md).
-Treat both as secrets and do not copy them into an article, Git, logs, or screenshots.
+The `--persist --profile by-foot` options save the key, relay settings, and authorized clients in a reusable profile, normally at `~/.config/nak/bunker/by-foot`.
+The process prints a connection URI and, with `--qrcode`, a QR code for compatible clients.
 The signer must remain running to answer requests.
-This setup isolates ordinary clients from the key, but the machine running `nak` still has the complete key.
 
 The relay addresses above are explicit transport choices for this example, not a claim that they are permanent or universally suitable. Relay selection is the next step of the experiment.
 
@@ -446,7 +451,9 @@ Next, construct and sign the kind-0 event locally. As before, the subshell keeps
 
 ```bash
 (
+  set -e
   IFS= read -r NOSTR_SECRET_KEY < "$nostr_key_dir/identity.hex"
+  test -n "$NOSTR_SECRET_KEY"
   export NOSTR_SECRET_KEY
 
   nak event --kind 0 --content @"$nostr_key_dir/profile.json" < /dev/null > "$nostr_key_dir/profile.event.json"
@@ -723,4 +730,79 @@ The surrounding application galaxies provide different relay choices, discovery 
 
 For independent publishing, that makes Nostr useful.
 An article can remain on a website you control while Nostr carries announcements, references, discussion, or an additional long-form copy.
+
+## Appendix
+
+### Relay Choice and Optional Coordination
+
+[Above](#nostr-is-not-a-website) I said:
+
+> It is **YOUR** job as a user of the Nostr system to decide which relays to use, and different relays serve different purposes.
+
+That was too absolute. In the walkthrough, you choose every relay explicitly.
+In the wider ecosystem, clients can automate some of that work, and relay operators can arrange synchronization and forwarding.
+There is no guarantee that every event will propagate throughout Nostr, but that does not mean coordination is absent.
+
+#### Discovering an Author's Relays
+
+**[NIP-65](<https://github.com/nostr-protocol/nips/blob/master/65.md>) (Relay List Metadata)** lets an identity publish a signed kind-10002 event listing its preferred relays.
+Write relays are where the author publishes; read relays are where the author expects to receive mentions.
+A client that finds this record can use it to decide where to look for the author's posts or where to send a mention.
+
+Even the `nak v0.21.2` used in this article supports this through its optional `--outbox` flag:
+
+```bash
+nak req --outbox --author "$nostr_pubkey" --kind 1 --limit 10
+```
+
+This asks `nak` to discover publishing relays for the author and query them.
+The corresponding `nak event --outbox` option can select publication destinations from relay metadata, including receiving relays for mentioned identities.
+Both options are disabled by default; the commands in the walkthrough use the relay addresses you supply instead.
+
+#### Synchronizing Stored Events
+
+Suppose relay A contains events E1 and E2, while relay B contains E2 and E3.
+A synchronization tool can determine that B lacks E1 and A lacks E3, then copy the missing events.
+The original signatures remain intact, so copying those events does not require their authors' private keys.
+
+**[NIP-77](<https://github.com/nostr-protocol/nips/blob/master/77.md>) (Negentropy Syncing)** makes the comparison efficient.
+The participants exchange compact summaries to identify missing event IDs, rather than downloading all their events again.
+Ordinary Nostr retrieval and publication messages then transfer the missing events.
+The comparison can be restricted by filters such as author, event kind, or time range.
+
+`nak` exposes this through `nak sync`.
+The following is an illustration using placeholder addresses:
+
+```bash
+nak sync --author "$nostr_pubkey" wss://relay-a.example.org wss://relay-b.example.org
+```
+
+The `--author` filter limits synchronization to events created by that public key.
+It includes all event kinds unless you add another filter, such as `--kind 1` for short notes or `--kind 30023` for long-form articles.
+Replies and mentions written by other people are excluded, even if they concern this author.
+
+In v0.21.2, this requires NIP-77 support on both relays and copies missing events in both directions.
+It actually publishes events to the destinations; it is not merely an inspection command.
+Each destination still decides whether to accept and retain them.
+Running the command does not establish an ongoing synchronization service.
+
+> **By the way:** You can keep a private relay on your Linux machine and send it a copy of each event you publish.<br>
+> [strfry](<https://github.com/hoytech/strfry>) stores events persistently in LMDB, supports NIP-77, and listens on `127.0.0.1:7777` by default.<br>
+> [nostr-rs-relay](<https://github.com/scsibug/nostr-rs-relay>) is a SQLite-backed alternative, although its documented features do not include NIP-77.<br>
+> With strfry running locally, `nak sync --author "$nostr_pubkey" ws://127.0.0.1:7777 wss://relay.example.org` can copy your stored events to a new NIP-77-compatible relay;
+> replace the example destination and **remember that synchronization runs in both directions**.
+>
+> Keep separate signed-event files if you want every historical revision, because ordinary relay storage may replace older versions.
+
+#### Continuously Forwarding New Events
+
+Relay operators can also configure ongoing forwarding.
+For example, the [strfry](<https://github.com/hoytech/strfry/blob/master/docs/router.md>) relay software includes `strfry router`, which can receive events from selected relays, forward locally received events to them, or do both.
+Filters and plugins can restrict which events are copied.
+
+An operator could use this to distribute new events between regional relays or forward selected authors' events to another relay.
+This is a configured service, separate from comparing and filling gaps in stored event collections.
+It depends on someone choosing the connections and keeping the service running; it does not make all Nostr relays replicas of one another.
+
+
 
