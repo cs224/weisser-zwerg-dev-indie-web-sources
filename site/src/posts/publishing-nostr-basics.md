@@ -566,4 +566,61 @@ Keep this file unchanged for the following steps.
 Running the construction command again would normally produce a different `created_at`, event ID, and signature.
 To demonstrate relay-independent transport, the next step will send this one already-signed event to several relays rather than constructing a new event for each destination.
 
+### Send the Exact Same Event to More Than One Relay
+
+The event is already complete and signed. It can now be sent unchanged to each selected relay; the secret key is no longer needed for this step:
+
+```bash
+nostr_key_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nostr-by-foot"
+nostr_event_file="$nostr_key_dir/hello-note.event.json"
+
+(
+  set -e
+  test -s "$nostr_event_file"
+
+  nak event --nevent wss://relay.damus.io wss://nos.lol wss://nostr.mom < "$nostr_event_file"
+)
+# connecting to relay.damus.io... ok.
+# connecting to nos.lol... ok.
+# connecting to nostr.mom... ok.
+# {"kind":1,"id":"f292825be64138d64e6b24f53700c4dab30ee0f331142fbb6d74d5c0052522f1","pubkey":"3e83581fe34e3a683c8005add82eb007e0e224bb20a8875ed79413c2c380a978","created_at":1793075252,"tags":[],"content":"Hello, Nostr! I am learning how one signed event can be published to several relays.\n","sig":"4dfca24d19fbd43dd27f39ed994fee4be09ce65ea491edccc7bb87723aad036096ba690313ee55bed3545389ba8830fff643e84090d0c2ff64e0f4126561633b"}
+# publishing to relay.damus.io... success.
+# publishing to nos.lol... success.
+# publishing to nostr.mom... success.
+# nevent1qqs09y5zt0nyzwxkfe4jfafhqrzd4vcwurenz9p0hdkhf4wqq5jj9ugpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6q3q86p4s8lrfcaxs0yqqkkast4sqlswyf9myz5gwhkhjsfu9suq49uq5ytvws
+```
+
+`nak` recognizes the signed event on standard input and does not create or sign another one.
+It connects to every listed relay and submits the same event ID, content, public key, timestamp, and signature to each.
+
+The output reports the connection and publication result separately for every relay.
+One relay may reject or fail to retain the event without changing what the other relays received.
+`--nevent` also prints an `nevent1...` locator containing the event ID and relay hints; it is a reference to the event, not another copy of it.
+
+You can reproduce that locator from the saved event and turn it into an ordinary web link through njump:
+
+```bash
+nostr_event_id="$(jq -r '.id' "$nostr_event_file")"          # f292825be64138d64e6b24f53700c4dab30ee0f331142fbb6d74d5c0052522f1
+nostr_event_author="$(jq -r '.pubkey' "$nostr_event_file")"  # 3e83581fe34e3a683c8005add82eb007e0e224bb20a8875ed79413c2c380a978
+
+nostr_nevent="$(
+  nak encode nevent --author "$nostr_event_author" --relay wss://relay.damus.io --relay wss://nos.lol --relay wss://nostr.mom "$nostr_event_id"
+)"
+# nevent1qqs09y5zt0nyzwxkfe4jfafhqrzd4vcwurenz9p0hdkhf4wqq5jj9ugpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6q3q86p4s8lrfcaxs0yqqkkast4sqlswyf9myz5gwhkhjsfu9suq49uq5ytvws
+
+nostr_njump_event_url="https://njump.me/$nostr_nevent"
+printf '%s\n' "$nostr_njump_event_url"
+# https://njump.me/nevent1qqs09y5zt0nyzwxkfe4jfafhqrzd4vcwurenz9p0hdkhf4wqq5jj9ugpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6q3q86p4s8lrfcaxs0yqqkkast4sqlswyf9myz5gwhkhjsfu9suq49uq5ytvws
+```
+
+The concrete event constructed above can be opened as [Hello, Nostr!](https://njump.me/nevent1qqs09y5zt0nyzwxkfe4jfafhqrzd4vcwurenz9p0hdkhf4wqq5jj9ugpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6q3q86p4s8lrfcaxs0yqqkkast4sqlswyf9myz5gwhkhjsfu9suq49uq5ytvws) through njump.
+
+The link can guide njump to the selected relays, but it cannot make an unpublished or rejected event appear there.
+For it to work at least one relay has to accept the event.
+
+Keep the event file and the printed `nevent` value.
+The next step will query the relays independently and confirm that they return the same signed object.
+
+
+
 
