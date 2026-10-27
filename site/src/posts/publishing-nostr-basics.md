@@ -676,6 +676,39 @@ A client may also fail to find the note if it does not use the relay hints or ca
 Underneath those different presentations, the event remains the object already retrieved and verified: ID `f292825be64138d64e6b24f53700c4dab30ee0f331142fbb6d74d5c0052522f1`, signed by the same public key and carrying the same text.
 The clients provide the experience around that object; they do not define its identity.
 
+### Repeat the Experiment with a Long-Form Article
+
+The same sequence also works for an article: construct an event locally, sign it once, send the exact signed event to several relays, retrieve it again, and verify it. The main difference is the event's shape.
+
+[NIP-23](https://github.com/nostr-protocol/nips/blob/master/23.md) represents a published long-form article as a `kind-30023` event.
+Its `content` contains **Markdown**, while tags carry information such as a stable `d` identifier, title, summary, publication time, topics, and an optional image URL.
+Because `kind-30023` is addressable and replaceable, publishing a newer event with the same author, kind, and `d` value updates the article as clients normally present it.
+
+This introduces a second useful locator.
+An `nevent1...` value identifies one exact signed revision.
+An `naddr1...` value identifies the article by its stable coordinate: the tuple (kind, author, and `d` value).
+It lets a client find the newest available revision. Relay hints can be included in either locator.
+
+Long-form clients such as [YakiHonne](https://yakihonne.com/) and [Habla](https://habla.nostr.info/) interpret the Markdown and metadata as an article.
+A microblogging client may understand kind 1 very well but display kind 30023 minimally or not at all, and a relay may accept short notes while rejecting or not retaining long-form events.
+Selecting suitable relays and clients therefore becomes more visible than it was for the simple note.
+
+We can combine the long-form article with a short kind-1 announcement event.
+In this case the announcement event can contain a brief introduction together with the article's `nostr:naddr1...` reference or a web-gateway link to reference our long-form article.
+Notice that `nostr:naddr1...` can work in a similar way as an HTML style link even if a kind-1 event is plaintext.
+
+The idea behind that approach is that this separation mirrors the publishing distinction introduced at the beginning of this article:
+the long-form event carries the work, while the short event helps people discover it.
+
+A possible pattern is therefore:
+
+* publish and verify the kind-30023 article;
+* derive its stable `naddr` and, when useful, the exact revision's `nevent`;
+* construct and sign a separate kind-1 announcement referring to the article;
+* send each event to relays appropriate for its purpose;
+* open both through different clients and observe which parts of the shared protocol each client turns into a useful experience.
+
+
 
 
 
