@@ -508,3 +508,62 @@ These outputs serve different purposes:
 They are not three identities. The public key is the identity; `npub` and `nprofile` are encodings, while njump is one gateway for viewing Nostr data. If njump disappears, the `npub`, `nprofile`, signed profile event, and events stored by the relays remain usable elsewhere.
 
 You can now put the `npub`, the more informative `nprofile`, or the njump URL on a website or in another public profile. Never publish the corresponding `nsec`, hexadecimal secret key, or private `bunker://` connection.
+
+### Construct and Sign a Small Event Locally
+
+For the first ordinary message, use a short public text note. Nostr represents this as a **kind-1 event**, as defined by [NIP-01](<https://github.com/nostr-protocol/nips/blob/master/01.md>).
+
+First, save the message as plain text:
+
+```bash
+nostr_key_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nostr-by-foot"
+nostr_note_file="$nostr_key_dir/hello-note.txt"
+nostr_event_file="$nostr_key_dir/hello-note.event.json"
+
+cat > "$nostr_note_file" <<'EOF'
+Hello, Nostr! I am learning how one signed event can be published to several relays.
+EOF
+```
+
+Now ask `nak` to construct and sign the event:
+
+```bash
+(
+  set -e
+  IFS= read -r NOSTR_SECRET_KEY < "$nostr_key_dir/identity.hex"
+  test -n "$NOSTR_SECRET_KEY"
+  export NOSTR_SECRET_KEY
+
+  nak event --kind 1 --content @"$nostr_note_file" < /dev/null > "$nostr_event_file"
+)
+```
+
+No relay address appears in this command, so nothing is sent over the network. `nak` writes the completed signed event to `hello-note.event.json`.
+
+Inspect it locally:
+
+```bash
+cat $nostr_event_file | jq .
+{
+  "kind": 1,
+  "id": "f292825be64138d64e6b24f53700c4dab30ee0f331142fbb6d74d5c0052522f1",
+  "pubkey": "3e83581fe34e3a683c8005add82eb007e0e224bb20a8875ed79413c2c380a978",
+  "created_at": 1793075252,
+  "tags": [],
+  "content": "Hello, Nostr! I am learning how one signed event can be published to several relays.\n",
+  "sig": "4dfca24d19fbd43dd27f39ed994fee4be09ce65ea491edccc7bb87723aad036096ba690313ee55bed3545389ba8830fff643e84090d0c2ff64e0f4126561633b"
+}
+
+# The pubkey is the hex version of the pubkey:
+cat $nostr_key_dir/identity.pubkey.hex
+3e83581fe34e3a683c8005add82eb007e0e224bb20a8875ed79413c2c380a978
+```
+
+The event now contains the message, its creation time, the author's public key, an event ID derived from all of its unsigned fields, and a signature created with the secret key.
+The relay is deliberately absent: the signed event exists independently of any particular server.
+
+Keep this file unchanged for the following steps.
+Running the construction command again would normally produce a different `created_at`, event ID, and signature.
+To demonstrate relay-independent transport, the next step will send this one already-signed event to several relays rather than constructing a new event for each destination.
+
+
