@@ -237,7 +237,7 @@ This idea appears under many names in different ecosystems:
 
 These tools follow a similar pattern, but they are not interchangeable.
 Each understands particular key types, request formats, and signing protocols.
-“Challenge-response” conveys the general intuition, although “signing request and response” is more precise: the application asks another component to sign a specific object.
+"Challenge-response" conveys the general intuition, although "signing request and response" is more precise: the application asks another component to sign a specific object.
 
 A signer can itself have different internal structures:
 
