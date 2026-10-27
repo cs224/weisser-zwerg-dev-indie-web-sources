@@ -665,6 +665,17 @@ Now verify every returned signature and confirm that every event has the ID of t
 A successful result demonstrates two separate facts: each relay returned an authentic event, and every returned event has the same identity as the one constructed locally.
 The relays stored and served the message, but they did not change its cryptographic identity.
 
+### Open the Event Through Different Clients
+
+The same `nevent1...` locator can be handed to different Nostr clients and gateways. Compare the comparatively neutral web rendering from [njump](https://njump.me/nevent1qqs09y5zt0nyzwxkfe4jfafhqrzd4vcwurenz9p0hdkhf4wqq5jj9ugpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6q3q86p4s8lrfcaxs0yqqkkast4sqlswyf9myz5gwhkhjsfu9suq49uq5ytvws), the social-media-style interface from [Primal](https://primal.net/e/nevent1qqs09y5zt0nyzwxkfe4jfafhqrzd4vcwurenz9p0hdkhf4wqq5jj9ugpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6q3q86p4s8lrfcaxs0yqqkkast4sqlswyf9myz5gwhkhjsfu9suq49uq5ytvws), the relay-aware navigation in [Coracle](https://coracle.social/nevent1qqs09y5zt0nyzwxkfe4jfafhqrzd4vcwurenz9p0hdkhf4wqq5jj9ugpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6q3q86p4s8lrfcaxs0yqqkkast4sqlswyf9myz5gwhkhjsfu9suq49uq5ytvws), and the independent interpretations from [Jumble](https://jumble.social/nevent1qqs09y5zt0nyzwxkfe4jfafhqrzd4vcwurenz9p0hdkhf4wqq5jj9ugpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6q3q86p4s8lrfcaxs0yqqkkast4sqlswyf9myz5gwhkhjsfu9suq49uq5ytvws), [Fevela](https://fevela.me/nevent1qqs09y5zt0nyzwxkfe4jfafhqrzd4vcwurenz9p0hdkhf4wqq5jj9ugpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6q3q86p4s8lrfcaxs0yqqkkast4sqlswyf9myz5gwhkhjsfu9suq49uq5ytvws), and [YakiHonne](https://yakihonne.com/nevent1qqs09y5zt0nyzwxkfe4jfafhqrzd4vcwurenz9p0hdkhf4wqq5jj9ugpz3mhxue69uhhyetvv9ujuerpd46hxtnfduqs6amnwvaz7tmwdaejumr0dsqs7amnwvaz7tmwdaehgu3wd4hk6q3q86p4s8lrfcaxs0yqqkkast4sqlswyf9myz5gwhkhjsfu9suq49uq5ytvws).
+
+The clients may differ in layout, profile information, timestamps, reply threads, reactions, recommendations, and moderation.
+Some obtain the author's name and picture from a separate kind-0 profile event; replies and reactions are separate events as well.
+A client may also fail to find the note if it does not use the relay hints or cannot reach a relay that stores it.
+
+Underneath those different presentations, the event remains the object already retrieved and verified: ID `f292825be64138d64e6b24f53700c4dab30ee0f331142fbb6d74d5c0052522f1`, signed by the same public key and carrying the same text.
+The clients provide the experience around that object; they do not define its identity.
+
 
 
 
