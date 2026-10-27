@@ -3,9 +3,9 @@ layout: "layouts/post-with-toc.njk"
 title: "Nostr from First Principles: Protocol, Relays, and Application Galaxies"
 description: "Understanding Nostr as an ecosystem"
 seodescription: "A practical introduction to Nostr: identities, signed events, relays, clients, application galaxies, and its relationship to independent web publishing."
-creationdate: 2026-10-25
+creationdate: 2026-10-27
 keywords: Nostr, independent publishing, IndieWeb, decentralized social media, relays, Nostr clients, NIPs, digital identity, content syndication
-date: 2026-10-25
+date: 2026-10-27
 tags: ['post']
 ---
 
@@ -708,3 +708,19 @@ A possible pattern is therefore:
 * construct and sign a separate kind-1 announcement referring to the article;
 * send each event to relays appropriate for its purpose;
 * open both through different clients and observe which parts of the shared protocol each client turns into a useful experience.
+
+## Conclusion
+
+I think, this is enough to see the larger idea:
+Nostr supplies signed, portable objects and locators;
+relays provide distribution and retrieval;
+clients decide whether those objects look like an article, a social announcement, or merely unfamiliar event data.
+
+The experiment also explains why Nostr can feel fragmented at first.
+There is no single website that defines the network, no relay that necessarily contains everything, and no client that must interpret every event kind.
+Instead, the common foundation is the public-key identity and the signed event.
+The surrounding application galaxies provide different relay choices, discovery mechanisms, moderation, and user experiences.
+
+For independent publishing, that makes Nostr useful.
+An article can remain on a website you control while Nostr carries announcements, references, discussion, or an additional long-form copy.
+
