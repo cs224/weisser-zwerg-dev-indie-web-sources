@@ -621,6 +621,54 @@ For it to work at least one relay has to accept the event.
 Keep the event file and the printed `nevent` value.
 The next step will query the relays independently and confirm that they return the same signed object.
 
+### Retrieve the Event and Verify Its Signature
+
+Query each relay separately using the event ID from the local file.
+Connection messages remain on the terminal, while each returned JSON event is saved in its own file:
+
+```bash
+nostr_key_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nostr-by-foot"
+nostr_event_file="$nostr_key_dir/hello-note.event.json"
+nostr_event_id="$(jq -r '.id' "$nostr_event_file")"
+nostr_retrieval_dir="$nostr_key_dir/retrieved"
+
+install -d -m 700 "$nostr_retrieval_dir"
+
+nak req --id "$nostr_event_id" wss://relay.damus.io > "$nostr_retrieval_dir/relay.damus.io.json"
+# connecting to relay.damus.io... ok.
+nak req --id "$nostr_event_id" wss://nos.lol > "$nostr_retrieval_dir/nos.lol.json"
+# connecting to nos.lol... ok
+nak req --id "$nostr_event_id" wss://nostr.mom > "$nostr_retrieval_dir/nostr.mom.json"
+# connecting to nostr.mom... ok.
+```
+
+Now verify every returned signature and confirm that every event has the ID of the original:
+
+```bash
+(
+  set -e
+
+  for nostr_retrieved_event in "$nostr_retrieval_dir"/*.json; do
+    nak verify < "$nostr_retrieved_event"
+    test "$(jq -r '.id' "$nostr_retrieved_event")" = "$nostr_event_id"
+    printf 'verified: %s\n' "$nostr_retrieved_event"
+  done
+)
+# verified: ~/.config/nostr-by-foot/retrieved/nos.lol.json
+# verified: ~/.config/nostr-by-foot/retrieved/nostr.mom.json
+# verified: ~/.config/nostr-by-foot/retrieved/relay.damus.io.json
+
+```
+
+`nak verify` recalculates the event ID from the event fields and checks the signature against the author's public key. If a relay returns nothing, malformed JSON, altered fields, or an invalid signature, the verification block stops with an error.
+
+A successful result demonstrates two separate facts: each relay returned an authentic event, and every returned event has the same identity as the one constructed locally.
+The relays stored and served the message, but they did not change its cryptographic identity.
+
+
+
+
+
 
 
 
