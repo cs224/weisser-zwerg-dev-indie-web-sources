@@ -688,6 +688,64 @@ The degradation is nonlinear: 3-bit is format-dependent, 2-bit shows measurable 
 
 Also worthwhile to watch in this context is the c't 3003 video [Was ich über lokale KI gelernt habe](https://www.youtube.com/watch?v=M1j_uRqKMKI).
 
+### Old Data-Center GPUs Revisited: Tesla V100
+
+**\[Addendum 2026-10-30\]**:
+My earlier conclusion that old GPUs quickly become unusable with modern inference engines now has an interesting exception.
+Current upstream [`vLLM` requires an NVIDIA GPU with Compute Capability 7.5 or newer](https://github.com/vllm-project/vllm/blob/v0.32.0/docs/getting_started/installation/gpu.cuda.inc.md), while the [Tesla V100 is a Volta/SM70 card with Compute Capability 7.0](https://images.nvidia.com/content/technologies/volta/pdf/tesla-volta-v100-datasheet-letter-fnl-web.pdf).
+The community-maintained [1Cat-vLLM](https://github.com/1CatAI/1Cat-vLLM) fork treats the V100 as a first-class target and implements optimized paths for recent models and quantization formats.
+
+A particularly [interesting community build](https://www.reddit.com/r/LocalLLaMA/comments/1wl680s/finally_got_qwen_38_next_running_on_my_v100_6gpu/) runs `Qwen3.8-Flash-Next-NVFP4` on **six Tesla V100 16GB cards**, providing 96GB of aggregate HBM2 memory.
+The model is distributed using tensor parallelism 2 and pipeline parallelism 3 (`TP2/PP3`).
+The author measured an average of **22.59 tokens/s without Multi-Token Prediction (MTP)** and **42.70 tokens/s with MTP**.
+This is already fast enough for interactive coding-agent use.
+
+This was not an isolated result.
+A [later, more extensively documented deployment](https://github.com/1CatAI/1Cat-vLLM/issues/746) runs the same model family on **four V100 PCIe 32GB cards** with 128GB of aggregate HBM2.
+At a 32K context it measured approximately **75.8 tokens/s** for one request with MTP4; at shorter contexts, four concurrent requests produced approximately **160-164 aggregate tokens/s**.
+Each V100 provides 900GB/s of memory bandwidth, which remains very useful for memory-bound LLM inference even though the GPU was introduced in 2017.
+
+The following figures are representative prices and published measurements as of October 2026, rather than a controlled benchmark.
+Card-only prices and complete-system prices are deliberately identified because they are not equivalent.
+
+| System | Memory available to the model | Approximate purchase price | &nbsp; | Published Qwen3.8 result |
+|---|---:|---:|:---:|---|
+| **6 x V100 PCIe 16GB** | 96GB HBM2 | [**$1,450-$2,030 for the GPUs**](https://pcpartvalue.com/gpu/nvidia-tesla-v100-pcie-16-gb-gv100-16-gb-2017) | &nbsp; | Flash-Next: **42.7 tok/s** with MTP |
+| **4 x V100 32GB** | 128GB HBM2 | [**$2,500-$2,800 for the GPUs**](https://pcpartvalue.com/gpu/nvidia-tesla-v100-pcie-32-gb-gv100-32-gb-2018); [one complete used four-GPU server was offered for $3,600](https://www.reddit.com/r/HighVRAMHardwareWatch/comments/1wy69sp/four_v100s_for_3600_the_host_matters_as_much_as/) | &nbsp; | Flash-Next: **75.8 tok/s** at 32K with MTP4 |
+| **Framework Desktop, Ryzen AI Max+ 395** | 128GB unified LPDDR5X | [**$3,449**](https://frame.work/products/desktop-diy-amd-aimax300/body/new), before storage | &nbsp; | Dense Qwen3.8-27B: [**24.5 tok/s** with MTP4](https://www.amd.com/en/blogs/2026/run-qwen-3-8-27b-on-amd-ryzen-ai-max-and-radeon-graphics-cards-day-0.html) |
+| **NVIDIA DGX Spark** | 128GB coherent unified memory | [**$4,699** complete system](https://forums.developer.nvidia.com/t/2-23-2026-price-change-announcement/361713) | &nbsp; | Flash-Next: [**43.3 tok/s** median in one four-bit deployment](https://forums.developer.nvidia.com/t/fitting-qwen3-8-flash-next-180b-onto-one-dgx-spark-44-tok-s-at-four-bits/382117) |
+| **Mac Studio M5 Ultra** | 96-512GB unified memory | [**from $5,499**](https://www.apple.com/newsroom/2026/08/apple-introduces-new-mac-studio-with-m5-max-and-m5-ultra/); the measured 256GB configuration costs more | &nbsp; | Flash-Next 6-bit: [**74.4 tok/s at 64K**, 64.7 tok/s at 195K](https://omlx.ai/benchmarks/performance/v0nnkryw) |
+| [**RTX PRO 6000 Blackwell**](https://marketplace.nvidia.com/en-us/enterprise/laptops-workstations/nvidia-rtx-pro-6000-blackwell-workstation-edition/) | 96GB GDDR7 | [**$13,250** current NVIDIA price for one card](https://www.tomshardware.com/pc-components/gpus/nvidia-raises-rtx-pro-6000-blackwell-gpu-pricing-to-usd13-250-55-percent-increase-over-msrp-in-a-years-time) | &nbsp; | Flash-Next NVFP4: [**171.1 tok/s** in an optimized single-GPU setup](https://forums.developer.nvidia.com/t/optimized-qwen3-8-flash-next-on-1x-rtx-pro-6000-171-tok-s-524k-and-hicache-nixl-persistence/381722) |
+
+These token rates must not be read as an apples-to-apples leaderboard.
+Quantization, context length, MTP configuration, runtime, and batching differ.
+They nevertheless show the order of magnitude: the six-card V100 system reaches roughly the same reported single-stream decode rate as a DGX Spark, while the newer four-card V100 result is in the same range as a high-memory M5 Ultra.
+The RTX PRO 6000 Blackwell is much faster, but it also costs several times as much as the V100 GPUs.
+
+The price comparison is equally striking at the lower-memory end.
+A used [RTX A6000 currently costs around $4,200](https://gpusold.com/gpu/rtx-a6000) and a used [RTX 6000 Ada around $5,500-$6,000](https://pcpartvalue.com/gpu/nvidia-rtx-6000-ada-generation-ad102-48-gb-2022), yet each offers only 48GB of VRAM.
+Neither can hold this complete Flash-Next configuration without offloading, whereas six used 16GB V100s provide 96GB for substantially less money.
+
+The small number of active parameters in a Mixture-of-Experts model explains part of the speed, but it does not mean that only those active parameters need storage.
+The complete quantized weights and auxiliary tables still need to reside in aggregate GPU memory, system RAM, or a runtime-specific offload tier.
+This is where several V100s are attractive: they combine inexpensive capacity with high HBM2 bandwidth and optimized multi-GPU execution.
+
+There are practical requirements: the host needs enough PCIe connectivity, suitable power delivery, and directed airflow for passively cooled data-center cards; SXM2 cards additionally require a compatible baseboard or adapter.
+Those details matter when building the system, but they do not change the central result.
+Among the configurations I have found, a used V100 system currently appears to be an unusually inexpensive way to obtain **96-128GB of fast accelerator memory and genuinely fast local inference**.
+
+#### Rent Before Buying
+
+My thinking initially split into three paths: add a used RTX A6000 to the existing workstation for everyday Qwen3.8-27B and OpenCode use; build a multi-V100 server for much larger local MoE models; or rent hardware first to test models without buying GPUs.
+This developed into a broader model-tier architecture: a daily model could run on a local A6000 or rented hardware, while a much larger model could be called through a token API when needed or served by an owned multi-V100 system when repeated local availability, privacy, and control matter.
+The central question is therefore which model tiers must remain permanently local, which can be started on demand, and which are more sensibly consumed through an API.
+
+There are several ways to implement the rental path.
+[SwissGPU](https://www.swissgpu.ch/pricing) offers dedicated NVIDIA servers, including the RTX 6000 Ada, with per-minute billing that stops when the server is powered off; [RunPod](https://www.runpod.io/) and [Vast.ai](https://vast.ai/) provide broader on-demand GPU capacity.
+[Flow Swiss](https://flow.swiss/mac-bare-metal) offers dedicated Mac hardware with unified memory and a 24-hour minimum allocation-a useful alternative for testing unified-memory inference, although not an NVIDIA/vLLM substitute for validating a V100 setup.
+
+Renting is the lower-risk first step for validation and irregular use; buying becomes compelling when the same large pool of fast accelerator memory is needed regularly.
+
 ## Footnotes
 
 [^dockernetworknamespace]: This means it will run in a separate [network namespace](https://blog.kubesimplify.com/docker-networking-demystified).
