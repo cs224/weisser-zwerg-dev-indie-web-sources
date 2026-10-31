@@ -1,5 +1,5 @@
 {
-  "lastFetched": "2026-10-27T06:01:39.687Z",
+  "lastFetched": "2026-10-31T12:22:36.864Z",
   "children": [
     {
       "type": "entry",
@@ -312,6 +312,29 @@
       "mention-of": "https://weisser-zwerg.dev/",
       "wm-property": "mention-of",
       "wm-private": false
+    },
+    {
+      "type": "entry",
+      "author": {
+        "type": "card",
+        "name": "",
+        "photo": "",
+        "url": ""
+      },
+      "url": "https://www.thefulcrum.dev/the-programmers-fulcrum-30-october-2026/",
+      "published": null,
+      "published_ts": null,
+      "wm-received": "2026-10-30T15:40:40Z",
+      "wm-id": 2045516,
+      "wm-source": "https://www.thefulcrum.dev/the-programmers-fulcrum-30-october-2026/",
+      "wm-target": "https://weisser-zwerg.dev/posts/publishing-nostr-basics/",
+      "wm-protocol": "webmention",
+      "mention-of": "https://weisser-zwerg.dev/posts/publishing-nostr-basics/",
+      "wm-property": "mention-of",
+      "wm-private": false,
+      "rels": {
+        "canonical": "https://www.thefulcrum.dev/the-programmers-fulcrum-30-october-2026/"
+      }
     }
   ]
 }
