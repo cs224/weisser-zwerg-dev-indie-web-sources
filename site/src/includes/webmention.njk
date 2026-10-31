@@ -1,6 +1,6 @@
 <div class="webmention {% if webmention|isOwnWebmention %}webmention--own{% endif %}" id="webmention-{{ webmention['wm-id'] }}">
     <div class="webmention__meta">
-        {% if webmention.author %}
+        {% if webmention.author and webmention.author.name %}
             <a
                     class="webmention__author h-card u-url"
                     {% if webmention.url %}href="{{ webmention.url }}"{% endif %}
@@ -17,14 +17,11 @@
                             height="48"
                             loading="lazy"
                     >
-                {% else %}
-                    <img class="webmention__author__photo" src="{{ '/assets/images/avatar-default.jpg' | url }}" alt="" width="48" height="48">
                 {% endif %}
                 <strong class="p-name">{{ webmention.author.name }}</strong>
             </a>
         {% else %}
             <span class="webmention__author">
-                <img class="webmention__author__photo" src="{{ '/assets/images/avatar-default.svg' | url }}" alt="">
                 <strong>Anonymous</strong>
             </span>
         {% endif %}
@@ -37,6 +34,10 @@
         {% endif %}
     </div>
     <div class="webmention__content p-content">
-        {{ webmention.content.value | safe }}
+        {% if webmention.content.value %}
+            {{ webmention.content.value | safe }}
+        {% else %}
+            Mentioned this in <a href="{{ webmention.url }}" target="_blank" rel="noopener noreferrer">{{ webmention.url }}</a>.
+        {% endif %}
     </div>
 </div>

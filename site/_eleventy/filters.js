@@ -58,14 +58,19 @@ module.exports = {
         }
 
         const orderByDate = (a, b) =>
-            new Date(a.published) - new Date(b.published)
+            new Date(a.published || a['wm-received']) - new Date(b.published || b['wm-received'])
 
         const checkRequiredFields = entry => {
-            const { author, published, content } = entry
-            return !!author && !!author.name && !!published && !!content
+            return !!(entry.url || entry['wm-source'])
         }
 
         const clean = entry => {
+            entry = {
+                ...entry,
+                url: entry.url || entry['wm-source'],
+                published: entry.published || entry['wm-received'],
+                content: { ...entry.content }
+            }
             const { html, text } = entry.content
 
             if (html) {
@@ -78,7 +83,7 @@ module.exports = {
                 // sanitize HTML
                 entry.content.value = sanitizeHTML(html, allowedHTML)
             } else {
-                entry.content.value = sanitizeHTML(text, allowedHTML)
+                entry.content.value = sanitizeHTML(text || '', allowedHTML)
             }
 
             return entry
