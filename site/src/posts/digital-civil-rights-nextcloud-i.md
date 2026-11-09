@@ -544,7 +544,7 @@ The issue appears to be related to Resist Fingerprinting (RFP) ([`privacy.resist
 
 ### Orivon: A Web3 browser with integrated Nym mixnet routing
 
-I learned about the [Orivon browser](https://orivonstack.eth.limo/) through the[Nym team](https://www.youtube.com/@Nymtech)'s community call, [A browser that runs Nym by default](https://www.youtube.com/watch?v=UH-EyxQm-Ic).
+I learned about the [Orivon browser](https://orivonstack.eth.limo/) through the [Nym team](https://www.youtube.com/@Nymtech)'s community call, [A browser that runs Nym by default](https://www.youtube.com/watch?v=UH-EyxQm-Ic).
 In the call, Orivon's lead developer, David (a.k.a [Sp3rick](https://x.com/Sp3rick)), explains how he is building an open-source browser with the Nym mixnet integrated as its default tunnel option.
 
 In addition, Orivon supports `.eth` names, verifies content locally on your computer, and lets you route browser traffic through Nym: per tab, per site, or across the entire browser, in a click.
