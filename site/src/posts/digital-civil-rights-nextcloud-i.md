@@ -21,7 +21,7 @@ Our journey will help you to:
     1. Synchronize bookmarks and notes securely and privately.
 1. Set up a personal cloud solution that respects your digital autonomy.
 
-This is more than just a technical setup — it's about reclaiming your digital civil rights and laying the foundation for genuine online freedom.
+This is more than just a technical setup - it's about reclaiming your digital civil rights and laying the foundation for genuine online freedom.
 By the end of this guide, you'll have a scalable, privacy-focused digital infrastructure based on [Nextcloud](https://github.com/nextcloud/server) that can grow with your needs.
 It will serve us well for further steps on our journey towards digital sovereignty.
 
@@ -90,7 +90,7 @@ When it comes to managing passwords and authentication secrets, I've decided to 
     1. On mobile devices, I use [KeePassDX](https://github.com/Kunzisoft/KeePassDX), though switching between databases is cumbersome compared to KeePassXC. While there's a request for better [multi-database support](https://github.com/Kunzisoft/KeePassDX/issues/209), this feature is yet to be implemented.
         1. **Magikeyboard for Ease of Use**: KeePassDX includes a [Magikeyboard](https://www.kuketz-blog.de/keepassdx-magikeyboard-und-autofill-im-android-alltag-nutzen-passwoerter-teil2), which simplifies entering passwords and 2FA codes into apps and browsers. If you're new to this, check out the guide [KeePassDX: Magikeyboard und AutoFill](https://www.kuketz-blog.de/keepassdx-magikeyboard-und-autofill-im-android-alltag-nutzen-passwoerter-teil2), or watch the YouTube video [Complete Guide: KeePassXC | Free, Open-Source, Android Sync | Self-hosted password manager](https://www.youtube.com/watch?v=jL7gfM27EUA) for a walkthrough towards the end of the video.
         1. **Convenience Post First Login**: After the initial login to an account, your browser or app will remember the password. From then on, you'll primarily use the second database for TOTP codes. Additionally, KeePassDX can unlock databases using biometrics, such as your fingerprint, eliminating the need to enter the master password each time.
-        1. **Read-Only Mode for Sync Safety**: To avoid sync conflicts, I use KeePassDX in read-only mode on mobile devices. All password management — creation, updates, and deletions — is done on my workstation. The updated database files are then synced to other devices.
+        1. **Read-Only Mode for Sync Safety**: To avoid sync conflicts, I use KeePassDX in read-only mode on mobile devices. All password management - creation, updates, and deletions - is done on my workstation. The updated database files are then synced to other devices.
 
 You can simplify things by using a single KeePassXC password database and storing your 2FA secrets elsewhere, e.g. [Aegis](https://github.com/beemdevelopment/Aegis).
 
@@ -195,7 +195,7 @@ As detailed in [Wireguard Netzwerk mit Routing einrichten](https://www.edvpfau.d
 
 > If you prefer using an alternative reverse proxy apart from Traefik, refer to the [Reverse Proxy](https://github.com/nextcloud/all-in-one/blob/main/reverse-proxy.md) documentation within the Nextcloud All-in-One (AIO) documentation.
 
-**Nextcloud All-in-One: Secure Access Tips**: Making your Nextcloud All-in-One (AIO) instance accessible via a reverse proxy allows you to share content with anyone, not just registered users. However, this convenience comes with a trade-off: an increased attack surface. Let’s explore a few ways to mitigate this while still maintaining usability.
+**Nextcloud All-in-One: Secure Access Tips**: Making your Nextcloud All-in-One (AIO) instance accessible via a reverse proxy allows you to share content with anyone, not just registered users. However, this convenience comes with a trade-off: an increased attack surface. Let's explore a few ways to mitigate this while still maintaining usability.
 
 Option 1: Keep It on Your Home Network:
 
@@ -226,12 +226,12 @@ Once satisfied with it, this file can be taken and installed on any other machin
 However, the Nextcloud AIO approach requires me to go through these manual steps every time I set up Nextcloud on a new server.
 That said, the AIO approach has its strengths, especially when it comes to its [Maintenance and Release Schedule](https://github.com/nextcloud/server/wiki/Maintenance-and-Release-Schedule).
 Since Nextcloud doesn't provide Long-Term Support (LTS) versions, staying updated with its latest releases is crucial.
-AIO simplifies this process, making it easier to keep up with Nextcloud’s regular updates.
+AIO simplifies this process, making it easier to keep up with Nextcloud's regular updates.
 
 The naming schemes in Nextcloud can be quite confusing.
 On one hand, there's talk of `Nextcloud Hub` with version numbers like 7, 8, 9, and so on.
 On the other hand, there are Nextcloud versions numbered 28, 29, 30, etc.
-From what I understand, there's [no functional difference](https://help.nextcloud.com/t/nextcloud-unterschied-zu-nextcloud-hub/119072) between Nextcloud Hub and Nextcloud without the "Hub" label — the term Hub is simply a marketing term.
+From what I understand, there's [no functional difference](https://help.nextcloud.com/t/nextcloud-unterschied-zu-nextcloud-hub/119072) between Nextcloud Hub and Nextcloud without the "Hub" label - the term Hub is simply a marketing term.
 To make sense of these naming conventions, the [Maintenance and Release Schedule](https://github.com/nextcloud/server/wiki/Maintenance-and-Release-Schedule) page provides a helpful mapping between the two versioning systems.
 
 For a deeper dive, check out the [Nextcloud release channels and how to track them](https://nextcloud.com/blog/nextcloud-release-channels-and-how-to-track-them/) documentation.
@@ -349,7 +349,7 @@ In my configuration, the IP `10.0.1.3` represents the connection between my netc
 ### Configuring Nextcloud
 
 I strongly recommend enabling [two-factor authentication](https://docs.nextcloud.com/server/latest/user_manual/en/user_2fa.html) (2FA) for improved security.
-While Nextcloud also supports `passkeys`, the current implementation is inconvenient and "non-sensical" — it requires both 2FA and a passkey simultaneously.
+While Nextcloud also supports `passkeys`, the current implementation is inconvenient and "non-sensical" - it requires both 2FA and a passkey simultaneously.
 For more details, see the open GitHub ticket: [Disable 2FA when Webauthn is being used](https://github.com/nextcloud/server/issues/21215).
 For now, I would advise sticking with traditional 2FA methods.
 
@@ -465,7 +465,7 @@ Restoring your previous Nextcloud AIO instance from a backup on a new server is 
 
 You can test the restoration on:
 1. A brand-new machine with Docker installed, or
-1. A reset instance, ensuring it is “clean” from a Nextcloud AIO perspective. For guidance on resetting, see: [How to properly reset the instance?](https://github.com/nextcloud/all-in-one#how-to-properly-reset-the-instance)
+1. A reset instance, ensuring it is "clean" from a Nextcloud AIO perspective. For guidance on resetting, see: [How to properly reset the instance?](https://github.com/nextcloud/all-in-one#how-to-properly-reset-the-instance)
 
 **Step 1: Start the AIO Master Container**: Run the following command to begin:
 
@@ -542,9 +542,16 @@ Additionally, an [arkenfox/user.js](https://github.com/arkenfox/user.js) ticket 
 
 The issue appears to be related to Resist Fingerprinting (RFP) ([`privacy.resistFingerprinting`](https://support.mozilla.org/en-US/kb/resist-fingerprinting)) and Fingerprinting Protection (FPP) ([`privacy.fingerprintingProtection`](https://discuss.privacyguides.net/t/firefox-prefs-privacy-resistfingerprinting-vs-privacy-fingerprintingprotection/13042)). This explains why the problem occurs in LibreWolf but not in Firefox.
 
+### Orivon: A Web3 browser with integrated Nym mixnet routing
 
+I learned about the [Orivon browser](https://orivonstack.eth.limo/) through the[Nym team](https://www.youtube.com/@Nymtech)'s community call, [A browser that runs Nym by default](https://www.youtube.com/watch?v=UH-EyxQm-Ic).
+In the call, Orivon's lead developer, David (a.k.a [Sp3rick](https://x.com/Sp3rick)), explains how he is building an open-source browser with the Nym mixnet integrated as its default tunnel option.
+
+In addition, Orivon supports `.eth` names, verifies content locally on your computer, and lets you route browser traffic through Nym: per tab, per site, or across the entire browser, in a click.
+
+You can find the project's source code on [GitHub](https://github.com/OrivonBrowser/orivon-mvp).
 
 ## Footnotes
 
 [^opensearchxml]: This option will only be visible if the searchengine website includes a header in the page pointing to its [OpenSearch XML](https://developer.mozilla.org/en-US/docs/Web/OpenSearch) file with the necessary URLs.
-[^nextcloud-docker-compose-stack]: Have a look at [Nextcloud Server – mit Docker Compose und Traefik installieren](https://goneuland.de/nextcloud-server-mit-docker-compose-und-traefik-installieren) to see a "standard" docker-compose stack set-up.
+[^nextcloud-docker-compose-stack]: Have a look at [Nextcloud Server - mit Docker Compose und Traefik installieren](https://goneuland.de/nextcloud-server-mit-docker-compose-und-traefik-installieren) to see a "standard" docker-compose stack set-up.
