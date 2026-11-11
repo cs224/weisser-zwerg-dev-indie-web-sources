@@ -3151,3 +3151,1295 @@ Brave supplies browser integration; it is not a separate naming protocol here.
 
 These alternative names require compatible applications, browser support, or gateways; they do not automatically resolve everywhere that ordinary DNS names do.
 And naming remains separate from storage: owning a name, even without renewal fees, does not pay for retaining the content it points to.
+
+### Publish Directly to Arweave and Pay in AR
+
+The main walkthrough used Turbo to bundle signed data items and submit them to Arweave.
+I now want to see the machinery underneath that service by publishing a third version of the same website directly to Arweave, paying its native transaction fees in AR.
+We will change only `index.html` and publish a new manifest that continues to reference the manual path's original `style.css` object.
+We will package the new HTML and manifest as two signed data items in one native transaction; the existing stylesheet remains reusable even though it was originally uploaded through Turbo.
+
+We will use Arweave's [HTTP API](<https://docs.arweave.org/developers/arweave-node-server/http-api>) through `curl` to inspect balances, query fees, submit transactions, and check their status.
+A short JavaScript script will use a bundle-encoding library to prepare the signed data items and [`arweave-js`](<https://github.com/ArweaveTeam/arweave-js>) to construct the outer native transaction.
+Despite its name, `arweave-js` is a library, published as the npm package `arweave`, rather than a command-line tool like `turbo`.
+Plain JavaScript executed with Node is sufficient; preparation, signing, and submission will remain separate, visible steps.
+
+> The [free allowance used earlier](<https://docs.ar.io/build/upload/turbo-credits/>) is a Turbo service feature.
+> Native Arweave mainnet transactions require an AR fee even for small files, so this experiment will cost AR despite its tiny payloads.
+> Paying directly avoids Turbo's infrastructure fee, but it does not remove the underlying network and storage costs.
+
+The experiment will proceed as follows:
+
+1. Establish a long-lived AR wallet in Wander, record its public address, and retain its recovery material.
+2. Preserve the earlier HTML version, prepare version 3, and inspect the live upload fees while leaving `style.css` unchanged.
+3. Acquire native AR for the long-lived payer in Wander; leave the disposable upload signer unfunded.
+4. Create, inspect, and sign the HTML data item locally. Use its ID to create and sign the manifest, retaining the original CSS identifier.
+5. Package both signed items into one ANS-104 bundle, quote its complete size, and inspect the outer native transaction. Sign that transaction with the funded payer and save it before submission.
+6. Submit the saved transaction and check inclusion and confirmations: acceptance by a node does not yet mean it has been mined. Retrieve the website through the manifest item's ID and compare its files with the local originals.
+
+#### Establish the Long-Lived AR Wallet in Wander
+
+For the AR token reserve, we will use [Wander](<https://www.wander.app/>), formerly ArConnect, a self-custodial wallet available as a browser extension and mobile app.
+It serves a similar purpose for native AR to the role MetaMask played for our Solana identity.
+Here we will use the browser extension and create a separate Arweave wallet for keeping AR beyond this experiment.
+
+> **What is the WNDR token advertised during installation?**<br>
+> Wander's [July 2025 fair-launch announcement](<https://www.wander.app/blog/wndr-fair-launch>) introduces WNDR as its own project token in the AO/Arweave ecosystem, with intended benefits such as reduced service fees and access to features.
+> The connection to AR is indirect: the announced model lets AR holders direct their future AO token rewards to Wander through the Permaweb Index and receive WNDR in return.
+> This redirects the AO rewards; the underlying AR remains under the holder's control.
+> WNDR is separate from AR, AO, and ARIO, and does not replace AR for paying native Arweave transaction fees.
+> We need neither WNDR nor participation in this launch to hold and send AR with Wander.
+
+Wander manages the same kind of [RSA identity represented by an Arweave JWK](<https://www.wander.app/help/what-is-a-json-keyfile>) that we used for uploads earlier.
+The difference is its role: this new identity holds the long-lived AR reserve and will sign and pay for the outer native transaction, while the unfunded command-line signer signs the data items inside it.
+Our MetaMask Solana identity continues to own the ArNS name.
+
+> **Keep the wallet open while following the walkthrough.**<br>
+> I found Wander's toolbar popup annoying because it closed whenever I clicked elsewhere.
+> I would prefer a persistent browser sidebar like the ones I use with MetaMask and Phantom, but I could not find that option in Wander.
+> A working alternative is to open Wander's menu/settings and select **Fullscreen**.
+
+1. Open the [official Wander website](<https://www.wander.app/>) and follow its **Download extension** link to the browser's extension store.
+2. Open the installed extension, choose to create a new wallet, and set its unlock password. If Wander is already configured, use its [account management screen to add a new account](<https://www.wander.app/help/browser-extensions---settings-how-to-create-or-import-additional-wallets>).
+3. To back up the wallet, navigate to **Menu > Manage Accounts > Account 1 > Back up recovery phrase**. Select the intended account if its name differs from `Account 1`.
+4. Only then does Wander ask **"Reveal recovery phrase?"**. Follow the prompts to reveal it, record the words in the correct order, and complete any backup confirmation requested by the wallet. Retain the phrase securely outside this project. If you also export a JWK keyfile as a backup, protect it as private key material.
+5. With the intended account selected, open **Receive** and [copy its full public Arweave address](<https://www.wander.app/help/browser-extension---how-to-receive-arweave-and-ao-assets>). Compare the copied value with the wallet's display before saving it in your notes.
+
+> The unlock password protects access to the wallet in this browser installation; it is not a substitute for a recovery backup.
+> Wander documents [recovery through a seed phrase or keyfile](<https://www.wander.app/help/how-do-i-access-my-wallet-if-i-forget-my-password>).
+> Anyone possessing that recovery material can control the wallet's funds, so keep it private.
+> The public address can be recorded alongside the publication notes.<br>
+> For this experiment the public address is `ECvRPFcbiOR2dwhf9st7opzMK33LDIkGXzfu_5njKSM`.
+
+An Arweave address is a case-sensitive, 43-character string containing letters, digits, `-`, and `_`.
+Set the following shell variable to the address copied from Wander:
+
+```bash
+# XXX_TODO_XXX: Replace this with the full public Arweave address from Wander.
+ar_reserve_address="ECvRPFcbiOR2dwhf9st7opzMK33LDIkGXzfu_5njKSM"
+printf '%s\n' "$ar_reserve_address"
+```
+
+This is the new reserve address, distinct from both `$upload_address`, our existing command-line signer, and `$arns_owner_address`, our Solana owner.
+The shell variable is only a convenient reference; retain the public address in your notes so it remains available after a restart.
+Creating this wallet requires no AR payment.
+
+> **Token-fetch warnings in Wander.**<br>
+> After installation, Wander showed red exclamation marks for WNDR, PI, USDA, and wAR, with the message "Wander is unable to fetch your token".
+> The AR and AO entries displayed zero balances without those warnings.
+> I have not established the cause of these warnings.
+> For this walkthrough, we need native AR, whose balance we will also check independently through Arweave's HTTP API before submitting the bundle.
+
+This wallet will pay the native transaction fee directly; the disposable upload signer will remain unfunded.
+
+> The reserve wallet and its recovery material are intended to be retained for the long term.
+
+#### What Is a "Funded Wallet"?
+
+There are two different things:
+
+* **Creating a cryptographic identity:** generating a key pair and deriving its address. This happens locally and costs nothing.
+* **Creating an account entry in Arweave's balance ledger:** when a previously unknown address first receives AR, the network must start tracking its balance. That first transfer incurs an additional fee.
+
+The implementation checks whether the recipient already exists in the accounts map.
+It adds the surcharge when the entry is absent; it is not charged for every subsequent upload or top-up.
+The sender pays this fee in addition to the transferred amount.
+It is a spent fee, not a recoverable deposit.
+
+Currently we have the following estimates:
+
+<table class="article-table">
+  <thead>
+    <tr>
+      <th scope="col">Component</th>
+      <th scope="col">Fee (AR)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Transfer fee without a new-account surcharge</td>
+      <td><code>0.000042664221</code></td>
+    </tr>
+    <tr>
+      <td>Transfer fee to our previously unfunded upload address</td>
+      <td><code>0.265863359239</code></td>
+    </tr>
+  </tbody>
+</table>
+
+At the current quoted $3.27 per AR, that first funding transaction costs approximately $0.87, separately from the AR delivered to the recipient.<br>
+This makes creating large numbers of account entries costly.<br>
+Turbo avoids this by using two independently signed layers:
+
+```text
+Native Arweave transaction
+  signed by: Turbo's funded Arweave identity
+  AR fee paid by: that same identity
+  payload:
+    ANS-104 bundle
+      signed data item
+        signed by: your disposable upload identity
+        content: your index.html
+```
+
+The inner data item has its own signature, owner, and identifier.
+It has no native payment amount or transaction fee field.
+The outer transaction pays for storing the whole bundle.
+
+This separation is explicitly one of [ANS-104](<https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-104.md>)'s purposes:
+someone else can pay while the original author's identity and signature remain intact, without that author holding funds.
+
+You can verify this against our actual first HTML upload:
+
+* Our HTML item [`KNBfjAq_B8o_eKBmO8Aj2Non2dQdThS6BZjGLD4U_x8`](<https://viewblock.io/arweave/tx/KNBfjAq_B8o_eKBmO8Aj2Non2dQdThS6BZjGLD4U_x8>) is signed by the [`6h59…` identity](<https://viewblock.io/arweave/address/6h59SG7Jkkpc5rWO2fKlTw6P5MrG2eVttKSlXOufjwY>).
+* Its containing native transaction is [`WaDbzRNGW_qxLV4uQRf18rUOnIqMNJYqJ5Mc2A9xhGw`](<https://viewblock.io/arweave/tx/WaDbzRNGW_qxLV4uQRf18rUOnIqMNJYqJ5Mc2A9xhGw>).
+* That transaction is signed by [`JNC6vBhjHY1EPwV3pEeNmrsgFMxH5d38_LHsZ7jful8`](<https://viewblock.io/arweave/address/JNC6vBhjHY1EPwV3pEeNmrsgFMxH5d38_LHsZ7jful8>), a different identity.
+* Its native fee was `0.017617079614 AR` for the entire bundle, not just our HTML.
+
+You can also inspect the [outer transaction as JSON](<https://arweave.net/tx/WaDbzRNGW_qxLV4uQRf18rUOnIqMNJYqJ5Mc2A9xhGw>).
+
+Our identity therefore appears in permanently stored, signed content without needing an entry in the native AR balance ledger.
+Turbo credits are the separate service-payment arrangement; for our small uploads, Turbo's free allowance covered that charge.
+
+We can use the same separation without Turbo. ANS-104 is an open format:
+
+1. A disposable JWK signs the HTML data item.
+2. We package that item into a bundle locally.
+3. A long-lived, funded Arweave identity signs the outer native transaction and pays in AR.
+4. We submit it directly to Arweave.
+
+That requires a bundle-encoding library alongside `arweave-js`, but no Turbo account, credits, or infrastructure fee.
+The disposable signer stays unfunded.
+
+For our intended publishing model, one retained funded payer plus disposable data-item signers is the better fit.
+
+#### Prepare Version 3 and Inspect the Live Fees
+
+If you are returning after a restart, first run the block in [Resume the Walkthrough After a Restart](#resume-the-walkthrough-after-a-restart) from the directory containing the website and its publication-state directory.
+It restores the earlier variables and changes into `$site_dir`.
+If you have already run it in this Bash session, continue here.
+
+First, retain the version 2 source files outside the website directory and create a separate directory for this native-upload experiment:
+
+```bash
+v2_source_dir="${publication_state_dir:?Restore the walkthrough variables first}/source-v2"
+native_v3_state_dir="$publication_state_dir/native-v3"
+ar_node="https://arweave.net"
+
+install -d -- "$v2_source_dir" "$native_v3_state_dir"
+(
+  set -e
+  rg -q -F 'This is version 2 ' "${site_dir:?}/index.html"
+  cmp -- "$v1_source_dir/style.css" "$site_dir/style.css"
+  set -o noclobber
+  cat "$site_dir/index.html" > "$v2_source_dir/index.html"
+  cat "$site_dir/style.css" > "$v2_source_dir/style.css"
+)
+tree "$v2_source_dir"
+# .../source-v2
+# ├── index.html
+# └── style.css
+```
+
+The backup block refuses to overwrite an existing snapshot; when resuming, reuse the saved version 2 files.
+Now change the HTML's version number, keeping the relative stylesheet link and CSS unchanged:
+
+```bash
+sed 's/This is version 2/This is version 3/' "$v2_source_dir/index.html" > "$site_dir/index.html"
+
+diff -u "$v2_source_dir/index.html" "$site_dir/index.html"
+cmp -- "$v2_source_dir/style.css" "$site_dir/style.css"
+wc -c "$site_dir/index.html" "$site_dir/style.css"
+# 464 .../index.html
+# 422 .../style.css
+# 886 total
+```
+
+The `diff` should show only the change from `version 2` to `version 3`.
+The CSS comparison should produce no output.
+
+To compare separate uploads with the bundle we will construct, we first estimate the new manifest's size.
+The HTML data-item ID will be known after local signing.
+Both the old and new IDs have 43 characters, so we can estimate the manifest's exact byte count using a placeholder of the same length and the same JSON formatting:
+
+```bash
+native_v3_manifest_estimate_file="$native_v3_state_dir/manifest-size-estimate.json"
+
+jq --arg html "$(printf '%043d' 0)" --arg css "$manual_v1_css_id" '.paths["index.html"].id = $html | .fallback.id = $html | .paths["style.css"].id = $css' \
+  "$manual_v2_manifest_file" > "$native_v3_manifest_estimate_file"
+
+native_v3_html_bytes="$(wc -c < "$site_dir/index.html")"
+native_v3_manifest_bytes="$(wc -c < "$native_v3_manifest_estimate_file")"
+printf 'HTML: %s bytes\nManifest: %s bytes\n' "$native_v3_html_bytes" "$native_v3_manifest_bytes"
+# HTML: 464 bytes
+# Manifest: 362 bytes
+```
+
+This document is only for estimating the fee.
+We will create the publication manifest with the real HTML ID later.
+The CSS entry already contains the original manual upload's identifier.
+
+The native [transaction-price endpoint](<https://docs.arweave.org/developers/arweave-node-server/http-api#get-transaction-price>) accepts the data size in bytes and returns the upload fee in *winston*, where **1 AR = 1,000,000,000,000 winston**.
+These two requests save the current quotes for uploading the HTML and manifest as separate native transactions:
+
+```bash
+curl --fail --silent --show-error --max-time 30 https://arweave.net/price/464 --output "$native_v3_state_dir/html-fee.winston"
+# 3526829235
+curl --fail --silent --show-error --max-time 30 https://arweave.net/price/362 --output "$native_v3_state_dir/manifest-fee.winston"
+# 3526829235
+```
+
+Uploaded separately, the fee would be **0.0035 AR** (about **$0.0115**) for the 464-byte HTML file and the same amount for the 362-byte manifest.
+Together, that would be **0.007 AR** (about **$0.023**), using the quoted exchange rate of **$3.27 per AR**.
+
+> **Small uploads are priced in 256 KiB steps.**<br>
+> For native transactions, Arweave calculates the fee from the data size rounded up to a multiple of **256 KiB (262,144 bytes)**, plus a fixed transaction-size allowance.
+> At the same network price, a non-empty payload of up to 262,144 bytes therefore has the same minimum upload fee; the next step starts at 262,145 bytes.
+> This rule is explicit in the [protocol implementation](<https://github.com/ArweaveTeam/arweave/blob/18d402c714132e1de3962b12ff32a420127e0c02/apps/arweave/src/ar_tx.erl#L222-L237>) and its [boundary tests](<https://github.com/ArweaveTeam/arweave/blob/18d402c714132e1de3962b12ff32a420127e0c02/apps/arweave/src/ar_tx.erl#L970-L981>).
+> Bundling allows several small data items to share one native transaction's minimum charge.
+
+#### Bundling
+
+We will publish the version 3 HTML and its manifest together in one ANS-104 bundle, assembled locally without Turbo.
+The crucial detail is that the HTML's data-item ID becomes known **when we sign it locally**, before submitting anything to Arweave.
+[ANS-104 defines that ID as the SHA-256 hash of the item's signature](<https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-104.md#2-dataitem-signature-and-id>).
+
+The sequence is therefore:
+
+1. Create and sign the version 3 HTML data item locally. Its signature gives us its final ID.
+2. Create the manifest referencing that HTML ID and the original, already published CSS ID.
+3. Sign the manifest as another data item. Its ID is now known too.
+4. Package both signed items into one ANS-104 bundle.
+5. Put the bundle into a native transaction, sign it with the funded payer, and submit it.
+
+There is no circular dependency: the manifest needs the HTML item's ID, but neither item needs the enclosing transaction's ID.
+The bundle contains the already signed items; packaging them does not change their IDs.
+We retain those signed bytes rather than signing the items again, which could produce different IDs.
+
+We therefore have **three IDs but only one native transaction fee**:
+
+* The **HTML item ID** identifies the new page.
+* The **manifest item ID** identifies the document through which we access the website.
+* The **outer transaction ID** identifies the native transaction carrying both items.
+
+Our tiny bundle, including signatures and metadata, will remain below 256 KiB.
+At the quoted price, that means approximately **0.0035 AR ($0.0115)** for both items together, instead of twice that amount.
+Before submission, we will query the fee for the completed bundle's actual byte size.
+The original stylesheet remains outside the new bundle and is reused through its existing ID.
+
+This is the workflow we will follow: the disposable JWK signs both data items and stays unfunded, while the long-lived identity in Wander signs and pays for the outer native transaction.
+
+#### Acquire Native AR for the Long-Lived Payer
+
+We now need native AR at the long-lived address managed by Wander so that it can pay for the bundle's outer transaction.
+The destination is `$ar_reserve_address`; the disposable upload identity at `$upload_address` stays unfunded.
+
+AR can be obtained through an exchange or a fiat-purchase provider:
+
+* **Buy through an exchange and withdraw to Wander.** [CoinGecko's AR markets overview](<https://www.coingecko.com/en/coins/arweave#markets>) lists exchanges and spot trading pairs. For example, Kraken lists [AR with support for the native Arweave network](<https://support.kraken.com/articles/360000678446-cryptocurrencies-available-on-kraken>). An exchange you already use is convenient if it supports AR purchases and native withdrawals for your account and country. Check that withdrawals are available before buying.
+* **Use Wander's Buy option.** Wander documents a [fiat-purchase flow through Transak](<https://www.wander.app/help/browser-extension---how-to-buy-ar-tokens-with-a-fiat-currency>). If available in your installation and region, select AR, your payment currency, and a payment method. Transak handles the purchase, payment details, and any required identity verification. Confirm that the receiving address is your intended Wander account.
+
+> **Wander/Transak purchase unavailable on November 11, 2026.**<br>
+> While trying to buy €50 worth of AR by card in Wander, I received the message: "AR on mainnet is temporarily unavailable. Please try again later."
+> I could not obtain a purchase quote through this route. The message did not explain the cause.
+
+You can also try [Transak's direct AR purchase page](<https://transak.com/buy/ar>) without going through Wander's Buy screen, supplying your public Wander address as the destination.
+
+> **The direct Transak route also failed on November 11, 2026.**<br>
+> I tried Transak's website directly and received the same message: "AR on mainnet is temporarily unavailable. Please try again later."
+> The page showed this error with €250 entered for a card purchase, so going directly to Transak did not resolve the problem in this experiment.
+
+I am keeping the direct link here in case AR purchases become available again.
+
+> We need **native AR on Arweave**, not ARIO, AO, WNDR, or a wrapped AR token on another network.
+> A DEX or bridge route must ultimately deliver native AR to this address as well; for example, everPay documents [withdrawing AR to Arweave](<https://docs.everpay.io/en/docs/guide/SDK/everpay-js/operation-api/withdraw>).
+> Merely holding a wrapped token or a balance inside another service does not fund the native transaction.
+
+At the earlier quote, **0.01 AR arriving in Wander** would cover the approximately **0.0035 AR** bundle fee with some margin.
+
+Compare the total amount charged with the amount of AR that will actually arrive; buying and withdrawing the tokens can cost considerably more than our small upload.
+Kraken, for example, publishes its [withdrawal fees and minimums](<https://support.kraken.com/articles/360000767986-cryptocurrency-withdrawal-fees-and-minimums>), but the final quote in the service you use is what matters.
+
+Before proceeding, display the public address we recorded earlier and compare it with **Receive** in Wander:
+
+```bash
+printf '%s\n' "${ar_reserve_address:?Set the public Wander address from the wallet subsection first}"
+# My address: ECvRPFcbiOR2dwhf9st7opzMK33LDIkGXzfu_5njKSM
+```
+
+Then complete the funding through the chosen provider:
+
+1. Select **AR / Arweave** as the asset and **Arweave** as the withdrawal network if a network selector is shown.
+2. Use the full Wander address as the destination. For an exchange, this is a withdrawal after buying AR; for the integrated purchase flow, check the address supplied to the provider.
+3. Review the amount that will arrive, the charges, and any withdrawal waiting period before confirming the purchase or withdrawal.
+4. Retain the provider's receipt and, once available, the Arweave transaction ID. Wait for the transfer to appear in Wander.
+
+The [first-funding fee explained above](#what-is-a-funded-wallet) belongs to the incoming transfer and is paid by its sender; the provider may account for it in its charges.
+It is separate from the fee our Wander identity will later pay to publish the bundle.
+
+I eventually obtained AR through [Gate](<https://www.gate.com>) and withdrew it over the native Arweave network on November 11, 2026.
+Of the **1.800 AR** deducted from my exchange account, Gate charged **0.082 AR** for the withdrawal, and **1.718 AR** arrived in my Wander wallet.
+The disposable upload signer remained unfunded.
+
+> **A pleasant surprise: the withdrawal charge was lower than the network fee.**<br>
+> The actual [Arweave](https://viewblock.io/arweave/tx/4VFARADAnRbL_cTnV_hFyq2nD2WtuwNkJj6WR6NLDFs) [transaction](<https://arweave.net/tx/4VFARADAnRbL_cTnV_hFyq2nD2WtuwNkJj6WR6NLDFs>) records `reward: "269347524253"`: a total network fee of **0.27 AR**, paid by Gate's sending wallet.
+> That was approximately **0.187 AR more** than Gate charged me for this withdrawal.
+> The transaction does not itemise the first-funding surcharge separately; nothing further was deducted from the **1.718 AR** received in Wander.
+
+We can independently check the resulting native balance using Arweave's [wallet-balance endpoint](<https://docs.arweave.org/developers/arweave-node-server/http-api#get-a-wallet-balance>):
+
+```bash
+curl --fail --silent --show-error --max-time 30 "https://arweave.net/wallet/${ar_reserve_address:?Set the public Wander address first}/balance"
+printf '\n'
+# 1718000000000
+```
+
+The response is an integer in winston: **1 AR = 1,000,000,000,000 winston**.
+If it still returns `0`, check the provider's transfer status and transaction ID; the incoming transfer may not yet have been confirmed.
+
+Once the balance is available, we have the funded payer needed for the next steps.
+The disposable JWK remains responsible only for signing the HTML and manifest data items; it receives no AR.
+We will compare the payer's balance with the completed bundle's fresh fee quote before submission.
+
+#### Create, Inspect, and Sign the HTML and Manifest Data Items
+
+We now prepare the two signed objects that will go inside the bundle.
+Both use the existing disposable Arweave JWK at `$upload_wallet_file`; Wander will sign the enclosing transaction in the next step.
+Creating and signing these data items happens locally and does not publish anything.
+
+For the ANS-104 encoding, we will use [`@dha-team/arbundles`](<https://github.com/DHA-Team/arbundles>), the same low-level library used by the installed Turbo SDK.
+
+The pinned version below requires Node.js 22 or newer.
+Keep the tooling outside `$site_dir` so that it cannot accidentally become part of a later directory upload:
+
+```bash
+native_v3_tools_dir="${native_v3_state_dir:?Prepare version 3 first}/tools"
+native_v3_html_item_file="$native_v3_state_dir/index.html.ans104"
+native_v3_manifest_file="$native_v3_state_dir/manifest.json"
+native_v3_manifest_item_file="$native_v3_state_dir/manifest.ans104"
+
+install -d -- "$native_v3_tools_dir"
+(
+  set -e
+  cd -- "$native_v3_tools_dir"
+  npm init --yes
+  npm install --save-exact --ignore-scripts @dha-team/arbundles@1.2.0
+)
+```
+
+The following small script has two modes: `inspect` constructs an unsigned data item and displays its public fields; `sign` also signs it, saves its binary representation, and verifies the saved result.
+It uses the library's `createData`, `ArweaveSigner`, and `DataItem` APIs.
+The private JWK is read from its existing location and is never printed or copied into the publication-state directory.
+
+```bash
+cat > "$native_v3_tools_dir/data-item.mjs" <<'EOF'
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { ArweaveSigner, createData, DataItem } from '@dha-team/arbundles';
+
+const [mode, keyFile, sourceFile, contentType, itemFile] = process.argv.slice(2);
+assert(['inspect', 'sign'].includes(mode) && keyFile && sourceFile && contentType && itemFile,
+  'Usage: node data-item.mjs inspect|sign KEY SOURCE CONTENT_TYPE ITEM_FILE');
+
+const summaryFile = `${itemFile}.json`;
+if (mode === 'sign') {
+  assert(!existsSync(itemFile) && !existsSync(summaryFile),
+    'Signed output already exists; retain it rather than signing again.');
+}
+
+const jwk = JSON.parse(readFileSync(keyFile, 'utf8'));
+const signer = new ArweaveSigner(jwk);
+const data = readFileSync(sourceFile);
+const item = createData(data, signer, {
+  tags: [{ name: 'Content-Type', value: contentType }],
+});
+
+const summary = {
+  uploader: createHash('sha256').update(item.rawOwner).digest('base64url'),
+  signatureType: item.signatureType,
+  target: item.target || null,
+  anchor: item.anchor || null,
+  tags: item.tags,
+  dataBytes: item.rawData.length,
+  serializedBytes: item.getRaw().length,
+  signed: false,
+};
+
+if (mode === 'sign') {
+  await item.sign(signer);
+  assert(await item.isValid(), 'Data-item signature verification failed.');
+  writeFileSync(itemFile, item.getRaw(), { flag: 'wx' });
+
+  // Verify the exact bytes saved to disk, including the original payload.
+  const saved = new DataItem(readFileSync(itemFile));
+  assert(await saved.isValid(), 'Saved data-item verification failed.');
+  assert.equal(saved.id, item.id);
+  assert(saved.rawData.equals(data), 'Saved payload differs from the source.');
+
+  summary.signed = true;
+  summary.id = saved.id;
+  summary.signatureVerified = true;
+  writeFileSync(summaryFile, JSON.stringify(summary, null, 2) + '\n', { flag: 'wx' });
+}
+
+console.log(JSON.stringify(summary, null, 2));
+EOF
+```
+
+* `uploader` is the address of the disposable Arweave upload identity we created earlier: the value in `$upload_address`, which is `6h59SG7Jkkpc5rWO2fKlTw6P5MrG2eVttKSlXOufjwY` in my experiment.
+The data item's `owner` field contains this same identity's public key; the script derives the displayed address from that key.
+* Signature type `1` means the RSA signer used by our JWK.
+* We supply only the `Content-Type` tag and leave the optional target and anchor empty.
+* `dataBytes` counts the file contents, while `serializedBytes` also includes the signature, public key, tags, and other ANS-104 fields.
+* There is no native `quantity` or `reward` field here: payment belongs to the outer transaction.
+
+**Inspect and sign the HTML.** First check that we still have version 3 and the original stylesheet, then inspect the unsigned HTML item:
+
+```bash
+(
+  set -e
+  rg -q -F 'This is version 3 ' "$site_dir/index.html"
+  cmp -- "$v2_source_dir/style.css" "$site_dir/style.css"
+  printf 'Expected uploader: %s\n' "$upload_address"
+  node "$native_v3_tools_dir/data-item.mjs" inspect "$upload_wallet_file" "$site_dir/index.html" text/html "$native_v3_html_item_file"
+)
+# Expected uploader: 6h59SG7Jkkpc5rWO2fKlTw6P5MrG2eVttKSlXOufjwY
+# {
+#   "uploader": "6h59SG7Jkkpc5rWO2fKlTw6P5MrG2eVttKSlXOufjwY",
+#   "signatureType": 1,
+#   "target": null,
+#   "anchor": null,
+#   "tags": [
+#     {
+#       "name": "Content-Type",
+#       "value": "text/html"
+#     }
+#   ],
+#   "dataBytes": 464,
+#   "serializedBytes": 1533,
+#   "signed": false
+# }
+```
+
+Check that `uploader` matches `$upload_address`, the tag is `Content-Type: text/html`, and `dataBytes` is `464` for the unchanged example.
+There is no final ID yet because we have not signed the item.
+Now sign and retain it:
+
+```bash
+node "$native_v3_tools_dir/data-item.mjs" sign "$upload_wallet_file" "$site_dir/index.html" text/html "$native_v3_html_item_file"
+# {
+#   "uploader": "6h59SG7Jkkpc5rWO2fKlTw6P5MrG2eVttKSlXOufjwY",
+#   "signatureType": 1,
+#   "target": null,
+#   "anchor": null,
+#   "tags": [
+#     {
+#       "name": "Content-Type",
+#       "value": "text/html"
+#     }
+#   ],
+#   "dataBytes": 464,
+#   "serializedBytes": 1533,
+#   "signed": true,
+#   "id": "OvEVX6iJ81icbGq4BxrQSnLmc6_sN_8szVO8g9zo2DA",
+#   "signatureVerified": true
+# }
+
+native_v3_html_id="$(jq -er '.id' "$native_v3_html_item_file.json")"
+printf 'Version 3 HTML item: %s\n' "$native_v3_html_id"
+# Version 3 HTML item: OvEVX6iJ81icbGq4BxrQSnLmc6_sN_8szVO8g9zo2DA
+
+tree -L 1 .../publishing-arweave-ario-basics-site-publication-state/native-v3/
+# /home/cs/workspaces/indie-publisher-template/publishing-arweave-ario-basics-site-publication-state/native-v3/
+# ├── html-fee.winston
+# ├── index.html.ans104
+# ├── index.html.ans104.json
+# ├── manifest-fee.winston
+# ├── manifest-size-estimate.json
+# └── tools
+
+tree -L 1 .../publishing-arweave-ario-basics-site-publication-state/native-v3/tools
+# /home/cs/workspaces/indie-publisher-template/publishing-arweave-ario-basics-site-publication-state/native-v3/tools
+# ├── data-item.mjs
+# ├── node_modules
+# ├── package.json
+# └── package-lock.json
+```
+
+The result now includes `signed: true`, `signatureVerified: true`, and the final data-item ID.
+The `.ans104` file contains the signed binary item; the accompanying `.ans104.json` file is a local inspection summary, not an upload receipt.
+Your ID will differ from anyone else's because signing with this RSA-PSS key introduces randomness.
+
+**Create and sign the manifest.** We can now replace the previous manifest's HTML references with that locally obtained ID, including its fallback, while retaining the original CSS identifier:
+
+```bash
+(
+  set -e
+  set -o noclobber
+  jq --arg html "${native_v3_html_id:?Sign the HTML first}" \
+     --arg css "${manual_v1_css_id:?Restore the original CSS ID}" \
+     '.paths["index.html"].id = $html |
+      .fallback.id = $html |
+      .paths["style.css"].id = $css' \
+    "$manual_v2_manifest_file" > "$native_v3_manifest_file"
+)
+
+jq . "$native_v3_manifest_file"
+# {
+#   "manifest": "arweave/paths",
+#   "version": "0.2.0",
+#   "index": {
+#     "path": "index.html"
+#   },
+#   "paths": {
+#     "index.html": {
+#       "id": "OvEVX6iJ81icbGq4BxrQSnLmc6_sN_8szVO8g9zo2DA"
+#     },
+#     "style.css": {
+#       "id": "AXKDPYfrfbDIZCWHsThDWiQ45yykp9Kr4U7XAG-cU4Q"
+#     }
+#   },
+#   "fallback": {
+#     "id": "OvEVX6iJ81icbGq4BxrQSnLmc6_sN_8szVO8g9zo2DA"
+#   }
+# }
+wc -c "$native_v3_manifest_file"
+# 362 .../native-v3/manifest.json
+
+node "$native_v3_tools_dir/data-item.mjs" inspect "$upload_wallet_file" "$native_v3_manifest_file" application/x.arweave-manifest+json "$native_v3_manifest_item_file"
+# {
+#   "uploader": "6h59SG7Jkkpc5rWO2fKlTw6P5MrG2eVttKSlXOufjwY",
+#   "signatureType": 1,
+#   "target": null,
+#   "anchor": null,
+#   "tags": [
+#     {
+#       "name": "Content-Type",
+#       "value": "application/x.arweave-manifest+json"
+#     }
+#   ],
+#   "dataBytes": 362,
+#   "serializedBytes": 1457,
+#   "signed": false
+# }
+```
+
+Check that `index.html` and `fallback` refer to `$native_v3_html_id`, while `style.css` still refers to `$manual_v1_css_id`.
+The manifest's own `Content-Type` is `application/x.arweave-manifest+json`; this is what identifies it as a path manifest to a gateway.
+Then sign it as the second data item:
+
+```bash
+node "$native_v3_tools_dir/data-item.mjs" sign "$upload_wallet_file" "$native_v3_manifest_file" application/x.arweave-manifest+json "$native_v3_manifest_item_file"
+# {
+#   "uploader": "6h59SG7Jkkpc5rWO2fKlTw6P5MrG2eVttKSlXOufjwY",
+#   "signatureType": 1,
+#   "target": null,
+#   "anchor": null,
+#   "tags": [
+#     {
+#       "name": "Content-Type",
+#       "value": "application/x.arweave-manifest+json"
+#     }
+#   ],
+#   "dataBytes": 362,
+#   "serializedBytes": 1457,
+#   "signed": true,
+#   "id": "k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k",
+#   "signatureVerified": true
+# }
+
+native_v3_manifest_id="$(jq -er '.id' "$native_v3_manifest_item_file.json")"
+printf 'Version 3 manifest item: %s\n' "$native_v3_manifest_id"
+# Version 3 manifest item: k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k
+```
+
+> **Keep the signed bytes, not just the IDs.**<br>
+> The script refuses to overwrite existing signed output.
+> When resuming, read the IDs from the saved summaries and use the existing `.ans104` files.
+> Re-signing the HTML could produce a different ID and would require rebuilding and re-signing the manifest that references it.
+
+We now have both final item IDs and their locally verified signed bytes.
+Next we will package these exact two items into one bundle and prepare the native transaction that carries them.
+
+#### Bundle the Items and Sign the Native Transaction
+
+The HTML and manifest are already signed, so bundling now means arranging their existing bytes into the [ANS-104 bundle format](<https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-104.md#12-transaction-body-format>).
+We then prepare one native Arweave transaction, inspect its fee and fields, and ask Wander to sign it with the funded reserve identity.
+We will save that signed transaction for submission in the next step.
+
+**Package the two existing items.** A bundle starts with an item count, followed by each item's byte length and ID, and then the signed items themselves.
+The following script constructs that header and uses `arbundles` to read and verify the result.
+It needs no private key and does not re-sign either item:
+
+```bash
+native_v3_bundle_file="$native_v3_state_dir/bundle.ans104"
+native_v3_signing_dir="$native_v3_state_dir/signing"
+native_v3_unsigned_file="$native_v3_signing_dir/unsigned.json"
+native_v3_signed_file="$native_v3_state_dir/native-v3.signed.json"
+
+cat > "$native_v3_tools_dir/bundle-items.mjs" <<'EOF'
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { Bundle, DataItem, longTo32ByteArray } from '@dha-team/arbundles';
+
+const [htmlFile, manifestFile, cssId, bundleFile] = process.argv.slice(2);
+const items = [htmlFile, manifestFile].map(file => new DataItem(readFileSync(file)));
+for (const [index, file] of [htmlFile, manifestFile].entries()) {
+  assert(await items[index].isValid(), `Invalid signed item: ${file}`);
+  assert.equal(items[index].id, JSON.parse(readFileSync(`${file}.json`)).id);
+}
+
+const manifest = JSON.parse(items[1].rawData.toString('utf8'));
+assert.equal(manifest.paths['index.html'].id, items[0].id);
+assert.equal(manifest.fallback.id, items[0].id);
+assert.equal(manifest.paths['style.css'].id, cssId);
+
+const header = Buffer.concat([
+  Buffer.from(longTo32ByteArray(items.length)),
+  ...items.flatMap(item => [
+    Buffer.from(longTo32ByteArray(item.getRaw().length)), item.rawId,
+  ]),
+]);
+const bytes = Buffer.concat([header, ...items.map(item => item.getRaw())]);
+const bundle = new Bundle(bytes);
+assert(await bundle.verify(), 'Bundle verification failed.');
+assert.deepEqual(bundle.getIds(), items.map(item => item.id));
+for (let i = 0; i < items.length; i++) {
+  assert(bundle.get(i).getRaw().equals(items[i].getRaw()));
+}
+
+writeFileSync(bundleFile, bytes, { flag: 'wx' });
+console.log(JSON.stringify({ bytes: bytes.length, itemIds: bundle.getIds() }, null, 2));
+EOF
+
+node "$native_v3_tools_dir/bundle-items.mjs" "$native_v3_html_item_file" "$native_v3_manifest_item_file" "$manual_v1_css_id" "$native_v3_bundle_file"
+# {
+#   "bytes": 3150,
+#   "itemIds": [
+#     "OvEVX6iJ81icbGq4BxrQSnLmc6_sN_8szVO8g9zo2DA",
+#     "k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k"
+#   ]
+# }
+
+native_v3_bundle_bytes="$(wc -c < "$native_v3_bundle_file")"
+printf 'Complete bundle: %s bytes\n' "$native_v3_bundle_bytes"
+# Complete bundle: 3150 bytes
+```
+
+For our files, that is 1,533 bytes for the HTML item, 1,457 bytes for the manifest item, and 160 bytes of bundle headers.
+Both item IDs remain unchanged.
+The bundle itself does not yet have a native transaction ID; that will come from the outer transaction's signature.
+
+**Quote and construct the outer transaction.** Install the pinned `arweave-js` package in the same tooling directory:
+
+```bash
+(
+  set -e
+  cd -- "$native_v3_tools_dir"
+  npm install --save-exact --ignore-scripts arweave@1.15.7
+)
+install -d -- "$native_v3_signing_dir"
+```
+
+Query the node for the complete bundle's fee, a recent transaction anchor, and the payer's current balance:
+
+```bash
+(
+  set -e
+  curl --fail --silent --show-error --max-time 30 "$ar_node/price/$native_v3_bundle_bytes" --output "$native_v3_state_dir/bundle-fee.winston"
+  # 3531726853
+  curl --fail --silent --show-error --max-time 30 "$ar_node/tx_anchor" --output "$native_v3_state_dir/tx-anchor.txt"
+  # OlSX0BUWTwKtJJViE3WQEPhYAfcYZqQuazs3YhmXOE3tZV2WtKkq9cByoKJOYXhj
+  curl --fail --silent --show-error --max-time 30 "$ar_node/wallet/${ar_reserve_address:?Set the Wander address}/balance" --output "$native_v3_state_dir/payer-balance.winston"
+  # 1718000000000
+)
+```
+
+These are read-only requests.
+The [transaction anchor](<https://docs.arweave.org/developers/arweave-node-server/http-api#get-transaction-anchor>) ties the transaction to recent chain state; it is unrelated to the website's previous publication ID.
+Because the complete bundle still fits below 256 KiB, its quote should be close to the earlier **0.0035 AR** estimate, subject to the network's current price.
+
+> Prepare the outer transaction shortly before submitting it: a block anchor is valid only within a recent-block window.
+> If you pause long enough for an unsubmitted transaction's anchor to become stale, obtain a fresh anchor and fee quote and prepare and sign a replacement outer transaction, retaining the earlier files separately.
+> The signed HTML and manifest items can be reused unchanged; only the outer transaction ID changes.
+
+Now construct and save the unsigned transaction using those responses:
+
+```bash
+cat > "$native_v3_tools_dir/prepare-native.mjs" <<'EOF'
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import Arweave from 'arweave';
+
+const [stateDir, payer] = process.argv.slice(2);
+assert(/^[A-Za-z0-9_-]{43}$/.test(payer), 'Expected the public Wander address.');
+const readText = name => readFileSync(join(stateDir, name), 'utf8').trim();
+const reward = readText('bundle-fee.winston');
+const balance = readText('payer-balance.winston');
+const anchor = readText('tx-anchor.txt');
+assert(/^\d+$/.test(reward) && BigInt(reward) > 0n);
+assert(/^\d+$/.test(balance) && BigInt(balance) >= BigInt(reward), 'Insufficient AR.');
+assert(/^[A-Za-z0-9_-]+$/.test(anchor), 'Invalid transaction anchor.');
+
+const arweave = Arweave.init({ host: 'arweave.net', port: 443, protocol: 'https' });
+const transaction = await arweave.createTransaction({
+  data: readFileSync(join(stateDir, 'bundle.ans104')),
+  last_tx: anchor,
+  reward,
+  target: '',
+  quantity: '0',
+});
+transaction.addTag('Bundle-Format', 'binary');
+transaction.addTag('Bundle-Version', '2.0.0');
+transaction.addTag('Content-Type', 'application/octet-stream');
+
+writeFileSync(join(stateDir, 'signing', 'unsigned.json'),
+  JSON.stringify(transaction, null, 2) + '\n', { flag: 'wx' });
+writeFileSync(join(stateDir, 'signing', 'payer-address.txt'), payer + '\n', { flag: 'wx' });
+console.log(JSON.stringify({
+  payer,
+  balanceAR: arweave.ar.winstonToAr(balance),
+  ...transaction.toJSON(),
+  data: '(bundle bytes omitted from this display)',
+  tags: transaction.tags.map(tag => ({
+    name: tag.get('name', { decode: true, string: true }),
+    value: tag.get('value', { decode: true, string: true }),
+  })),
+  feeAR: arweave.ar.winstonToAr(transaction.reward),
+}, null, 2));
+EOF
+
+node "$native_v3_tools_dir/prepare-native.mjs" "$native_v3_state_dir" "$ar_reserve_address"
+# {
+#   "payer": "ECvRPFcbiOR2dwhf9st7opzMK33LDIkGXzfu_5njKSM",
+#   "balanceAR": "1.718000000000",
+#   "format": 2,
+#   "id": "",
+#   "last_tx": "OlSX0BUWTwKtJJViE3WQEPhYAfcYZqQuazs3YhmXOE3tZV2WtKkq9cByoKJOYXhj",
+#   "owner": "",
+#   "tags": [
+#     {
+#       "name": "Bundle-Format",
+#       "value": "binary"
+#     },
+#     {
+#       "name": "Bundle-Version",
+#       "value": "2.0.0"
+#     },
+#     {
+#       "name": "Content-Type",
+#       "value": "application/octet-stream"
+#     }
+#   ],
+#   "target": "",
+#   "quantity": "0",
+#   "data": "(bundle bytes omitted from this display)",
+#   "data_size": "3150",
+#   "data_root": "SwSjx4Rrjsho8c46joL4Qio3de_NSTIL-zX4_Zp-P7Q",
+#   "reward": "3531726853",
+#   "signature": "",
+#   "feeAR": "0.003531726853"
+# }
+
+tree $native_v3_state_dir/signing/
+# .../publishing-arweave-ario-basics-site-publication-state/native-v3/signing/
+# ├── payer-address.txt
+# └── unsigned.json
+```
+
+The saved JSON contains the unsigned transaction in the format expected by arweave-js, including the complete bundle in its base64url-encoded data field and base64url-encoded tag names and values.
+For readability, the terminal display hides the bundle bytes, decodes the tags, and adds the intended payer address, its previously retrieved balance, and the fee expressed in AR.
+These three additional fields are inspection aids and are not saved as part of the transaction.
+
+The fields to inspect are:
+
+* `format: 2` selects the current native transaction format.
+* `target: ""` and `quantity: "0"` mean this transaction stores data without transferring AR to another address.
+* `reward` is the single network fee in winston; `feeAR` displays its AR equivalent.
+* `data_size` is the complete bundle size, and `data_root` is the Merkle root committing to those data bytes.
+* `last_tx` contains the anchor just retrieved.
+* `Bundle-Format` and `Bundle-Version` identify the payload as an ANS-104 binary bundle so that gateways can unpack its items.
+* `owner`, `signature`, and `id` are still empty. Wander will supply the funded payer's public key and signature, from which the outer transaction ID is derived.
+
+The first-funding surcharge is not relevant to this storage transaction: there is no recipient account to create.
+
+**Sign with Wander in the browser.** Wander exposes its [signing API](<https://docs.wander.app/api/sign>) to browser pages, so we will use a small local page and the browser's developer console.
+This keeps the payer's private key inside Wander.
+The page loads the same pinned library from disk and serves only the public signing files:
+
+```bash
+cp -- "$native_v3_tools_dir/node_modules/arweave/bundles/web.bundle.min.js" "$native_v3_signing_dir/arweave.js"
+cat > "$native_v3_signing_dir/index.html" <<'EOF'
+<!doctype html>
+<meta charset="utf-8">
+<title>Sign the Arweave version 3 bundle</title>
+<h1>Sign the Arweave version 3 bundle</h1>
+<p>Follow the walkthrough in the browser's developer console. This page does not submit transactions.</p>
+<script src="./arweave.js"></script>
+EOF
+
+python3 -m http.server 8767 --bind 127.0.0.1 --directory "$native_v3_signing_dir"
+```
+
+Keep that server running and open [http://127.0.0.1:8767/](<http://127.0.0.1:8767/>) in the browser where Wander is installed.
+Select the reserve account in Wander, then open the page's **Developer Tools > Console**; in Chrome on Linux, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> opens it directly.
+The following blocks are **JavaScript for that browser console**, not Bash commands.
+
+First, connect and inspect the unsigned transaction:
+
+```javascript
+var nativeArweave = Arweave.init({ host: 'arweave.net', port: 443, protocol: 'https' });
+await window.arweaveWallet.connect(
+  ['ACCESS_ADDRESS', 'SIGN_TRANSACTION'], { name: 'Arweave by Foot' }
+);
+var expectedPayer = (await (await fetch('./payer-address.txt')).text()).trim();
+var connectedPayer = await window.arweaveWallet.getActiveAddress();
+if (connectedPayer !== expectedPayer) throw new Error('Select the intended Wander account.');
+var unsignedNativeTx = await (await fetch('./unsigned.json')).json();
+var nativeTx = nativeArweave.transactions.fromRaw(unsignedNativeTx);
+await nativeTx.prepareChunks(nativeTx.data);
+if (nativeTx.data_root !== unsignedNativeTx.data_root) {
+  throw new Error('Rebuilt data root differs from the saved transaction.');
+}
+console.log({
+  payer: connectedPayer, dataBytes: nativeTx.data_size,
+  target: nativeTx.target, quantity: nativeTx.quantity,
+  feeAR: nativeArweave.ar.winstonToAr(nativeTx.reward),
+});
+```
+
+The saved JSON contains the bundle and its data root, but omits the SDK's in-memory chunk metadata.
+`prepareChunks` rebuilds that metadata locally before signing; the check confirms that the data root is unchanged.
+Without this step, [Wander's transaction validation](<https://github.com/wanderwallet/Wander/blob/4828cf173ef4b183a442b738ad349148c9edf60f/src/utils/assertions.ts>) rejects the reloaded transaction with `expected to be not undefined`.
+
+If `window.arweaveWallet` is unavailable, unlock Wander, allow it access to this local page, and reload the page.
+Choose **Always ask** when granting the connection's signing permissions, so that the next operation presents a confirmation.
+Check the payer, bundle size, zero transfer amount, and fee before proceeding.
+
+Now request the signature, review and approve it in Wander, and download the signed transaction:
+
+```javascript
+await nativeArweave.transactions.sign(nativeTx);
+if (!(await nativeArweave.transactions.verify(nativeTx))) throw new Error('Invalid signature.');
+if (await nativeArweave.wallets.ownerToAddress(nativeTx.owner) !== expectedPayer) {
+  throw new Error('The transaction was signed by a different account.');
+}
+console.log({ id: nativeTx.id, feeAR: nativeArweave.ar.winstonToAr(nativeTx.reward) });
+
+var signedNativeBlob = new Blob([JSON.stringify(nativeTx, null, 2) + '\n'], { type: 'application/json' });
+var signedNativeURL = URL.createObjectURL(signedNativeBlob);
+var signedNativeLink = document.createElement('a');
+signedNativeLink.href = signedNativeURL;
+signedNativeLink.download = 'native-v3.signed.json';
+signedNativeLink.click();
+setTimeout(() => URL.revokeObjectURL(signedNativeURL), 1000);
+```
+
+This calls `sign`, which returns a signed transaction.
+We do not use Wander's [dispatch operation](<https://docs.wander.app/api/dispatch>), which also submits data and may use a bundler.
+If the download needs to be repeated, rerun only the download lines beginning with `var signedNativeBlob`; keep the existing `nativeTx` rather than requesting another signature.
+
+> Wander may append `Signing-Client` and `Signing-Client-Version` tags and apply its configured fee multiplier, as shown in its [signing implementation](<https://github.com/wanderwallet/Wander/blob/4828cf173ef4b183a442b738ad349148c9edf60f/src/api/modules/sign/sign.background.ts>).
+> The verification below permits those additional tags but requires the fee we inspected.
+> If the fee differs, stop and review Wander's fee setting and the signed result before proceeding; do not edit the signed JSON to change the fee.
+
+**Retain and verify the downloaded transaction.** Stop the local server with <kbd>Ctrl</kbd>+<kbd>C</kbd>, return to Bash, and copy the download into the publication-state directory:
+
+```bash
+# XXX_TODO_XXX: Adjust this if your browser saved the file elsewhere or added a suffix.
+native_v3_download_file="$HOME/Downloads/native-v3.signed.json"
+(
+  set -o noclobber
+  cat -- "$native_v3_download_file" > "$native_v3_signed_file"
+)
+```
+
+Finally, check the saved file independently with Node: its signature must verify, its payer must be the Wander address, its bundle bytes must match our local bundle exactly, and its transaction fields must match the inspected request.
+
+```bash
+cat > "$native_v3_tools_dir/verify-native.mjs" <<'EOF'
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import Arweave from 'arweave';
+
+const [stateDir, signedFile, payer] = process.argv.slice(2);
+const arweave = Arweave.init({ host: 'arweave.net', port: 443, protocol: 'https' });
+const original = JSON.parse(readFileSync(join(stateDir, 'signing', 'unsigned.json')));
+const signed = JSON.parse(readFileSync(signedFile));
+const tx = arweave.transactions.fromRaw(signed);
+assert(await arweave.transactions.verify(tx), 'Invalid native transaction signature.');
+assert.equal(await arweave.wallets.ownerToAddress(tx.owner), payer, 'Unexpected payer.');
+for (const field of ['format', 'last_tx', 'target', 'quantity', 'reward', 'data_size', 'data_root', 'data']) {
+  assert.equal(signed[field], original[field], `Changed transaction field: ${field}`);
+}
+assert.deepEqual(signed.tags.slice(0, original.tags.length), original.tags);
+for (const tag of signed.tags.slice(original.tags.length)) {
+  const name = arweave.utils.b64UrlToString(tag.name);
+  assert(['Signing-Client', 'Signing-Client-Version'].includes(name), `Unexpected tag: ${name}`);
+}
+const bundleBytes = readFileSync(join(stateDir, 'bundle.ans104'));
+assert(Buffer.from(tx.data).equals(bundleBytes), 'Bundle payload differs.');
+assert.equal(tx.data_size, String(bundleBytes.length));
+const rebuilt = await arweave.createTransaction({
+  data: bundleBytes, reward: tx.reward, last_tx: tx.last_tx,
+});
+assert.equal(tx.data_root, rebuilt.data_root, 'Bundle data root differs.');
+console.log(JSON.stringify({
+  id: tx.id, payer, dataBytes: tx.data_size,
+  feeAR: arweave.ar.winstonToAr(tx.reward), signatureVerified: true,
+}, null, 2));
+EOF
+
+node "$native_v3_tools_dir/verify-native.mjs" "$native_v3_state_dir" "$native_v3_signed_file" "$ar_reserve_address"
+# {
+#   "id": "T0gT47segLYaI8kXz0Pxsq-A9kH2V00M1h9Awebmbcs",
+#   "payer": "ECvRPFcbiOR2dwhf9st7opzMK33LDIkGXzfu_5njKSM",
+#   "dataBytes": "3150",
+#   "feeAR": "0.003531726853",
+#   "signatureVerified": true
+# }
+native_v3_tx_id="$(jq -er '.id' "$native_v3_signed_file")"
+printf 'Signed native transaction: %s\n' "$native_v3_tx_id"
+Signed native transaction: T0gT47segLYaI8kXz0Pxsq-A9kH2V00M1h9Awebmbcs
+
+tree -L 2 $native_v3_state_dir/
+# .../publishing-arweave-ario-basics-site-publication-state/native-v3/
+# ├── bundle.ans104
+# ├── bundle-fee.winston
+# ├── html-fee.winston
+# ├── index.html.ans104
+# ├── index.html.ans104.json
+# ├── manifest.ans104
+# ├── manifest.ans104.json
+# ├── manifest-fee.winston
+# ├── manifest.json
+# ├── manifest-size-estimate.json
+# ├── native-v3.signed.json
+# ├── payer-balance.winston
+# ├── signing
+# │   ├── arweave.js
+# │   ├── index.html
+# │   ├── payer-address.txt
+# │   └── unsigned.json
+# ├── tools
+# │   ├── bundle-items.mjs
+# │   ├── data-item.mjs
+# │   ├── node_modules
+# │   ├── package.json
+# │   ├── package-lock.json
+# │   ├── prepare-native.mjs
+# │   └── verify-native.mjs
+# └── tx-anchor.txt
+```
+
+We now have three identifiers: the HTML item ID, the manifest item ID, and the outer native transaction ID.
+The first two have not changed during bundling or Wander signing.
+The saved native transaction contains the bundle and the payer's signature, ready for the separate submission step.
+Its signature already authorises that exact transaction, so retain it as the submission artifact rather than signing it again on a retry.
+
+#### Submit the Bundle and Retrieve Version 3
+
+We now have a signed native transaction containing both data items.
+Submitting it sends those saved bytes to Arweave.
+The outer transaction pays the native AR fee, while the enclosed HTML and manifest retain their original uploader and IDs.
+
+**Submit the saved transaction.** The following small helper uses the same `arweave-js` 1.15.7 installation for two operations: `status` reads the transaction's current state, and `submit` uploads it.
+It records each result in a local JSON-lines log, including errors, so that a lost connection does not leave us relying on terminal output alone:
+
+```bash
+native_v3_network_log="$native_v3_state_dir/network.jsonl"
+
+cat > "$native_v3_tools_dir/native-network.mjs" <<'EOF'
+import assert from 'node:assert/strict';
+import { readFileSync, appendFileSync } from 'node:fs';
+import Arweave from 'arweave';
+
+const [action, signedFile, nodeUrl, logFile] = process.argv.slice(2);
+assert(['status', 'submit'].includes(action), 'Use status or submit.');
+const endpoint = new URL(nodeUrl);
+const arweave = Arweave.init({
+  host: endpoint.hostname,
+  port: Number(endpoint.port || (endpoint.protocol === 'https:' ? 443 : 80)),
+  protocol: endpoint.protocol.slice(0, -1),
+  timeout: 30000,
+});
+const saved = JSON.parse(readFileSync(signedFile));
+const tx = arweave.transactions.fromRaw(saved);
+assert(/^[A-Za-z0-9_-]{43}$/.test(tx.id), 'Expected a signed transaction ID.');
+
+let result;
+try {
+  if (action === 'submit') {
+    await tx.prepareChunks(tx.data);
+    assert.equal(tx.data_root, saved.data_root, 'Payload does not match its data root.');
+    assert.equal(String(tx.data.length), saved.data_size, 'Unexpected payload size.');
+    assert(await arweave.transactions.verify(tx), 'Invalid transaction signature.');
+    result = await arweave.transactions.post(tx);
+    if (result.status < 200 || result.status >= 300) process.exitCode = 1;
+  } else {
+    result = await arweave.transactions.getStatus(tx.id);
+  }
+} catch (error) {
+  result = { error: error.message };
+  process.exitCode = 1;
+}
+
+const record = { time: new Date().toISOString(), action, node: nodeUrl, id: tx.id, ...result };
+appendFileSync(logFile, JSON.stringify(record) + '\n', { mode: 0o600 });
+console.log(JSON.stringify(record, null, 2));
+EOF
+
+node "$native_v3_tools_dir/native-network.mjs" status "$native_v3_signed_file" "$ar_node" "$native_v3_network_log"
+# {
+#   "time": "2026-11-11T07:39:11.789Z",
+#   "action": "status",
+#   "node": "https://arweave.net",
+#   "id": "T0gT47segLYaI8kXz0Pxsq-A9kH2V00M1h9Awebmbcs",
+#   "status": 400,
+#   "confirmed": null
+# }
+```
+
+Before the first submission, a `404` is expected: this node does not yet know the transaction.
+If the status is already `202` (pending) or `200` with confirmation details, continue with the status checks below rather than submitting again.
+My first check instead returned `400`, as recorded above. The SDK's status result omits the response body, so that output alone does not establish the reason; `400` should not be interpreted as a pending transaction.
+
+The next block is the actual publication step.
+It first repeats the preceding section's local checks against the prepared transaction and bundle, then sends the signed transaction:
+
+```bash
+(
+  set -e
+  node "$native_v3_tools_dir/verify-native.mjs" "$native_v3_state_dir" "$native_v3_signed_file" "$ar_reserve_address"
+  node "$native_v3_tools_dir/native-network.mjs" submit "$native_v3_signed_file" "$ar_node" "$native_v3_network_log"
+)
+# {
+#   "id": "T0gT47segLYaI8kXz0Pxsq-A9kH2V00M1h9Awebmbcs",
+#   "payer": "ECvRPFcbiOR2dwhf9st7opzMK33LDIkGXzfu_5njKSM",
+#   "dataBytes": "3150",
+#   "feeAR": "0.003531726853",
+#   "signatureVerified": true
+# }
+# {
+#   "time": "2026-11-11T07:40:47.370Z",
+#   "action": "submit",
+#   "node": "https://arweave.net",
+#   "id": "T0gT47segLYaI8kXz0Pxsq-A9kH2V00M1h9Awebmbcs",
+#   "status": 200,
+#   "statusText": "OK",
+#   "data": {}
+# }
+```
+
+For this small bundle, the SDK sends the transaction and its complete payload together to the node's [`POST /tx` endpoint](<https://docs.arweave.org/developers/arweave-node-server/http-api#submit-a-transaction>).
+The [SDK's `post` implementation](<https://github.com/ArweaveTeam/arweave-js/blob/v1.15.7/src/common/transactions.ts>) reports successful upload as `status: 200`.
+That result means the upload completed; it does **not** mean a miner has included the transaction in a block.
+The local log is a record of the SDK response.
+
+> **Retry the saved transaction, not the signing process.**<br>
+> If submission times out, first check the existing transaction ID: the node may have received it even though its response did not reach us.
+> A repeated submission of the same signed transaction retains the same ID and cannot create a second distinct transaction or charge its fee twice on the same chain.
+> If the node rejects the transaction, inspect the recorded error before retrying; for example, an expired anchor requires a newly prepared and signed outer transaction, as discussed above.
+> Do not edit the signed JSON: changing its anchor or fee invalidates the signature.
+
+**Check inclusion and confirmations.** Run the read-only status command again, and repeat it after a few minutes while the transaction is pending:
+
+```bash
+native_v3_tx_id="$(jq -er '.id' "$native_v3_signed_file")"
+node "$native_v3_tools_dir/native-network.mjs" status "$native_v3_signed_file" "$ar_node" "$native_v3_network_log"
+# {
+#   "time": "2026-11-11T07:43:29.787Z",
+#   "action": "status",
+#   "node": "https://arweave.net",
+#   "id": "T0gT47segLYaI8kXz0Pxsq-A9kH2V00M1h9Awebmbcs",
+#   "status": 200,
+#   "confirmed": {
+#     "block_height": 2039958,
+#     "block_indep_hash": "4zLJAK7Hgc3XU8FM8-EqZZHjmVkAjnsTg4SmE2P9sUPD0K6UcC3fyMZJCU1IO4eQ",
+#     "number_of_confirmations": 2
+#   }
+# }
+
+printf 'Transaction: https://viewblock.io/arweave/tx/%s\n' "$native_v3_tx_id"
+# Transaction: https://viewblock.io/arweave/tx/T0gT47segLYaI8kXz0Pxsq-A9kH2V00M1h9Awebmbcs
+printf 'Status API: %s/tx/%s/status\n' "$ar_node" "$native_v3_tx_id"
+# Status API: https://arweave.net/tx/T0gT47segLYaI8kXz0Pxsq-A9kH2V00M1h9Awebmbcs/status
+```
+
+The [`GET /tx/{id}/status` response](<https://docs.arweave.org/developers/arweave-node-server/http-api#get-transaction-status>) distinguishes the stages:
+
+* `202`, with `confirmed: null` in the SDK result: the transaction is pending.
+* `200`, with a `confirmed` object: the transaction has been included in a block. `block_height` and `block_indep_hash` identify that block; `number_of_confirmations` reports its confirmation count.
+* `404`: the responding node does not know the transaction. After an attempted upload, this alone does not establish whether another node received it.
+
+For this walkthrough, we will wait for at least **20 confirmations** before treating publication as complete.
+This is our chosen checkpoint.
+The check concerns the **outer transaction ID**; the two inner item IDs do not have separate native transactions or confirmation counts.
+
+**Retrieve the website and compare its bytes.** Once the bundle is included, a gateway must also discover and index its data items before it can serve the website through the manifest ID.
+For this native bundle, we will use `arweave.net` as the retrieval gateway.
+In my checks, `turbo-gateway.com` served the outer bundle, but returned `404` for the manifest item inside it.
+The same bundle, manifest, and resolved website files were already available through `arweave.net`, and all four downloads matched the local originals.
+The variable below applies only to this native-upload experiment; the earlier `$gateway_base` remains available for the preceding walkthrough.
+
+```bash
+# echo $gateway_base
+# https://turbo-gateway.com
+native_v3_gateway="https://arweave.net"
+native_v3_fetch_dir="$native_v3_state_dir/retrieved"
+native_v3_html_id="$(jq -er '.id' "$native_v3_html_item_file.json")"
+# OvEVX6iJ81icbGq4BxrQSnLmc6_sN_8szVO8g9zo2DA
+# https://arweave.net/OvEVX6iJ81icbGq4BxrQSnLmc6_sN_8szVO8g9zo2DA
+# https://turbo-gateway.com/OvEVX6iJ81icbGq4BxrQSnLmc6_sN_8szVO8g9zo2DA
+native_v3_manifest_id="$(jq -er '.id' "$native_v3_manifest_item_file.json")"
+# k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k
+# https://arweave.net/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/
+# https://turbo-gateway.com/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/
+install -d -- "$native_v3_fetch_dir"
+
+(
+  set -e
+  native_fetch() {
+    printf 'Fetching %s\n' "$1" >&2
+    curl --fail --silent --show-error --location --max-time 60 --retry 5 --retry-delay 10 --retry-all-errors --output "$2" "$1"
+  }
+
+  native_fetch "$native_v3_gateway/raw/$native_v3_tx_id" "$native_v3_fetch_dir/bundle.ans104"
+  cmp -- "$native_v3_bundle_file" "$native_v3_fetch_dir/bundle.ans104"
+
+  native_fetch "$native_v3_gateway/raw/$native_v3_manifest_id" "$native_v3_fetch_dir/manifest.json"
+  cmp -- "$native_v3_manifest_file" "$native_v3_fetch_dir/manifest.json"
+  jq -e --arg html "$native_v3_html_id" --arg css "$manual_v1_css_id" \
+    '.paths["index.html"].id == $html and .paths["style.css"].id == $css' \
+    "$native_v3_fetch_dir/manifest.json"
+
+  native_fetch "$native_v3_gateway/$native_v3_manifest_id/" "$native_v3_fetch_dir/index.html"
+  cmp -- "$site_dir/index.html" "$native_v3_fetch_dir/index.html"
+
+  native_fetch "$native_v3_gateway/$native_v3_manifest_id/style.css" "$native_v3_fetch_dir/style.css"
+  cmp -- "$v2_source_dir/style.css" "$native_v3_fetch_dir/style.css"
+
+  printf 'Version 3 verified: bundle, manifest, HTML, and unchanged CSS match.\n'
+  printf 'Version 3 website: %s/%s/\n' "$native_v3_gateway" "$native_v3_manifest_id"
+)
+# Fetching https://arweave.net/raw/T0gT47segLYaI8kXz0Pxsq-A9kH2V00M1h9Awebmbcs
+# Fetching https://arweave.net/raw/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k
+# true
+# Fetching https://arweave.net/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/
+# Fetching https://arweave.net/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/style.css
+# Version 3 verified: bundle, manifest, HTML, and unchanged CSS match.
+# Version 3 website: https://arweave.net/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/
+```
+
+Each successful `cmp` is silent; `jq` should print `true`.
+The helper prints each requested URL, and the final website URL appears only after all downloads and comparisons succeed.
+The `/raw/` requests compare the stored bundle and manifest themselves, while the last two requests test the website paths resolved through the manifest.
+With my signed manifest, that URL is [the version 3 website](<https://arweave.net/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/>).
+
+> **Storage and gateway indexing are separate.**<br>
+> Our HTML and manifest are stored inside the outer bundle.
+> A gateway can retrieve that bundle as one sequence of bytes without knowing which individual items it contains.
+> To serve the manifest through its own item ID, it also needs a way to locate that item inside the bundle.
+>
+> AR.IO gateways have two configurable processing stages, controlled by [gateway filters](<https://docs.ar.io/build/run-a-gateway/manage/filters>):
+>
+> * **Unbundling:** open a bundle and parse the signed data items inside it. `ans104UnbundleFilter` selects which bundles this background process handles.
+> * **Indexing:** record the discovered items' identifiers and metadata so that they can be looked up later. `ans104IndexFilter` selects which items enter that index.
+>
+> On November 11, 2026, Turbo's gateway exposed the following settings through its public [`/ar-io/info` endpoint](<https://turbo-gateway.com/ar-io/info>):
+>
+> ```json
+> {
+>   "ans104UnbundleFilter": { "never": true },
+>   "ans104IndexFilter": { "never": true }
+> }
+> ```
+>
+> Here, `{"never": true}` means that the filter selects nothing.
+> This background process therefore neither unpacks new bundles nor adds their contained items to its index.
+>
+> This is consistent with what I observed: Turbo's gateway could return the complete 3,150-byte bundle, but could not resolve the manifest's individual ID and returned `404`.
+>
+> `arweave.net`, on the other hand, could resolve it, and the retrieved files matched the local originals.
+> The publication was stored successfully; the gateways differed in their ability to locate its contents.
+>
+> This has consequences for publishing through `ar://` links and Wayfinder, discussed in [Gateway Discovery and the Limits of Automatic Routing](#gateway-discovery-and-the-limits-of-automatic-routing) below.
+
+We have now followed the native path from signed data items to a funded outer transaction and retrieved the website through `arweave.net`.
+The HTML and manifest share one AR fee, the original CSS is reused, and the upload identity remains unfunded.
+The existing ArNS undername still points to version 2; publishing version 3 does not move that separate mutable pointer.
+However, successful retrieval through this gateway leaves an important question: can a reader reach the same publication without knowing which gateway serves it?
+
+#### Gateway Discovery and the Limits of Automatic Routing
+
+I expected a publication stored on Arweave to be accessible through any working gateway, with Wayfinder choosing one automatically.
+The experiment exposed a significant limitation in that expectation.
+On November 11, 2026, the native transaction had been mined and `arweave.net` served the website correctly, but opening the following address through the Wayfinder browser extension led to Turbo's gateway and a `404` response:
+
+```text
+ar://k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/
+```
+
+The bytes were stored, yet the reader's attempt to reach them failed.
+There are two separate issues here: discovering an item inside its bundle, and recovering when the selected gateway cannot find it.
+
+**An item ID still needs a location lookup.** The manifest ID does not encode the outer transaction ID or its position inside that transaction.
+A gateway needs to discover that relationship before it can retrieve the item.
+AR.IO supports [several sources for this lookup](<https://docs.ar.io/build/run-a-gateway/manage/cdb64>), including local indexes, other gateways, shared indexes, and GraphQL services.
+Each gateway therefore does not need to unpack the entire blockchain itself.
+These mechanisms are intended to make discovery automatic, but they do not guarantee that every gateway can resolve every item.
+In this experiment, Turbo's gateway could retrieve the outer bundle but could not resolve its manifest item, while `arweave.net` could do both.
+The precise reason that Turbo's available lookup mechanisms failed to find this item remains unestablished.
+
+**Wayfinder did not recover from the missing lookup.** The [revision used in this walkthrough](<https://github.com/ar-io/wayfinder/tree/a3390ca5e9eca6aca81c0c24ef41ac3dfa0c021c>), containing Core 2.0.2, has the following behaviour:
+
+* Its [gateway probes](<https://github.com/ar-io/wayfinder/blob/a3390ca5e9eca6aca81c0c24ef41ac3dfa0c021c/packages/wayfinder-core/src/routing/ping.ts>) ordinarily check the gateway's root URL. They establish that the server responds, not that it can locate this particular publication.
+* The browser extension [resolves the address to a gateway URL](<https://github.com/ar-io/wayfinder/blob/a3390ca5e9eca6aca81c0c24ef41ac3dfa0c021c/packages/wayfinder-extension/src/routing.ts#L248-L280>) and redirects the browser there. Its [response handlers](<https://github.com/ar-io/wayfinder/blob/a3390ca5e9eca6aca81c0c24ef41ac3dfa0c021c/packages/wayfinder-extension/src/background.ts#L790-L957>) do not retry another gateway when that page returns `404`.
+* Core's separate [download implementation](<https://github.com/ar-io/wayfinder/blob/a3390ca5e9eca6aca81c0c24ef41ac3dfa0c021c/packages/wayfinder-core/src/fetch/wayfinder-fetch.ts#L134-L193>) retries certain network and server failures, but explicitly stops retrying for HTTP `4xx` responses, including `404`.
+
+That last assumption is unsuitable for this situation: a gateway's inability to find an item does not establish that the item does not exist.
+I expected Wayfinder to handle this search, but the tested implementation left me to discover a working gateway manually.
+
+**Why Turbo can nevertheless serve its own bundles.** When an upload goes through Turbo, its infrastructure receives the individual data items before bundling them.
+It already has their bytes and identifiers.
+The [documented bundler integration](<https://docs.ar.io/build/extensions/bundler/#configure-optimistic-indexing>) shares data with the gateway and provides an authenticated API for *optimistic indexing*, allowing items to become accessible before their enclosing transaction settles on Arweave.
+Our native upload bypassed that ingestion process: it wrote the bundle directly to Arweave and left gateways to discover its contents afterward.
+
+The `{"never": true}` settings shown above therefore do not mean that Turbo's gateway cannot serve bundled content.
+They disable the particular background discovery process we examined; other ingestion and lookup mechanisms can still supply bundled items.
+Those settings alone also do not establish that Turbo deliberately excludes uploads made elsewhere, or explain the full cause of this failed lookup.
+
+**Later discovery is possible, but remains unverified.** The failed requests do not establish that the publication will remain inaccessible through Turbo's gateway.
+It could recover automatically even with local unbundling disabled:
+
+* A later request could succeed through another configured [lookup source](<https://docs.ar.io/build/run-a-gateway/manage/cdb64>), such as a gateway or GraphQL service that has since learned the item-to-bundle relationship.
+* A [shared index](<https://docs.ar.io/build/run-a-gateway/manage/index-sharing/>) could receive an update containing that relationship. If Turbo subscribes to that index, the update could make the item discoverable there.
+
+Both mechanisms exist in AR.IO, but they depend on the gateway's configuration and the coverage of its sources.
+Information available at one gateway is not guaranteed to reach every other gateway eventually.
+
+When I checked again approximately an hour after submission on November 11, 2026, `arweave.net` still returned the manifest successfully, while Turbo still returned `404`.
+A query to [`arweave.net/graphql`](<https://arweave.net/graphql>) found the manifest, but returned an empty `bundledIn.id` instead of its enclosing transaction ID.
+Serving the manifest's bytes and exposing its parent relationship through a discovery API were therefore different things in this case.
+A gateway relying on that GraphQL response would not obtain the relationship it needed, even though downloading the manifest directly from `arweave.net` worked.
+
+This does not establish that Turbo used that particular lookup path.
+Its public information endpoint did not expose enough configuration to determine that.
+
+> Waiting may resolve this if the missing relationship reaches a lookup source that Turbo uses.
+> However, I have not established such a propagation path or a time bound for this publication.
+
+If the cause is indexing lag, a delayed shared-index update, or a temporary failure, time can help.
+If the necessary source is absent, incompatible, or never supplies the relationship, waiting alone will not resolve it.
+The evidence therefore describes a discovery failure observed at the time of testing, with eventual recovery still unverified; it establishes neither permanent unavailability nor assured eventual availability.
+
+For a publisher, this is a material access limitation.
+The successful native upload demonstrated storage and retrieval through a working endpoint; it did not demonstrate reliable access through arbitrary gateways or automatic Wayfinder routing.
+Bundling saved a native transaction fee and preserved the separate uploader identity, but the resulting item URLs still depend on discovery infrastructure that can fail independently of storage.
+
+Two concrete issues deserve upstream investigation: Wayfinder's missing fallback after a content `404`, and Turbo's failure to discover this valid, externally submitted bundle.
+The [working HTTPS publication URL](<https://arweave.net/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/>) gives readers access now, but it binds that access to a known gateway.
+For my intended publishing model, making the same immutable identifier reliably reachable without that prior knowledge remains an unresolved requirement.
