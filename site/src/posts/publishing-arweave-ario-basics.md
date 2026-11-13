@@ -2391,6 +2391,86 @@ An independently hosted website can remain the everyday home of the work while t
 
 ## Appendix
 
+### Who Runs What: Organizations, Services, and Gateways
+
+The shared branding initially made it difficult for me to distinguish the open networks from the organizations and commercial services around them.
+Arweave provides the storage network, while Solana executes the current ArNS and ARIO contracts.
+The Console, Turbo, and individual gateways provide ways to use those networks, with different operators and payment arrangements.
+
+#### The Foundation, PDS, and Gateway Operators
+
+The [AR.IO platform terms](<https://ar.io/legal/terms-of-service-and-privacy-policy/>) distinguish the Console's operator from the provider of Turbo credits.
+The [AR.IO About page](<https://ar.io/about/>) adds the historical relationship:
+
+<table class="article-table">
+  <thead>
+    <tr><th>Organization or participants</th><th>Role in the ecosystem</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Stichting ar.io, the AR.IO Foundation</strong></td><td>A Dutch foundation that operates the ar.io platform, including the Console, and supports the ecosystem through development, grants, education, and outreach.</td></tr>
+    <tr><td><strong>Permanent Data Solutions, Inc. (PDS)</strong></td><td>The company behind ArDrive and Turbo, and the original developer of the AR.IO network. It also operates Permaweb Services, which provides private gateways for organizations.</td></tr>
+    <tr><td><strong>Gateway operators</strong></td><td>Participants who run the open-source gateway software and provide access to Arweave data. The network permits independently operated gateways; running its software does not make an operator part of PDS or the Foundation.</td></tr>
+  </tbody>
+</table>
+
+Purchasing Turbo credits establishes a commercial relationship with **PDS/ArDrive**.
+The Foundation's terms explicitly say that it does not issue or control those credits; responsibility for Turbo's pricing and service lies with its separate provider.
+The fact that the purchase happens inside `console.ar.io` does not change that distinction.
+
+Turbo's prominent integration is understandable given PDS's role in developing AR.IO.
+Nevertheless, an ecosystem-branded interface can make one commercial service appear inseparable from the protocol, especially when credits and cards are the most visible choices.
+
+#### The Console Also Documents Direct Payments
+
+The [purchase guide for Console 4.11.0](<https://docs.ar.io/build/guides/working-with-arns/buy-manage-arns-console>) describes three routes:
+
+<table class="article-table">
+  <thead>
+    <tr><th>Payment choice</th><th>What happens</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Credits or card</td><td>Existing Turbo credits pay for the name, or the card purchases credits first. Turbo covers the registration's Solana costs.</td></tr>
+    <tr><td>Crypto → ARIO</td><td>The owner's wallet pays ARIO directly to the registry and SOL for network fees and account deposits. No Turbo infrastructure fee applies.</td></tr>
+    <tr><td>Other cryptocurrencies, such as SOL or USDC</td><td>The payment buys Turbo credits first, which then pay for the name. The token transfer can itself require a network fee.</td></tr>
+  </tbody>
+</table>
+
+The same guide documents record changes paid directly with the owner's SOL, with Turbo credits as another payment option.
+Thus, using the Console does not necessarily mean using Turbo for payment, and paying with cryptocurrency does not necessarily mean bypassing Turbo.
+The selected route matters.
+
+I verified these options in the documentation; the [direct Solana experiment below](#register-and-update-an-arns-name-directly-on-solana) uses the SDK, and I did not test the Console's direct ARIO purchase route end to end.
+Check the options offered by the version actually loaded in the browser.
+The separate [fee discussion](#turbo's-infrastructure-fee-and-direct-payments) explains the 35% top-up deduction displayed during this experiment and the costs that remain with direct payment.
+
+#### The Public Domains and Their Infrastructure
+
+The [AR.IO website](<https://ar.io/>), [Console](<https://console.ar.io/>), and [gateway directory](<https://gateways.ar.io/#/gateways>) serve different purposes.
+
+Today, I found that `weisser-zwerg-native.ar.io` and `weisser-zwerg-native.turbo-gateway.com` resolved to the same two IP addresses: `162.55.156.39` and `49.13.45.141`.
+Both failed to serve the native-upload publication even when their response headers identified the correct manifest.
+For these hostnames, `.ar.io` behaved like an alternative address for Turbo's gateway infrastructure.
+This is an inference from the shared addresses and observed behaviour.
+There may be load balancing within that deployment; I found no evidence that it selected a gateway from the wider network that could serve this publication.
+
+The [gateway behaviour overview](#gateway-behaviour-overview) records the broader test: seven of 25 gateway domains delivered the complete website through both its immutable ID and its ArNS name.
+Other responses included `404`, connection failures, and HTTP 200 JSON wrappers containing the manifest instead of the website.
+The tested Wayfinder browser extension also selected Turbo's gateway and did not switch to another gateway after the content request returned `404`.
+The [routing analysis](#gateway-discovery-and-the-limits-of-automatic-routing) identifies the tested revision and its limitations.
+
+#### Why Turbo Uploads and Direct Uploads Can Behave Differently
+
+Turbo receives an upload's individual data items before bundling them, so its ingestion service already has their bytes and identifiers.
+The [documented bundler integration](<https://docs.ar.io/build/extensions/bundler/#configure-optimistic-indexing>) lets a gateway share that data and receive *optimistic index* entries, making items accessible before their enclosing transaction settles on Arweave.
+My direct AR upload bypassed that ingestion path: gateways had to discover the items inside the submitted bundle afterward.
+
+Turbo's [public gateway settings](<https://turbo-gateway.com/ar-io/info>) reported `{"never": true}` for both `ans104UnbundleFilter` and `ans104IndexFilter` during today's checks.
+Those settings disabled the background process that unpacks bundles and indexes their items; they did not disable every way of obtaining bundled content.
+This explains how serving Turbo uploads can coexist with disabled background unbundling, but does not establish the precise cause of my failed lookup or deliberate exclusion of uploads made elsewhere.
+
+Gateways can also use [other lookup sources](<https://docs.ar.io/build/run-a-gateway/manage/cdb64>) and [shared indexes](<https://docs.ar.io/build/run-a-gateway/manage/index-sharing/>).
+Later discovery is possible, but I established neither a propagation path nor a time bound that would make this publication available through Turbo automatically.
+
 ### Caution: "Permanent" Is Still a Long-Term Claim
 
 The endowment model is ingenious, but its assumptions have not been tested for anything close to 200 years.
@@ -4443,3 +4523,2334 @@ Bundling saved a native transaction fee and preserved the separate uploader iden
 Two concrete issues deserve upstream investigation: Wayfinder's missing fallback after a content `404`, and Turbo's failure to discover this valid, externally submitted bundle.
 The [working HTTPS publication URL](<https://arweave.net/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/>) gives readers access now, but it binds that access to a known gateway.
 For my intended publishing model, making the same immutable identifier reliably reachable without that prior knowledge remains an unresolved requirement.
+
+### Register and Update an ArNS Name Directly on Solana
+
+The preceding experiment published version 3 directly to Arweave and paid for storage in AR.
+We will now do the corresponding experiment for naming: register an ArNS name and change its target directly through Solana, paying the underlying costs without Turbo credits.
+We will reuse the Solana account from the main walkthrough, [`BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ`](<https://solscan.io/account/BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ>), which I have now funded with SOL.
+Its private key will remain in the browser wallet when we sign the transactions.
+
+There are two currencies involved: [ARIO, an SPL token on Solana](<https://docs.ar.io/learn/token/>), pays the ArNS registration price; SOL pays transaction fees and the rent-exempt balances required for new on-chain accounts.
+Both are managed through the same Solana wallet.
+A simple update to an existing name's target requires only a Solana transaction, no further ARIO transaction.
+
+The experiment will proceed as follows:
+
+1. Choose a new base name, check its availability, and compare lease and permanent registration prices, separating ARIO from SOL costs.
+2. Acquire the required ARIO for the existing wallet, retaining enough SOL for fees and account creation.
+3. Prepare and inspect the registration, initially pointing the name at the existing version 2 manifest.
+4. Sign through the browser wallet, submit through Solana RPC, and independently verify the registry entry, ANT ownership, controller permissions, and target.
+5. Update the target to version 3 in a separate transaction, and explain how the same operation applies to an undername.
+6. Verify the on-chain record, gateway resolution, and retrieved files, distinguishing naming from the gateway discovery problem observed above.
+
+#### Choose a Name and Inspect the Live Registration Cost
+
+I already own `weisser-zwerg`, so it cannot serve as an example of a fresh registration.
+For the following walkthrough I use `weisser-zwerg-native`.
+Choose your own base name when following along.
+
+If the earlier shell variables are missing, first run [Resume the Walkthrough After a Restart](#resume-the-walkthrough-after-a-restart).
+Keep the new tooling and quote files beside the earlier publication state, outside the website directory:
+
+```bash
+native_arns_state_dir="${publication_state_dir:?Restore the walkthrough variables first}/native-arns"
+native_arns_tools_dir="$native_arns_state_dir/tools"
+
+# XXX_TODO_XXX: Choose the new base name you want to investigate.
+native_arns_name="weisser-zwerg-native"
+# XXX_TODO_XXX: Use the existing owner's public Solana address.
+arns_owner_address="BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ"
+solana_rpc_url="${SOLANA_RPC_URL:-https://api.mainnet-beta.solana.com}"
+
+install -d -- "$native_arns_tools_dir"
+(
+  set -e
+  cd -- "$native_arns_tools_dir"
+  npm init --yes
+  npm install --save-exact --ignore-scripts @ar.io/sdk@4.5.2
+)
+ario_cli="$native_arns_tools_dir/node_modules/.bin/ar.io"
+"$ario_cli" --version
+# 4.5.2
+```
+
+The [AR.IO SDK includes an `ar.io` command-line interface](<https://github.com/ar-io/ar-io-sdk/blob/v4.5.2/CLI.md>), so these initial read-only checks need no JavaScript helper.
+The commands below query Solana through the selected RPC endpoint and require only the public address.
+If the public endpoint rejects or rate-limits your requests, set `SOLANA_RPC_URL` to your own mainnet RPC endpoint before running the setup block.
+
+Check three kinds of registry entry: an existing registration, a reserved name, and a returned name that may follow a different purchase path:
+
+```bash
+"$ario_cli" get-arns-record --rpc-url "$solana_rpc_url" --name "$native_arns_name"
+# ArNS record not found: weisser-zwerg-native
+
+"$ario_cli" get-arns-reserved-name --rpc-url "$solana_rpc_url" --name "$native_arns_name"
+# Reserved name not found: weisser-zwerg-native
+
+"$ario_cli" get-arns-returned-name --rpc-url "$solana_rpc_url" --name "$native_arns_name"
+# Returned name not found: weisser-zwerg-native
+```
+
+These were my results before starting the walkthrough myself: none of the three entries existed for the candidate.
+If a command returns an existing entry instead, choose another candidate for this fresh-registration example.
+
+Now request both a one-year lease quote and a permanent-registration quote, saving the complete responses:
+
+```bash
+(
+  set -e -o pipefail
+
+  "$ario_cli" get-cost-details \
+    --rpc-url "$solana_rpc_url" \
+    --intent Buy-Name --name "$native_arns_name" \
+    --type lease --years 1 \
+    --address "$arns_owner_address" --fund-from balance \
+    | tee "$native_arns_state_dir/lease.quote.json"
+
+  "$ario_cli" get-cost-details \
+    --rpc-url "$solana_rpc_url" \
+    --intent Buy-Name --name "$native_arns_name" \
+    --type permabuy \
+    --address "$arns_owner_address" --fund-from balance \
+    | tee "$native_arns_state_dir/permabuy.quote.json"
+)
+# {
+#   "tokenCost": 2285128800,
+#   "discounts": [],
+#   "gasEstimate": {
+#     "totalLamports": 10941924,
+#     "feeLamports": 294244,
+#     "baseFeeLamports": 15000,
+#     "priorityFeeLamports": 279244,
+#     "rentLamports": 10647680,
+#     "rentReclaimedLamports": 0,
+#     "priorityFeeMicroLamports": 349055,
+#     "computeUnitLimit": 400000,
+#     "signatureCount": 3,
+#     "transactionCount": 2
+#   },
+#   "fundingPlan": {
+#     "address": "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#     "balance": 0,
+#     "stakes": {},
+#     "shortfall": 2285128800
+#   },
+#   "message": "The cost of the provided action is 2,285.1288 ARIO. Insufficient funds for action. There is a shortfall of 2,285.1288 ARIO"
+# }
+# {
+#   "tokenCost": 9521370000,
+#   "discounts": [],
+#   "gasEstimate": {
+#     "totalLamports": 10941924,
+#     "feeLamports": 294244,
+#     "baseFeeLamports": 15000,
+#     "priorityFeeLamports": 279244,
+#     "rentLamports": 10647680,
+#     "rentReclaimedLamports": 0,
+#     "priorityFeeMicroLamports": 349055,
+#     "computeUnitLimit": 400000,
+#     "signatureCount": 3,
+#     "transactionCount": 2
+#   },
+#   "fundingPlan": {
+#     "address": "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#     "balance": 0,
+#     "stakes": {},
+#     "shortfall": 9521370000
+#   },
+#   "message": "The cost of the provided action is 9,521.37 ARIO. Insufficient funds for action. There is a shortfall of 9,521.37 ARIO"
+# }
+```
+
+* `--fund-from balance` selects the wallet's liquid ARIO balance as the intended payment source.
+* The SDK's [`getCostDetails` implementation](<https://github.com/ar-io/ar-io-sdk/blob/v4.5.2/src/solana/io-readable.ts#L2833>) combines the registration price with an estimate of the SOL needed for fees and account creation.
+* `tokenCost` is expressed in mARIO, with 1,000,000 mARIO per ARIO.
+Within `gasEstimate`, `feeLamports`, `rentLamports`, and `totalLamports` express the fees, rent deposits, and total requirement in lamports, with 1,000,000,000 lamports per SOL.
+
+My quotes were as follows.
+The approximate USD equivalents use [CoinGecko's ARIO price](<https://www.coingecko.com/en/coins/ar-io-network>) of $0.001271 per ARIO, checked on the same day; they exclude the separate SOL costs and any fees for acquiring ARIO.
+
+<table class="article-table">
+  <thead>
+    <tr><th>Component</th><th>One-year lease</th><th>Permanent registration</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Registration price (<code>tokenCost</code>)</td><td>2,285.1288 ARIO ($2.90)</td><td>9,521.37 ARIO ($12.10)</td></tr>
+    <tr><td>Estimated transaction fees (<code>feeLamports</code>)</td><td>0.000294056 SOL</td><td>0.000294276 SOL</td></tr>
+    <tr><td>Rent deposits (<code>rentLamports</code>)</td><td>0.010647680 SOL</td><td>0.010647680 SOL</td></tr>
+    <tr><td>Total estimated SOL requirement (<code>totalLamports</code>)</td><td>0.010941736 SOL</td><td>0.010941956 SOL</td></tr>
+  </tbody>
+</table>
+
+The registration price and SOL requirement are separate amounts, not alternatives.
+A lease expires unless extended; permanent registration has no scheduled renewal payment.
+
+> The slightly different SOL fee estimates came from separate live queries.
+
+> **Rent is an account deposit, not a recurring bill.**
+> Solana requires a [minimum SOL balance for storing account data](<https://solana.com/docs/core/accounts>).
+>
+> On Solana, an account is a place where data is stored. Your wallet has an account, but the ArNS registration also creates accounts holding information about the name and its ANT.
+> Each such account must contain a minimum SOL balance. Your wallet supplies that balance when the account is created. This is what the quote calls rent. The balance stays there; it is not gradually consumed by monthly or yearly charges.
+>
+> This means that part of the SOL leaves your wallet but remains attached to the records created for your name.
+> The quoted rent amount funds the new accounts needed by the registration flow; it is separate from the transaction fees that are spent.
+> Recovering such a balance requires closing the relevant account through a supported program operation.
+
+My quote also reported `fundingPlan.balance: 0` and an ARIO shortfall equal to the registration price.
+That refers to the available **ARIO**, not the SOL I had just transferred to the account.
+
+The next step is therefore to choose between a one year lease or permabuy and acquire the required ARIO.
+
+#### Acquire the Required ARIO
+
+We can obtain ARIO by swapping part of the SOL already held in the existing owner's wallet.
+The [official ARIO acquisition guide](<https://docs.ar.io/learn/token/get-the-token/>) links to Jupiter and Raydium for trading the Solana token.
+We will use [Jupiter](<https://jup.ag/>), which finds a swap route through Solana liquidity pools, and approve the swap with the same account in Phantom.
+
+First, verify the token's **mint address**, which identifies ARIO itself rather than the wallet receiving it.
+The [official Solana ARIO mint](<https://ar.io/token/>) is:
+
+```text
+DcNnMuFxwhgV4WY1HVSaSEgr92bv2b1vUvEKiNxWqHdF
+```
+
+You can inspect it on [Solscan](<https://solscan.io/token/DcNnMuFxwhgV4WY1HVSaSEgr92bv2b1vUvEKiNxWqHdF>).
+Select this Solana token, not the bridged ARIO on Base; the ticker alone does not establish which asset you are buying.
+
+Before swapping, refresh the registration quote for the lease or permanent purchase you chose above.
+Its `fundingPlan.shortfall`, divided by 1,000,000, gives the additional ARIO required.
+Use that token amount as the target rather than the approximate USD conversion in the table, and allow a small margin for changes in the registration price before purchase.
+
+> **Keep enough SOL for the next steps.**
+> After the swap, the wallet must still cover the registration's quoted SOL requirement, plus a margin for fee changes and the later record update.
+> The swap itself also has transaction costs and may need to create an account for holding your ARIO tokens.
+> Do not swap the entire SOL balance: owning enough ARIO does not pay these SOL costs.
+
+> **Jupiter requires the SOL amount to sell, not the ARIO amount to buy.**
+> On November 13, 2026, my updated registration quote reported a shortfall of 2,399.38512 ARIO, so I wanted to buy 2,500 ARIO with a small buffer.
+> I expected to enter that amount in the **Buy** field, but Jupiter's **Market / Ultra** interface only let me edit the SOL amount in **Sell**; the ARIO amount was a calculated result.
+> This was not a setting I had missed: [Jupiter's FAQ](<https://support.jup.ag/>) explains that its former **ExactOut** option was removed because it often produced worse pricing.
+>
+> At the displayed rate of about 63,045 ARIO per SOL, 2,500 ARIO corresponded to approximately 0.03965 SOL.
+> Entering 0.04 SOL was therefore a useful starting point for a fresh quote.
+> Recheck the resulting output and minimum received after changing the amount; the exchange rate and route can change, so this calculation does not guarantee an exact ARIO amount.
+
+1. Open [Jupiter](<https://jup.ag/>), connect Phantom, and confirm that the connected Solana address matches `$arns_owner_address`.
+2. Choose SOL as the token to spend. For the token to receive, paste the full ARIO mint address above into the token selector and verify the selected asset.
+3. Enter the SOL amount in **Sell** and inspect the calculated ARIO amount in **Buy**. Adjust the SOL input until the **minimum received** covers the required additional ARIO and your chosen buffer, while preserving the SOL reserve described above.
+4. Review the exchange rate, fees, price impact, and slippage tolerance-the permitted movement in price before the swap would fail. Then approve the swap in Phantom. The earlier CoinGecko conversion is a reference value; the swap's actual quote determines what you receive.
+5. Wait for confirmation and inspect the transaction through its explorer link. Retain the transaction signature or link with the experiment's other records, and check the resulting ARIO and SOL balances in the wallet.
+
+> **Make ARIO visible in Phantom.**
+> After my swap, Jupiter showed 2,505.974996 ARIO, but ARIO was absent from Phantom's main token list.
+> The balance was already present on Solana; I had to enable the token's visibility using [Phantom's Manage Tokens settings](<https://help.phantom.com/articles/42969287602963>):
+>
+> 1. In Phantom's browser extension, open the home view and click the **three dots** to the right of the **Tokens / Perps / Collectibles** row.
+> 2. Choose **Manage Tokens**.
+> 3. Find **Ar.io Network / ARIO** and turn its toggle on.
+>
+> Phantom then displayed **2,505.975 ARIO**, rounding the same balance shown by Jupiter.
+> This only changes the wallet's display; it does not transfer tokens or require another purchase.
+
+We can independently inspect the ARIO balance through the same read-only CLI used for pricing:
+
+```bash
+(
+  set -e -o pipefail
+  "$ario_cli" balance \
+    --rpc-url "$solana_rpc_url" \
+    --address "$arns_owner_address" \
+    | tee "$native_arns_state_dir/ario-balance.json"
+)
+```
+
+The response contains `mARIOBalance` and a message expressing the balance in ARIO.
+This is the ARIO balance recorded on Solana, separate from the account's Turbo credits.
+Run the chosen `get-cost-details` command from the preceding subsection again: `fundingPlan.shortfall: 0` means that the ARIO balance covers that quote.
+Check the remaining SOL separately against `gasEstimate.totalLamports`; an ARIO shortfall of zero does not establish that the SOL balance is sufficient.
+
+The swap acquires the payment token; the name is not registered until we submit the registration transaction in the following steps.
+
+#### Detour: Converting Between Tokens, Chains, and Payment Systems
+
+Buying ARIO through Jupiter took this experiment into a topic I have wanted to understand for some time.
+Throughout this article, different operations have required different forms of payment: AR for native Arweave storage, ARIO for an ArNS name, SOL for Solana transactions, and Turbo credits for the service that connects several of these operations.
+Conversion keeps appearing, even though publishing a website was the original goal.
+
+Compared with buying through a centralised exchange and then withdrawing, the Jupiter experience felt remarkably direct: connect a wallet, inspect the quote, and sign.
+That prompted a broader question: why can some conversions work this way, while others require sending funds to an intermediary and waiting for a separate payout?
+And what changes when the denomination remains Bitcoin, but the balance lives in [Lightning](<https://lightning.network/>), [Ark](<https://docs.arkadeos.com/primer>), or [Cashu](<https://cashu.space/>)?
+
+This detour is a first map of those mechanisms and their different trust assumptions, with references for a possible later article.
+
+##### Jupiter and Raydium: An Atomic Swap on One Chain
+
+[Raydium](<https://raydium.io/>) is a decentralised exchange protocol on Solana.
+Its [automated market makers](<https://docs.raydium.io/protocol-overview>) use liquidity pools: other participants supply tokens, and program rules determine how a trade changes the pool balances and the price.
+We can trade against a pool without finding someone who wants precisely the opposite trade at that moment.
+
+[Jupiter](<https://jup.ag/>) helps find and execute a route through available liquidity.
+Its [swap infrastructure](<https://developers.jup.ag/docs/swap>) compares routes and quotes, including offers from market makers, and prepares a transaction for the wallet to sign.
+Raydium can supply pools along such a route; its [aggregator documentation](<https://docs.raydium.io/integration-guides/aggregator>) explains how those pools participate.
+Jupiter is therefore more than another frontend for one Raydium pool.
+
+The attractive property is **atomic execution**: when the swap's instructions run in one Solana transaction, either all of them succeed or their state changes are rolled back.
+The swap cannot complete just the part that takes my SOL while failing to deliver the required ARIO.
+A failed transaction can still cost a network fee, as the [Solana transaction documentation](<https://solana.com/docs/core/transactions>) explains.
+Atomicity also does not guarantee a good price or make an incorrectly authorised transaction harmless.
+
+Both assets in this example live on Solana.
+SOL is its native currency; ARIO is a Solana token.
+These are not Ethereum ERC-20 tokens, but Solana uses [SPL tokens](<https://solana.com/docs/tokens>).
+Swaps are not limited to SOL against another token, but two supported Solana tokens can also be exchanged against one another.
+
+Nym provides another example, connecting this topic to my [earlier node-operator guide](../digital-civil-rights-networking-nym-node-operator-guide) and its [2026 update](../digital-civil-rights-networking-nym-node-operator-guide-2026).
+The [official NYM token overview](<https://nym.com/token>) lists both [Uniswap](<https://app.uniswap.org/>) for Ethereum ERC-20 NYM and [Osmosis](<https://app.osmosis.zone/?from=OSMO&to=NYM>) for NYM transferred through the Inter-Blockchain Communication protocol, or IBC.
+A Uniswap trade gives us NYM on Ethereum; an Osmosis trade gives us a balance on Osmosis.
+For bonding or delegation, we need [native NYM on the Nyx blockchain](<https://nym.com/explorer/onboarding/staking-guide>), so either result still needs a suitable transfer or conversion to Nyx.
+The ticker alone does not identify the network or the wallet that can receive it.
+
+##### Similar Swap Interfaces Can Hide Different Trust Models
+
+We just dealt with atomic swaps on a single chain. But what happens if more than one chain is involved?
+An ordinary Solana swap cannot deliver native AR to my Wander address, because the AR token lives on its own chain, e.g. that balance belongs to a different blockchain.
+An interface offering that conversion must add some mechanism for crossing the boundary.
+
+For example, [SimpleSwap advertises a SOL-to-AR route](<https://simpleswap.io/crypto-to-crypto/sol-ar>), while [SwapSpace lists AR exchange offers](<https://swapspace.co/exchange/ar>) from providers.
+In a deposit-and-payout flow, I send the input asset to a provider's address and rely on that provider to deliver the output to my destination address.
+An account registration might be unnecessary, but there is still a period during which the provider controls my funds.
+The word *swap*, or even *aggregator*, does not establish that settlement is atomic.
+
+Nym also maintains its own [NYM swap service](<https://swap.nym.com/>).
+Currently, its [public asset list](<https://nym-swap-api.nymtech.cc/api/v1/swap/chains>) included BTC, ETH, Ethereum USDT and USDC, and ERC-20 NYM as inputs for acquiring native NYM.
+
+The service advertises itself as non-custodial and decentralised, but those labels alone do not establish atomic settlement.
+
+> The [client code served during this review](<https://swap.nym.com/_next/static/chunks/0ldwhv4jo910n.js>) describes an order progressing through deposit detection and confirmation to a separate NYM payout, with refund states if something goes wrong.
+> I did not establish an on-chain refund mechanism that the user could execute independently of the service.
+> I would therefore assess this as a service-mediated conversion, rather than assume it has the HTLC guarantees discussed below.
+
+[Edge Wallet also integrates NYM swaps using Nym-provided liquidity](<https://edge.app/blog/company-news/introducing-nym-token-support-how-to-store-and-use-nym/>); a different wallet interface does not by itself change the underlying settlement mechanism.
+
+An alternative is the community-run [SpectreDAO swap interface](<https://explorer.nym.spectredao.net/swap>), also linked from Nym's token overview.
+It uses Skip to combine DEX trades and transfers across chains, with native NYM on Nyx as the destination.
+This can automate a route through Osmosis and IBC without making the entire journey one atomic transaction.
+
+> Skip's [cross-chain failure documentation](<https://docs.skip.build/go/advanced-transfer/handling-cross-chain-failure-cases>) explains that a successful swap followed by a failed transfer can leave the purchased asset on an intermediate chain, where it must be recovered or forwarded.
+> The route's bridges, destination network, fees, and recovery behaviour therefore remain relevant even when one interface handles the steps.
+
+Another approach is to trade inside a system that represents deposits from other chains.
+[Permaswap](<https://app.permaswap.network/explore>) uses assets held through [everPay](<https://docs.everpay.io/en/docs/guide/basic-info>).
+The native assets backing those balances are held under everPay's custody arrangements, and returning to native AR involves its [withdrawal mechanism](<https://docs.everpay.io/en/docs/guide/dive/withdraw>).
+A threshold of key holders authorises movements of the backing AR; this is a different guarantee from settling both sides inside one Solana transaction.
+A convenient internal swap does not remove the deposit and redemption assumptions.
+
+The useful question is therefore: **what ensures that I receive the other side of the exchange: one chain's transaction rules, a cross-chain protocol, or a provider's promise?**
+
+##### Atomic Swaps Can Also Cross Chains
+
+Two independent chains cannot simply execute one shared transaction.
+Nevertheless, some pairs support protocols that link their separate transactions without handing both assets to an exchange.
+
+A classic mechanism is a **hash time-locked contract**, or HTLC, described in this [atomic-swap walkthrough](<https://bcoin.io/guides/swaps.html>).
+In simplified form:
+
+1. Alice chooses a secret and shares its hash, then locks her asset so that Bob can claim it by revealing the secret. Alice has a refund path after a deadline.
+2. Bob locks his asset using the same hash, with a suitably shorter refund deadline.
+3. Alice claims Bob's asset by revealing the secret. Bob learns it from that claim and uses it to claim Alice's asset.
+4. If the exchange does not proceed, the timeout paths allow recovery of the locked funds.
+
+This requires compatible conditions on both chains, sufficient confirmation time, and participants or their software monitoring and submitting the necessary transactions.
+A refund is a transaction to perform, not an instantaneous rollback of both chains.
+The arrangement avoids trusting the counterparty with an unconditional deposit, but it still consumes time and network fees.
+
+[Zano's atomic-swap explanation](<https://blog.zano.org/atomic-swaps-part-2/>) and its [Zano/BTC example implementation](<https://github.com/hyle-team/atomic_swap_example>) demonstrate such a construction.
+The published example is explicitly a proof of concept using test networks, not a ready-made production exchange.
+Zano's [Ionic swaps and Zano Trade](<https://docs.zano.org/docs/use/zano-trade>) address another case: trading ZANO and confidential assets within Zano itself.
+That should not be confused with a native BTC/ZANO market.
+
+There are deployed platforms built around cross-chain atomic settlement:
+
+* [Bison Wallet / DCRDEX](<https://dex.decred.org/>) uses an [atomic-swap protocol](<https://github.com/decred/dcrdex/blob/master/spec/atomic.mediawiki>) for supported assets, with order matching separated from custody. 
+  * It supports BTC and ZEC, among other assets. Its documented Zcash swaps use transparent addresses.
+* The [Komodo wallet technology now offered by Gleec](<https://gleec.com/komodo/wallet/>) uses HTLC-based swaps across supported chains.
+* [BasicSwap](<https://basicswapdex.com/faq.html>) supports both secret-hash swaps and constructions using **adaptor signatures**.
+  * These link completion of signatures to disclosure of a secret; the [COMIT Bitcoin/Monero explanation](<https://comit.network/blog/2020/10/06/monero-bitcoin/>) shows why this is useful when a chain lacks Bitcoin-style scripting.
+  * BasicSwap offers BTC/XMR atomic swaps.
+
+Each implementation supports particular chains and protocols; a working construction for one pair does not make every other pair possible.
+
+> **Privacy also depends on the swap path.**
+> Supporting Zcash does not necessarily mean spending directly from its shielded pool: the [audit of DCRDEX's Zcash integration](<https://leastauthority.com/zcg-dcrdex-zcash-integration-final-audit-report/>) describes swaps using transparent transactions.
+> Work such as [Zwap's proposed shielded swaps](<https://forum.zcashcommunity.com/t/zwap-trustless-shielded-atomic-swaps-for-zcash-early-access/55874>) is a separate topic to investigate.
+>
+> Nym also provides a dedicated [ZEC-to-NYM swapper](<https://zcash-swapper.nym.com/swap>).
+> Its [announcement and usage guide](<https://nym.com/blog/zec-nym-swapper>) describes paying with shielded Zcash and choosing either native NYM on Nyx or ERC-20 NYM on Ethereum as the destination asset.
+> Nym's mixnet protects network traffic; [NYM itself is not a privacy coin](<https://nym.com/token>).
+
+##### Wrapped Assets Move the Question to Issuance and Redemption
+
+Another way to trade assets together is to represent them on the same chain.
+A typical cross-chain wrapper works as follows:
+
+1. Native coins are deposited into custody or locked under a bridge's rules.
+2. Corresponding tokens are minted on the destination chain.
+3. Those tokens can participate in that chain's applications and swaps.
+4. Redemption burns or otherwise retires the representation and releases the native coins under the wrapper's rules.
+
+[Wrapped Bitcoin, or WBTC](<https://wbtc.network/>), is a concrete example.
+Its [whitepaper](<https://www.wbtc.network/whitepaper>) describes custodians holding BTC and merchants participating in minting and redemption.
+WBTC is a token backed by Bitcoin; holding it does not give its holder a Bitcoin private key controlling the backing coins.
+Access to redemption also depends on the system's procedures, rather than every wallet having a universal *unwrap* button.
+
+Once two tokens are on one chain, exchanging them can be atomic while the backing of one token still depends on custodians or a bridge.
+These are separate guarantees.
+Other [bridge designs](<https://ethereum.org/en/developers/docs/bridges/>) use validator groups, threshold signatures, or proofs of events on another chain, with different assumptions about what the destination can verify.
+
+NYM illustrates this distinction beyond Bitcoin wrappers.
+Nym's [2024 Gravity Bridge walkthrough](<https://nym.com/blog/nym-for-nym-swapper-app-bridges-native-and-erc20-token>) describes moving between Ethereum ERC-20 NYM and native Nyx NYM, including locking tokens on Ethereum as part of the conversion.
+
+For the Cosmos routes, [IBC token transfers](<https://github.com/lfdt-ibc/ibc/blob/main/spec/app/ics-020-fungible-token-transfer/README.md>) use escrow and corresponding token vouchers, with burning and release when retracing the transfer path.
+A token's transfer history identifies the backing route; two assets with the same displayed ticker need not have the same origin or redemption path.
+This is why buying NYM on Osmosis and receiving native NYM in a Nyx wallet are distinct steps, even when a router automates both.
+
+Wrapping consequently does more than move the original swap problem elsewhere: it creates an **ongoing backing and redemption obligation** for as long as the representation circulates.
+A smooth trading interface does not tell us who can release the backing assets, prevent withdrawals, or issue additional claims.
+
+##### Lightning and Ark: Bitcoin Through Different Payment Mechanisms
+
+Conversion need not change the currency.
+Moving between on-chain Bitcoin and a Bitcoin payment system can still change the wallet, the transaction format, the liquidity requirements, and the way funds return to the base chain.
+
+The [Lightning Network](<https://lightning.network/>) uses [payment channels](<https://docs.lightning.engineering/the-lightning-network/payment-channels>): Bitcoin is committed on-chain, while participants exchange signed updates to their balances without publishing every payment on Bitcoin.
+Payments can traverse several channels using conditional transfers.
+There is no separate native Lightning coin; the balances are denominated in bitcoin, commonly displayed in satoshis.
+
+With a self-custodial Lightning wallet, channel state and recovery mechanisms matter alongside private keys.
+Opening and closing channels involve Bitcoin transactions, and routing requires liquidity.
+A custodial Lightning wallet instead records a balance with its operator, who handles the channels and payments.
+Both can present a similar invoice interface while offering different control over funds.
+
+[Ark](<https://docs.arkadeos.com/primer>) offers another approach to Bitcoin payments.
+Instead of maintaining an individual payment channel for every user, an Ark operator coordinates transactions involving **virtual transaction outputs**, or VTXOs.
+These represent Bitcoin spending rights supported by a structure of signed transactions that can ultimately be settled on Bitcoin.
+
+Ark's operator assists with fast transfers, but the details matter: [Arkade's security model](<https://docs.arkadeos.com/learn/concepts/security-and-trust-model>) distinguishes settled outputs from transfers whose safety still depends on operator behaviour.
+VTXOs also have lifetimes and must be refreshed in time.
+Unilateral exit mechanisms can require waiting and paying Bitcoin fees; they are not equivalent to a cost-free withdrawal of any tiny balance.
+
+I encountered this topic through [Coinos](<https://coinos.io/>), which I had used as a custodial wallet for Nostr zaps.
+Coinos also offers an [Ark-based self-custodial wallet with Lightning support](<https://f-droid.org/en/packages/io.coinos.fdroid/>).
+
+##### Cashu: Private Tokens Issued by a Mint
+
+[Cashu](<https://cashu.space/>) takes another route: a **mint** issues cryptographic ecash tokens against a balance deposited with it, commonly funded through Lightning.
+[Blind signatures](<https://github.com/cashubtc/nuts/blob/main/00.md>) let the mint validate its tokens without directly linking their later redemption to their original issuance.
+The tokens can be transferred as data, and the recipient can exchange them at the mint for fresh tokens so that the old proofs cannot be spent again.
+
+> **David Chaum and the origins of ecash.**
+> Cashu belongs to the tradition of *Chaumian ecash*, named after [David Chaum](<https://chaum.com/publications/>), who developed the foundations of private electronic cash decades before Bitcoin.
+> Three foundational papers provide useful starting points:
+>
+> 1. [*Blind Signatures for Untraceable Payments*](<https://chaum.com/wp-content/uploads/2022/01/Chaum-blind-signatures.pdf>) - David Chaum, CRYPTO '82; proceedings published in 1983. Introduces blind signatures: an issuer can sign a concealed message without being able to link the resulting unblinded signature to that signing interaction. This is the central idea behind issuing ecash without linking withdrawal to later spending.
+> 2. [*Security Without Identification: Transaction Systems to Make Big Brother Obsolete*](<https://www.cs.umd.edu/~mmazurek/414-papers/chaum-identification.pdf>) - David Chaum, 1985. Explains the broader vision: payments, communications, and credentials can provide security without building a linked dossier of each person's activities.
+> 3. [*Untraceable Electronic Cash*](<https://chaum.com/wp-content/uploads/2021/12/Untraceable_Electronic_Cash.pdf>) - David Chaum, Amos Fiat, and Moni Naor, CRYPTO '88; proceedings published in 1990. Develops an offline-payment design that preserves the privacy of honest users while allowing repeated spending of the same coin to expose the double-spender.
+>
+> Cashu carries forward the blind-issuance principle, but it is not a literal implementation of all these historical designs.
+> Its ordinary [token-swap operation](<https://github.com/cashubtc/nuts/blob/main/03.md>) contacts the mint to invalidate spent proofs and issue fresh ones; it does not use the third paper's offline identity-revelation mechanism.
+
+This resembles a wrapped asset in one important respect: the holder has a claim on backing controlled elsewhere.
+But ordinary Cashu tokens are not entries in a public blockchain contract.
+The mint checks spent proofs, and users rely on it remaining solvent and willing to redeem.
+Blindness improves privacy; it does not prove that the backing funds exist.
+
+Cashu calls issuing tokens *minting* and redeeming them *melting*.
+For example, [NUT-05](<https://github.com/cashubtc/nuts/blob/main/05.md>) describes melting tokens to pay through another payment method.
+This can turn a Cashu balance back into a Lightning payment without requiring every recipient to manage a Lightning channel.
+The [Cashu FAQ](<https://docs.cashu.space/faq>) explains the custody and privacy trade-offs.
+
+##### Can Audits, Federations, or a DAO Remove the Custodian?
+
+A public reserve address can make some backing observable, and commitments or audits can help compare reserves with issued claims.
+However, **proof of reserves is not automatically proof of liabilities**: observing ten BTC does not tell us whether a mint has issued claims for ten or twenty BTC, or whether the funds are encumbered elsewhere.
+Cashu's proposed [proof-of-liabilities scheme](<https://gist.github.com/callebtc/ed5228d1d8cbaade0104db5d1cf63939>) is useful further reading on this distinction.
+Visibility can help detect misconduct without ensuring that a withdrawal will be honoured.
+
+A DAO or smart contract could administer policies and publish commitments.
+If the backing remains in a Bitcoin wallet controlled by an operator, governance on another chain cannot by itself force that operator to sign a Bitcoin withdrawal.
+A concrete signing or verification mechanism must connect the two.
+[Fedimint](<https://fedimint.org/users/how-it-works>) distributes custody among a federation of guardians, reducing reliance on one operator while retaining trust in a threshold of guardians.
+
+Publishing every ecash transfer on a chain would also change its cost and privacy properties.
+Periodic commitments and audits can retain more of the benefit of off-chain payments, but they provide different guarantees from enforcing every movement through a contract.
+A cheaper chain reduces transaction costs; it does not automatically solve reserve ownership or redemption.
+
+##### RAILGUN: Private Transfers Enforced by Smart Contracts
+
+[RAILGUN](<https://railgun.org/>) provides a different model for assets that already live on a supported smart-contract chain.
+It is a privacy protocol deployed on [Ethereum, Arbitrum, Polygon, and BNB Chain](<https://docs.railgun.org/wiki/learn/getting-started>), not an independent blockchain or a bridge between those networks.
+
+When assets are *shielded*, they enter contracts and are represented by private notes.
+Users authorise transfers with zero-knowledge proofs; the contracts check validity and prevent reuse of spent notes without publicly revealing the private transfer's sender, recipient, token, and amount.
+The [private-token documentation](<https://docs.railgun.org/wiki/learn/using-private-tokens>) explains this model.
+*Unshielding* withdraws assets to a public address on that same chain.
+Deposits, withdrawals, and interactions with external applications can still reveal information.
+
+[Railway Wallet](<https://www.railway.xyz/>) is a self-custodial wallet that uses RAILGUN.
+Its role is to manage the keys and construct transactions.
+[Broadcasters](<https://docs.railgun.org/developer-guide/wallet/broadcasters>) can submit transactions and receive payment for gas and their service, allowing users to avoid directly funding an identifiable public gas-paying address for each private transfer.
+The chain's execution costs still exist.
+
+Native BTC cannot be deposited directly into an Ethereum RAILGUN contract.
+A supported wrapped representation of BTC can be shielded, but unshielding returns that wrapped token, not native Bitcoin.
+Redeeming it on Bitcoin remains a separate operation with the wrapper's own trust assumptions.
+Similarly, a [private-wallet DEX swap](<https://docs.railgun.org/wiki/learn/integrating-railgun/example-dex-swaps>) can aim to hide the wallet's connection to a trade while the external DEX's trade amounts remain public.
+
+##### Zaps, Nutzaps, and a Possible Different Backend
+
+These mechanisms meet a concrete publishing use case in Nostr tips.
+[NIP-57 zaps](<https://github.com/nostr-protocol/nips/blob/master/57.md>) combine a Lightning payment with Nostr events: a zap request asks for an invoice, and a zap receipt reports its payment.
+The payment endpoint can belong to a custodial service or a self-custodial setup.
+The Nostr event does not determine how the underlying wallet manages its Bitcoin.
+
+> This "reversal" originally confused me: I want to tip a creator, yet my client first asks the creator's payment service to issue something.
+> The distinction is that **an invoice comes before payment; a receipt comes afterwards**.
+>
+> In the usual [BOLT-11 Lightning payment flow](<https://github.com/lightning/bolts/blob/master/11-payment-encoding.md>), the recipient's node creates a secret, includes its hash in the invoice, and reveals the secret to settle the conditional payment.
+> This protects payments that pass through intermediate routing nodes: their incoming and outgoing payments are linked by [hash time-locked contracts (HTLCs)](<https://docs.lightning.engineering/the-lightning-network/multihop-payments/hash-time-lock-contract-htlc>) using the same hash.
+> Each intermediary needs the matching secret to claim its incoming payment; that same secret also lets the next node claim the intermediary's outgoing payment.
+> The recipient reveals it to collect the payment, and it travels back along the route to settle these linked payments.
+> An intermediary therefore earns its routing fee without being able simply to pocket the forwarded amount.
+> Timeouts allow locked funds to be reclaimed if the payment does not complete.
+>
+> Once revealed, the secret is known along the route, so the payment hash must not be reused for another invoice.
+> [LNURL-pay](<https://github.com/lnurl/luds/blob/luds/06.md>) and a [Lightning Address](<https://github.com/lnurl/luds/blob/luds/16.md>) such as `bob@example.org` provide a reusable way to request fresh invoices.
+> Behind that address must be **a running, reachable service**: an online process that receives the requested amount, obtains a fresh invoice from the recipient's Lightning node, and returns it to the payer.
+> A static address alone cannot do this work; it identifies the service that does.
+>
+> [NIP-57](<https://github.com/nostr-protocol/nips/blob/master/57.md#protocol-flow>) adds the connection to Nostr: the payer signs a zap request (`9734`) and sends it to that service, normally without publishing it to relays.
+> The invoice's description hash binds it to this request, which can identify the post being rewarded.
+> After payment, the service signs and publishes a zap receipt (`9735`), allowing Nostr clients to display the tip alongside the post.
+>
+> The same service also observes settlement so that it can publish receipts.
+> It can be operated by a custodial provider or by the creator alongside their own Lightning node; a third-party company is not required.
+> Clients check the receipt against the signing key advertised by the recipient's service, but **the receipt is that service's payment attestation**, not independent proof of settlement.
+> NIP-57 explicitly acknowledges that a dishonest service could issue a false receipt.
+>
+> For alternatives, [Keysend](<https://docs.lightning.engineering/lightning-network-tools/lnd/send-messages-with-keysend>) supports payments without first requesting an invoice, while [BOLT-12 offers](<https://github.com/lightning/bolts/blob/master/12-offer-encoding.md>) provide reusable offers and invoice requests over Lightning onion messages instead of LNURL's HTTP interface.
+> Neither mechanism automatically supplies NIP-57's public Nostr receipt.
+
+[NIP-61 Nutzaps](<https://github.com/nostr-protocol/nips/blob/master/61.md>) use Cashu instead.
+The recipient advertises accepted mints and a public key for receiving locked ecash proofs.
+The sender publishes a Nutzap containing proofs that only the intended recipient can redeem.
+This allows delivery through Nostr without requiring that recipient to issue a Lightning invoice for each tip, but redemption still depends on the mint.
+Cashu's privacy also does not make the public Nutzap event private: its recipient and token amounts are visible.
+
+Could RAILGUN provide a backend for something similar with less reliance on a mint?
+In principle, a tipping application could send assets between users' private RAILGUN balances, with spending rules enforced by the contracts rather than a Cashu operator's private accounting.
+That would be a different system: it would need recipient addressing, chain and token selection, proof generation, fee handling, and a carefully designed notification or receipt mechanism.
+It would not be compatible with NIP-61 merely by changing an endpoint, and it would not inherit Cashu's inexpensive off-chain token transfers.
+If it used wrapped BTC, the wrapper's custody risk would remain.
+
+This is a possible direction for a later experiment, not an integration demonstrated here.
+
+##### What Do We Receive After Conversion?
+
+The distinctions become clearer if we compare what the resulting balance represents:
+
+<table class="article-table">
+  <thead>
+    <tr><th>Mechanism</th><th>What we receive</th><th>How we leave that representation</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>SOL → ARIO through Jupiter</td><td>Another token on the same chain</td><td>Spend ARIO directly or exchange it again</td></tr>
+    <tr><td>NYM acquired on Uniswap or Osmosis</td><td>NYM on Ethereum or an IBC representation on Osmosis</td><td>Use a suitable bridge or conversion route to obtain native NYM on Nyx for bonding or delegation</td></tr>
+    <tr><td>BTC → WBTC</td><td>A token backed by BTC held elsewhere</td><td>Use the wrapper's redemption process or sell the token</td></tr>
+    <tr><td>Self-custodial Lightning</td><td>A Bitcoin channel balance</td><td>Settle the channel on Bitcoin or use a service that exchanges a Lightning payment for on-chain BTC</td></tr>
+    <tr><td>Ark</td><td>A VTXO with defined Bitcoin spending and exit paths</td><td>Use an assisted withdrawal or the protocol's unilateral exit mechanism</td></tr>
+    <tr><td>Cashu</td><td>Ecash proofs issued by a particular mint</td><td>Ask that mint to redeem them, for example by paying a Lightning invoice</td></tr>
+    <tr><td>RAILGUN</td><td>Private notes backed by assets in contracts on that chain</td><td>Unshield to a public address; a wrapped asset remains wrapped</td></tr>
+  </tbody>
+</table>
+
+What interests me across these examples is the possibility of moving between systems without repeatedly returning to a centralised exchange.
+The resulting experience can be much smoother, but a balance labelled *BTC* or a button labelled *Swap* does not describe the whole arrangement.
+We still need to know what asset we receive, who can spend its backing, how settlement is enforced, and what returning to the native asset requires.
+
+For the ArNS experiment, the immediate conversion is now complete: the existing wallet holds ARIO on Solana, ready to pay for the name registration.
+
+#### Prepare and Inspect the Registration
+
+With ARIO now in the wallet, we can prepare the registration of `weisser-zwerg-native`.
+For this experiment I will use a **one-year lease**, which the ARIO acquired above covers.
+Its initial target will be the manual path's version 2 manifest, [`nieQ6Foe7yWBqtRJKmf0b_vEOYD8k4FWQOohfmrzzNQ`](<https://arweave.net/nieQ6Foe7yWBqtRJKmf0b_vEOYD8k4FWQOohfmrzzNQ/>).
+We will move it to version 3 in a later, separate operation.
+
+The SDK's high-level [`buyRecord` method](<https://github.com/ar-io/ar-io-sdk/blob/v4.5.2/src/solana/io-writeable.ts>) combines preparation, signing, submission, and follow-up work.
+To see the machinery and review it before signing, we will instead use its [`buildSpawnAntInstructions` helper](<https://github.com/ar-io/ar-io-sdk/blob/v4.5.2/src/solana/spawn-ant.ts>) and the underlying `getBuyNameInstructionAsync` builder from `@ar.io/solana-contracts`.
+Together they prepare three operations:
+
+<table class="article-table">
+  <thead>
+    <tr><th>Instruction</th><th>What it prepares</th><th>Payment</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Create the ANT asset</td><td>A Metaplex Core asset owned by the existing Phantom/MetaMask Solana address</td><td>SOL for the new account's rent deposit</td></tr>
+    <tr><td>Initialize the ANT</td><td>Its configuration, controller list, and root <code>@</code> record pointing at the version 2 manifest</td><td>SOL for the ANT's data accounts</td></tr>
+    <tr><td>Buy the name</td><td>An ArNS registry entry associating the chosen name with this ANT</td><td>ARIO from the owner's token account to the protocol treasury, plus SOL for the registration account</td></tr>
+  </tbody>
+</table>
+
+We can place all three in **one atomic Solana transaction**: if an instruction fails, their state changes are rolled back together, although a submitted transaction can still incur a network fee.
+The owner also pays that fee in SOL.
+
+> **The ANT's creation key is temporary; its public address remains its identifier.**
+> [Creating its Metaplex asset account](<https://www.metaplex.com/docs/smart-contracts/core/create-asset>) requires a signature from a newly generated key pair as well as the owner's signature.
+> The helper below retains that creation key locally in `private/ant-creation.seed`, with file mode `600`, so the next step can use the same ANT address.
+> Keep it until the registration transaction has reached `finalized` status and we have independently verified the ANT's ownership and initial record.
+> Before then, it may be needed to sign a replacement creation transaction if the first attempt fails or expires.
+> While retained, keep it outside any directory served by a web server or committed to Git.
+>
+> **After successful creation and verification, this private seed can be deleted; no long-term backup is required.**
+> It is not needed for later record updates, lease renewals, or ANT transfers.
+> Control follows the recorded owner and the ANT's permissions; for example, [transferring an asset requires its owner's or an authorised transfer delegate's signature](<https://www.metaplex.com/docs/smart-contracts/core/transfer>), not its creation key.
+> Deleting the creation key leaves the ANT, its public address, and its ownership intact. The owner's wallet key is the one that needs long-term protection.
+>
+> The other new account addresses are [program-derived addresses (PDAs)](<https://solana.com/docs/core/pda>).
+> They are calculated from inputs such as the name or ANT address and have no private keys for us to retain.
+
+Continue with the variables established above, restoring the walkthrough variables first if necessary.
+Make the registration choice explicit and add the dependencies that our helper imports directly, using the versions tested alongside SDK 4.5.2:
+
+```bash
+# XXX_TODO_XXX: Choose lease or permabuy; the latter requires more ARIO.
+native_arns_type="lease"
+# XXX_TODO_XXX: Lease duration; ignored by the program for permabuy.
+native_arns_years=1
+native_arns_initial_manifest_id="${manual_v2_manifest_id:?Restore the version 2 manifest ID first}"
+native_arns_plan_file="$native_arns_state_dir/registration.plan.json"
+
+(
+  set -e
+  cd -- "$native_arns_tools_dir"
+  npm install --save-exact --ignore-scripts \
+    @ar.io/solana-contracts@1.4.0 @solana/kit@6.10.0 \
+    @solana-program/token@0.13.0 @solana-program/compute-budget@0.15.0
+)
+```
+
+Create the preparation helper:
+
+```bash
+cat > "$native_arns_tools_dir/prepare-registration.mjs" <<'EOF'
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { randomBytes } from 'node:crypto';
+import { join } from 'node:path';
+import {
+  AccountRole, address, appendTransactionMessageInstructions,
+  compileTransaction, createKeyPairSignerFromPrivateKeyBytes,
+  createNoopSigner, createSolanaRpc, createTransactionMessage,
+  fetchEncodedAccounts, getBase64EncodedWireTransaction, pipe,
+  setTransactionMessageFeePayer, setTransactionMessageLifetimeUsingBlockhash,
+} from '@solana/kit';
+import {
+  ARIO_ANT_PROGRAM_ID, ARIO_ARNS_PROGRAM_ID, ARIO_TOKEN_MINT_ADDRESS,
+  SolanaARIOReadable, buildSpawnAntInstructions, getArnsSettingsPDA,
+  getArnsRegistryPDA, getDemandFactorPDA, getArnsRecordPDA,
+  getReservedNamePDA, getReturnedNamePDA,
+} from '@ar.io/sdk';
+import {
+  PurchaseType, fetchArnsConfig, getBuyNameInstructionAsync,
+  parseBuyNameInstruction,
+} from '@ar.io/solana-contracts/arns';
+import { parseInitializeInstruction } from '@ar.io/solana-contracts/ant';
+import { parseCreateV1Instruction } from '@ar.io/solana-contracts/mpl-core';
+import { findAssociatedTokenPda, TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
+import {
+  getSetComputeUnitLimitInstruction, getSetComputeUnitPriceInstruction,
+} from '@solana-program/compute-budget';
+
+const [stateDir, name, ownerText, type, yearsText, target] = process.argv.slice(2);
+const years = Number(yearsText);
+if (!stateDir || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name ?? '') ||
+    name.length > 51 || !['lease', 'permabuy'].includes(type) ||
+    !Number.isInteger(years) || years < 1 || years > 5 ||
+    !/^[A-Za-z0-9_-]{43}$/.test(target ?? '')) {
+  throw new Error('Expected: state-directory name owner lease|permabuy years manifest-id');
+}
+const owner = address(ownerText);
+const rpc = createSolanaRpc(process.env.SOLANA_RPC_URL ?? 'https://api.mainnet-beta.solana.com');
+const ario = new SolanaARIOReadable({ rpc });
+const json = value => JSON.stringify(value,
+  (_key, item) => typeof item === 'bigint' ? item.toString() : item, 2) + '\n';
+const save = (file, value) => writeFile(join(stateDir, file), json(value));
+
+const [config] = await getArnsSettingsPDA(ARIO_ARNS_PROGRAM_ID);
+const [demandFactor] = await getDemandFactorPDA(ARIO_ARNS_PROGRAM_ID);
+const [nameRegistry] = await getArnsRegistryPDA(ARIO_ARNS_PROGRAM_ID);
+const [arnsRecord] = await getArnsRecordPDA(name, ARIO_ARNS_PROGRAM_ID);
+const [reservedNameCheck] = await getReservedNamePDA(name, ARIO_ARNS_PROGRAM_ID);
+const [returnedNameCheck] = await getReturnedNamePDA(name, ARIO_ARNS_PROGRAM_ID);
+const entries = await fetchEncodedAccounts(rpc,
+  [arnsRecord, reservedNameCheck, returnedNameCheck]);
+if (entries.some(entry => entry.exists)) {
+  throw new Error('This example requires a name with no registered, reserved, or returned entry.');
+}
+const { data: settings } = await fetchArnsConfig(rpc, config);
+if (settings.mint !== ARIO_TOKEN_MINT_ADDRESS) throw new Error('Unexpected ARIO mint');
+const quote = await ario.getCostDetails({
+  intent: 'Buy-Name', name, type, years, fromAddress: owner, fundFrom: 'balance',
+});
+const { value: solBalance } = await rpc.getBalance(owner).send();
+if (quote.fundingPlan.shortfall > 0) throw new Error(quote.message);
+if (solBalance < BigInt(quote.gasEstimate.totalLamports)) {
+  throw new Error('SOL balance is below the SDK estimate.');
+}
+
+// A new account address needs a creation signature, separate from its owner's signature.
+const privateDir = join(stateDir, 'private');
+await mkdir(privateDir, { recursive: true, mode: 0o700 });
+const seedFile = join(privateDir, 'ant-creation.seed');
+let seed;
+try { seed = await readFile(seedFile); }
+catch (error) {
+  if (error.code !== 'ENOENT') throw error;
+  seed = randomBytes(32);
+  await writeFile(seedFile, seed, { flag: 'wx', mode: 0o600 });
+}
+const mintSigner = await createKeyPairSignerFromPrivateKeyBytes(seed);
+const ownerPlaceholder = createNoopSigner(owner); // Public address only; cannot sign.
+const spawn = await buildSpawnAntInstructions({
+  signer: ownerPlaceholder, mintSigner, antProgramId: ARIO_ANT_PROGRAM_ID,
+  state: { name, transactionId: target, targetProtocol: 0 },
+});
+const [buyerTokenAccount] = await findAssociatedTokenPda({
+  owner, mint: settings.mint, tokenProgram: TOKEN_PROGRAM_ADDRESS,
+});
+const buy = await getBuyNameInstructionAsync({
+  config, demandFactor, nameRegistry, arnsRecord,
+  reservedNameCheck, returnedNameCheck, buyerTokenAccount,
+  protocolTokenAccount: settings.treasury, buyer: ownerPlaceholder,
+  params: {
+    name, purchaseType: type === 'lease' ? PurchaseType.Lease : PurchaseType.Permabuy,
+    years, ant: spawn.mint,
+  },
+}, { programAddress: ARIO_ARNS_PROGRAM_ID });
+
+const computeUnitLimit = 800_000; // SDK 4.5.2's combined spawn-and-buy limit.
+const priorityFeeMicroLamports = BigInt(quote.gasEstimate.priorityFeeMicroLamports);
+const instructions = [
+  getSetComputeUnitLimitInstruction({ units: computeUnitLimit }),
+  getSetComputeUnitPriceInstruction({ microLamports: priorityFeeMicroLamports }),
+  ...spawn.instructions, buy,
+];
+const { value: lifetime } = await rpc.getLatestBlockhash().send();
+const message = pipe(
+  createTransactionMessage({ version: 0 }),
+  m => setTransactionMessageFeePayer(owner, m),
+  m => setTransactionMessageLifetimeUsingBlockhash(lifetime, m),
+  m => appendTransactionMessageInstructions(instructions, m),
+);
+const unsigned = compileTransaction(message);
+const wire = getBase64EncodedWireTransaction(unsigned);
+const wireBytes = Buffer.from(wire, 'base64').length;
+if (wireBytes > 1232) throw new Error(`Transaction too large: ${wireBytes} bytes`);
+const simulation = await rpc.simulateTransaction(wire, {
+  encoding: 'base64', sigVerify: false, replaceRecentBlockhash: true,
+}).send();
+await save('registration.simulation.json', simulation);
+if (simulation.value.err) {
+  throw new Error('Simulation failed; inspect registration.simulation.json before proceeding.');
+}
+
+const accountView = account => account
+  ? { address: account.address, role: AccountRole[account.role] } : null;
+const instructionView = instruction => ({
+  programAddress: instruction.programAddress,
+  accounts: instruction.accounts?.map(accountView) ?? [],
+  dataBase64: Buffer.from(instruction.data).toString('base64'),
+});
+const decoded = [
+  ['Create ANT asset', parseCreateV1Instruction(spawn.instructions[0])],
+  ['Initialize ANT and root record', parseInitializeInstruction(spawn.instructions[1])],
+  ['Buy name from liquid ARIO', parseBuyNameInstruction(buy)],
+].map(([operation, parsed]) => ({
+  operation, programAddress: parsed.programAddress, data: parsed.data,
+  accounts: Object.fromEntries(Object.entries(parsed.accounts)
+    .map(([label, account]) => [label, accountView(account)])),
+}));
+const plan = {
+  preparedAt: new Date().toISOString(), sdkVersion: '4.5.2',
+  name, type, years, owner, feePayer: owner, ant: spawn.mint,
+  rootRecord: { undername: '@', transactionId: target, targetProtocol: 0 },
+  arioMint: settings.mint, buyerTokenAccount, treasury: settings.treasury,
+  quote, solBalanceLamports: solBalance,
+  computeUnitLimit, priorityFeeMicroLamports,
+  transactionBytes: wireBytes, requiredSigners: Object.keys(unsigned.signatures),
+  instructions: instructions.map(instructionView), decoded,
+};
+await save('registration.plan.json', plan);
+console.log(json({
+  name, type, years, owner, ant: spawn.mint, manifest: target,
+  priceARIO: quote.tokenCost / 1_000_000,
+  estimatedTotalSOL: quote.gasEstimate.totalLamports / 1_000_000_000,
+  transactionBytes: wireBytes, simulatedComputeUnits: simulation.value.unitsConsumed,
+  plan: join(stateDir, 'registration.plan.json'),
+}));
+EOF
+```
+
+The script refreshes availability, pricing, and balances, then builds the instructions with the owner's **public address only**.
+It saves both their binary data and a decoded representation for inspection.
+The two compute-budget instructions preceding the three operations set the execution limit and priority fee; these values are also recorded in the plan.
+
+The script also calls Solana's [`simulateTransaction`](<https://solana.com/docs/rpc/http/simulatetransaction>) with signature verification disabled.
+This executes the proposed instructions against the node's current state without committing their effects or charging our wallet.
+Even if a simulation log says that the name was purchased, **it is still only a simulation**.
+
+```bash
+SOLANA_RPC_URL="$solana_rpc_url" \
+  node "$native_arns_tools_dir/prepare-registration.mjs" \
+    "$native_arns_state_dir" "$native_arns_name" "$arns_owner_address" \
+    "$native_arns_type" "$native_arns_years" "$native_arns_initial_manifest_id"
+
+# {
+#   "name": "weisser-zwerg-native",
+#   "type": "lease",
+#   "years": 1,
+#   "owner": "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#   "ant": "HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg",
+#   "manifest": "nieQ6Foe7yWBqtRJKmf0b_vEOYD8k4FWQOohfmrzzNQ",
+#   "priceARIO": 2399.38512,
+#   "estimatedTotalSOL": 0.010940658,
+#   "transactionBytes": 1176,
+#   "simulatedComputeUnits": "105869",
+#   "plan": ".../publishing-arweave-ario-basics-site-publication-state/native-arns/registration.plan.json"
+# }
+```
+
+In my current check, the one-year lease quote was **2,399.38512 ARIO**, the SDK's total SOL estimate was **0.010941924 SOL**, and the unsigned transaction occupied **1,176 bytes**.
+The simulation succeeded and consumed 108,804 compute units.
+These are observations from that check; the command obtains fresh values for each run.
+Its generated ANT address will also differ from mine.
+
+Now inspect the saved plan rather than relying only on the short terminal summary:
+
+```bash
+jq '{name, type, years, owner, feePayer, ant, rootRecord,
+     arioMint, buyerTokenAccount, treasury, quote, requiredSigners}' \
+  "$native_arns_plan_file"
+
+# {
+#   "name": "weisser-zwerg-native",
+#   "type": "lease",
+#   "years": 1,
+#   "owner": "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#   "feePayer": "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#   "ant": "HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg",
+#   "rootRecord": {
+#     "undername": "@",
+#     "transactionId": "nieQ6Foe7yWBqtRJKmf0b_vEOYD8k4FWQOohfmrzzNQ",
+#     "targetProtocol": 0
+#   },
+#   "arioMint": "DcNnMuFxwhgV4WY1HVSaSEgr92bv2b1vUvEKiNxWqHdF",
+#   "buyerTokenAccount": "3GwGCvaj6x8tvppYavfSXZ9i2V72cotqJHEBtyjyTFVP",
+#   "treasury": "6Sj3DQAynK916KfBHUZxnG4aDKdqFpBVPCNdD4X6Vrj5",
+#   "quote": {
+#     "tokenCost": 2399385120,
+#     "discounts": [],
+#     "gasEstimate": {
+#       "totalLamports": 10940658,
+#       "feeLamports": 292978,
+#       "baseFeeLamports": 15000,
+#       "priorityFeeLamports": 277978,
+#       "rentLamports": 10647680,
+#       "rentReclaimedLamports": 0,
+#       "priorityFeeMicroLamports": 347472,
+#       "computeUnitLimit": 400000,
+#       "signatureCount": 3,
+#       "transactionCount": 2
+#     },
+#     "fundingPlan": {
+#       "address": "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#       "balance": 2505974996,
+#       "stakes": {},
+#       "shortfall": 0
+#     }
+#   },
+#   "requiredSigners": [
+#     "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#     "HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg"
+#   ]
+# }
+
+
+jq '.decoded' "$native_arns_plan_file"
+
+# [
+#   {
+#     "operation": "Create ANT asset",
+#     "programAddress": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
+#     "data": {
+# ... long data structure ...
+#   {
+#     "operation": "Initialize ANT and root record",
+#     "programAddress": "2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5",
+#     "data": {
+# ... long data structure ...
+#   {
+#     "operation": "Buy name from liquid ARIO",
+#     "programAddress": "2yCUx5edFvUrkibYaUa2ZXWyx9kuJkS8CwyzsgHPWdZZ",
+#     "data": {
+jq '.value | {err, unitsConsumed, logs}' \
+  "$native_arns_state_dir/registration.simulation.json"
+
+# {
+#   "err": null,
+#   "unitsConsumed": "105869",
+#   "logs": [
+#     "Program ComputeBudget111111111111111111111111111111 invoke [1]",
+#     "Program ComputeBudget111111111111111111111111111111 success",
+#     "Program ComputeBudget111111111111111111111111111111 invoke [1]",
+#     "Program ComputeBudget111111111111111111111111111111 success",
+#     "Program CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d invoke [1]",
+#     "Program log: Instruction: Create",
+#     "Program 11111111111111111111111111111111 invoke [2]",
+#     "Program 11111111111111111111111111111111 success",
+#     "Program log: programs/mpl-core/src/state/asset.rs:155:Approve",
+#     "Program 11111111111111111111111111111111 invoke [2]",
+#     "Program 11111111111111111111111111111111 success",
+#     "Program 11111111111111111111111111111111 invoke [2]",
+#     "Program 11111111111111111111111111111111 success",
+#     "Program CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d consumed 15771 of 799700 compute units",
+#     "Program CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d success",
+#     "Program 2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5 invoke [1]",
+#     "Program log: Instruction: Initialize",
+#     "Program 11111111111111111111111111111111 invoke [2]",
+#     "Program 11111111111111111111111111111111 success",
+#     "Program 11111111111111111111111111111111 invoke [2]",
+#     "Program 11111111111111111111111111111111 success",
+#     "Program 11111111111111111111111111111111 invoke [2]",
+#     "Program 11111111111111111111111111111111 success",
+#     "Program log: ANT initialized for asset HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg",
+#     "Program 2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5 consumed 40847 of 783929 compute units",
+#     "Program 2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5 success",
+#     "Program 2yCUx5edFvUrkibYaUa2ZXWyx9kuJkS8CwyzsgHPWdZZ invoke [1]",
+#     "Program log: Instruction: BuyName",
+#     "Program 11111111111111111111111111111111 invoke [2]",
+#     "Program 11111111111111111111111111111111 success",
+#     "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]",
+#     "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 76 of 702848 compute units",
+#     "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success",
+#     "Program data: wFAV/clk49WbRSj44tnGEoAh6+08y6e7z4BmvxMltaUKSs2bwsX01BQAAAB3ZWlzc2VyLXp3ZXJnLW5hdGl2ZQABILYDjwAAAADxHNwaDjYtkI4jg5pSjuRhheXrEf6FnNnRnqKzxtOsPwC+tPZqAAAAAA==",
+#     "Program log: ArNS name 'weisser-zwerg-native' purchased for 2399385120 mARIO",
+#     "Program 2yCUx5edFvUrkibYaUa2ZXWyx9kuJkS8CwyzsgHPWdZZ consumed 48951 of 743082 compute units",
+#     "Program 2yCUx5edFvUrkibYaUa2ZXWyx9kuJkS8CwyzsgHPWdZZ success"
+#   ]
+# }
+```
+
+Check the following relationships in the decoded instructions:
+
+* The **asset owner**, ANT initializer, registration buyer, and transaction fee payer are all `$arns_owner_address`.
+* The **new ANT address** appears in both the asset-creation instruction and the registration's `params.ant` field. It is one of the two required signers; the existing owner is the other.
+* The **root target** is `$manual_v2_manifest_id`, with `targetProtocol: 0` selecting Arweave. The `@` record represents the base name itself.
+* The **ARIO mint** matches the official mint checked above. `buyerTokenAccount` is the owner's associated token account for ARIO; `treasury` is read from the on-chain ArNS configuration.
+* The named accounts expose what will be created: the ANT asset, `antConfig`, `antControllers`, `rootRecord`, and `arnsRecord`. The protocol's configuration, demand-factor, and name-registry accounts already exist and are shared infrastructure.
+
+The decoded `purchaseType` is `0` for a lease and `1` for permabuy in this version of the instruction format.
+The asset's `uri` refers to its wallet metadata/logo; the website target is the separate `target` in the ANT initialization instruction.
+Likewise, its program-derived `updateAuthority` allows the ANT program to maintain asset metadata; it is not the wallet that owns the ANT.
+
+> **A quote is not a price cap in the signed instruction.**
+> The purchase instruction contains the name, registration type, duration, and ANT address; the program calculates the ARIO charge from its pricing state when the transaction executes.
+> The saved quote is a review aid, and the SDK's SOL estimate includes assumptions about the registration flow.
+> Before signing, we will refresh the quote, inspect the transaction's fees, and simulate again.
+
+> **The full SDK flow also performs follow-up bookkeeping.**
+> After the atomic purchase, SDK 4.5.2 records the ANT in the owner's ownership/controller lookup lists and attempts to synchronise its registration attributes.
+> Those are separate operations from purchasing the name, and they help applications discover and display it.
+> Our plan here contains the main registration transaction; we will account for that follow-up work when completing and verifying the purchase.
+
+The result is a local **instruction plan**.
+It deliberately omits a lasting blockhash: Solana transactions have a short validity window, so the signing step will assemble a fresh transaction from these instructions.
+The owner's private key remains in Phantom/MetaMask, and no purchase has been submitted.
+
+#### Sign, Submit, and Verify the Purchase
+
+We now have a registration plan, an unfunded creation key for the new ANT account, and an owner whose SOL and ARIO remain in the browser wallet.
+Completing this walkthrough requires **three separate transactions and three owner approvals in Phantom**, in this order:
+
+1. **`purchase`: create the ANT and register the name.** This establishes ownership, pays the registration price in ARIO, and sets the initial website target. SOL pays the network fee, the Metaplex asset-creation fee, and the required account deposits. Once this transaction finalises, the name belongs to the owner.
+2. **`acl`: add the ownership and controller lookup entries.** The asset already records who owns it, but applications also need the reverse lookup: given a wallet address, which ANTs does it own or control? This transaction adds those entries so the Console can list the name normally. It uses SOL, with no additional ARIO registration charge.
+3. **`attributes`: synchronise the asset's registration metadata.** The ArNS registry records the registration, while the ANT is also a Metaplex asset that wallets and other applications can inspect. This step keeps the registration attributes attached to that asset, such as its name and registration type, in sync. It also uses SOL, with no additional ARIO registration charge.
+
+This follows the [SDK 4.5.2 flow for a newly created ANT](<https://github.com/ar-io/ar-io-sdk/blob/v4.5.2/src/solana/io-writeable.ts>).
+The purchase establishes the name and its owner; the other two transactions complete discovery and metadata bookkeeping.
+Keeping them separate also means that a failure in the attributes update cannot undo the purchase or the completed lookup entries.
+The first transaction additionally receives the temporary ANT creation key's signature locally; the three browser approvals are all from the long-lived owner.
+
+> **Read through the signing sequence before starting a round.**
+> Unlike the native Arweave transaction above, a Solana transaction contains a recent blockhash that [typically remains valid for only about 60-90 seconds](<https://solana.com/developers/cookbook/transactions/confirmation>).
+> The window is already running when `prepare-signing` fetches that blockhash; approving in Phantom or downloading the result does not restart it.
+> The exact limit is the transaction's `lastValidBlockHeight`.
+> Have Phantom unlocked and both browser code blocks below ready, then prepare, inspect, sign, and submit without an extended pause.
+>
+> I let two purchase attempts expire before submission. In one, downloading the signed file took about 37 seconds after preparation, and manually starting submission took another 25 seconds.
+> The shell helpers below remove that last delay: once the matching signed file arrives, they validate and submit it automatically.
+
+Each round follows the same sequence: **start its shell command → load and inspect the fresh packet in the browser (JavaScript in the Dev Console) → sign and download (JavaScript in the Dev Console) → let the waiting shell submit, wait for finalisation, and verify**.
+We will set up the tools and browser connection first, then perform those three rounds one at a time in the same Bash shell.
+
+##### Create the Transaction Helper
+
+The following helper reuses SDK 4.5.2 and the dependencies installed in the preceding subsection.
+Its four commands have separate purposes:
+
+* `prepare-signing` refreshes the purchase quote, assembles and simulates a transaction, and signs only with the temporary ANT creation key when that signature is needed.
+  * This helper and the earlier `prepare-registration.mjs` both contain code for quoting, transaction assembly, simulation, and JSON handling.
+  A production implementation could share this code; keeping the helpers self-contained makes this walkthrough easier to follow.
+* `submit` checks the downloaded signatures and transaction contents, saves its identifier before contacting the network, and submits the same bytes through Solana RPC.
+* `status` waits for finalisation and retains the on-chain transaction details without submitting anything.
+* `verify` independently reads the name registry, Metaplex asset ownership, ANT controllers, and initial target.
+
+```bash
+cat > "$native_arns_tools_dir/registration-flow.mjs" <<'EOF'
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import assert from 'node:assert/strict';
+import {
+  AccountRole, address, appendTransactionMessageInstructions, compileTransaction,
+  createKeyPairSignerFromPrivateKeyBytes, createNoopSigner, createSolanaRpc,
+  createTransactionMessage, fetchEncodedAccount, getBase64EncodedWireTransaction, getPublicKeyFromAddress,
+  getSignatureFromTransaction, getTransactionDecoder, partiallySignTransaction,
+  pipe, setTransactionMessageFeePayer, setTransactionMessageLifetimeUsingBlockhash,
+  verifySignature,
+} from '@solana/kit';
+import {
+  ARIO_ANT_PROGRAM_ID, SolanaARIOReadable, SolanaANTReadable,
+  SolanaANTRegistryReadable, SolanaANTRegistryWriteable,
+  getAntAuthorityPDA, getArnsRecordPDA,
+} from '@ar.io/sdk';
+import { fetchAssetV1 } from '@ar.io/solana-contracts/mpl-core';
+import { getSyncAttributesInstruction } from '@ar.io/solana-contracts/ant';
+import {
+  getSetComputeUnitLimitInstruction, getSetComputeUnitPriceInstruction,
+} from '@solana-program/compute-budget';
+
+const [action, stateDir, argument] = process.argv.slice(2);
+assert(['prepare-signing', 'submit', 'status', 'verify'].includes(action) && stateDir,
+  'Usage: registration-flow.mjs prepare-signing|submit|status|verify state-directory [phase|signed-file]');
+const json = value => JSON.stringify(value,
+  (_key, value) => typeof value === 'bigint' ? value.toString() : value, 2) + '\n';
+const load = async file => JSON.parse(await readFile(file, 'utf8'));
+const save = (file, value) => writeFile(file, json(value));
+const plan = await load(join(stateDir, 'registration.plan.json'));
+const rpc = createSolanaRpc(process.env.SOLANA_RPC_URL ?? 'https://api.mainnet-beta.solana.com');
+const ario = new SolanaARIOReadable({ rpc, commitment: 'finalized' });
+const owner = address(plan.owner);
+const asset = address(plan.ant);
+const placeholder = createNoopSigner(owner);
+const decodeTransaction = base64 => getTransactionDecoder().decode(Buffer.from(base64, 'base64'));
+
+async function inspectRegistration() {
+  const record = await ario.getArNSRecord({ name: plan.name });
+  const nft = await fetchAssetV1(rpc, asset, { commitment: 'finalized' });
+  const ant = new SolanaANTReadable({ rpc, processId: asset, commitment: 'finalized' });
+  const [antOwner, controllers, root] = await Promise.all([
+    ant.getOwner(), ant.getControllers(), ant.getRecord({ undername: '@' }),
+  ]);
+  const state = { Owner: antOwner, Controllers: controllers, Records: { '@': root } };
+  assert.equal(record.processId, asset, 'Registry points to a different ANT');
+  assert.equal(record.type, plan.type, 'Unexpected registration type');
+  assert.equal(nft.data.owner, owner, 'Metaplex asset has a different owner');
+  assert.equal(state.Owner, owner, 'ANT owner cache differs from the asset owner');
+  assert.deepEqual([...state.Controllers].sort(), [owner], 'Unexpected controllers');
+  assert.equal(state.Records['@'].transactionId, plan.rootRecord.transactionId);
+  assert.equal(state.Records['@'].targetProtocol, 0);
+  const registry = new SolanaANTRegistryReadable({ rpc, commitment: 'finalized' });
+  const lookup = await registry.accessControlList({ address: owner });
+  return { record, assetOwner: nft.data.owner, ant: state, lookup };
+}
+
+if (action === 'verify') {
+  const verification = await inspectRegistration();
+  await save(join(stateDir, 'registration.verified.json'), verification);
+  console.log(json(verification));
+} else if (action === 'prepare-signing') {
+  const phase = argument;
+  assert(['purchase', 'acl', 'attributes'].includes(phase), 'Choose purchase, acl, or attributes');
+  let instructions, quote = null, creationSigner;
+  let priorityPrice = BigInt(plan.priorityFeeMicroLamports);
+  if (phase === 'purchase') {
+    const [recordAddress] = await getArnsRecordPDA(plan.name);
+    assert.equal((await fetchEncodedAccount(rpc, recordAddress)).exists, false,
+      'Name is already registered: inspect it instead of repeating the purchase');
+    quote = await ario.getCostDetails({
+      intent: 'Buy-Name', name: plan.name, type: plan.type, years: plan.years,
+      fromAddress: owner, fundFrom: 'balance',
+    });
+    assert.equal(quote.fundingPlan.shortfall, 0, 'Insufficient ARIO');
+    assert.equal(quote.tokenCost, plan.quote.tokenCost,
+      'Price changed: rerun the preparation section and review the new plan');
+    priorityPrice = BigInt(quote.gasEstimate.priorityFeeMicroLamports);
+    instructions = plan.instructions.slice(2).map(ix => ({
+      programAddress: address(ix.programAddress), data: Buffer.from(ix.dataBase64, 'base64'),
+      accounts: ix.accounts.map(a => ({ address: address(a.address), role: AccountRole[a.role] })),
+    }));
+    creationSigner = await createKeyPairSignerFromPrivateKeyBytes(
+      await readFile(join(stateDir, 'private', 'ant-creation.seed')));
+    assert.equal(creationSigner.address, asset, 'Creation key does not match the planned ANT');
+  } else {
+    await inspectRegistration(); // Follow-up work only after the purchase is finalised.
+    if (phase === 'acl') {
+      const registry = new SolanaANTRegistryWriteable({ rpc, signer: placeholder });
+      instructions = await registry.bootstrapOwnerOnSpawn({ owner, asset });
+    } else {
+      const [arnsRecord] = await getArnsRecordPDA(plan.name);
+      const [antAuthority] = await getAntAuthorityPDA(asset);
+      instructions = [getSyncAttributesInstruction({
+        asset, payer: placeholder, antAuthority, arnsRecord, name: plan.name,
+      }, { programAddress: ARIO_ANT_PROGRAM_ID })];
+    }
+  }
+  if (!instructions.length) {
+    console.log('No missing lookup entries; no transaction is needed.');
+    process.exit(0);
+  }
+  instructions = [
+    getSetComputeUnitLimitInstruction({ units: phase === 'purchase' ? 800_000 : 400_000 }),
+    getSetComputeUnitPriceInstruction({ microLamports: priorityPrice }), ...instructions,
+  ];
+  const { value: lifetime } = await rpc.getLatestBlockhash({ commitment: 'confirmed' }).send();
+  const message = pipe(createTransactionMessage({ version: 0 }),
+    m => setTransactionMessageFeePayer(owner, m),
+    m => setTransactionMessageLifetimeUsingBlockhash(lifetime, m),
+    m => appendTransactionMessageInstructions(instructions, m));
+  let transaction = compileTransaction(message);
+  const wire = getBase64EncodedWireTransaction(transaction);
+  assert(Buffer.from(wire, 'base64').length <= 1232, 'Transaction exceeds the size limit');
+  const simulation = await rpc.simulateTransaction(wire, {
+    encoding: 'base64', commitment: 'confirmed', sigVerify: false,
+  }).send();
+  assert.equal(simulation.value.err, null, json(simulation.value));
+  const { value: fee } = await rpc.getFeeForMessage(
+    Buffer.from(transaction.messageBytes).toString('base64'), { commitment: 'confirmed' }).send();
+  assert(fee !== null, 'Blockhash expired; run prepare-signing again');
+  // Sign only the new asset account here. The owner still signs in Phantom.
+  if (creationSigner) transaction = await partiallySignTransaction([creationSigner.keyPair], transaction);
+  const attemptId = `${phase}-${randomUUID()}`;
+  const attemptDir = join(stateDir, 'attempts', attemptId);
+  await mkdir(attemptDir, { recursive: true });
+  const packet = {
+    attemptId, phase, owner, ant: asset, name: plan.name, type: plan.type, years: plan.years,
+    initialTarget: plan.rootRecord, quote, feeLamports: fee, lifetime,
+    instructions: instructions.map(ix => ({
+      programAddress: ix.programAddress,
+      accounts: ix.accounts?.map(a => ({ address: a.address, role: AccountRole[a.role] })) ?? [],
+      dataBase64: Buffer.from(ix.data).toString('base64'),
+    })),
+    transactionBase64: getBase64EncodedWireTransaction(transaction),
+  };
+  await save(join(attemptDir, 'prepared.json'), packet);
+  await save(join(attemptDir, 'simulation.json'), simulation);
+  const signingDir = join(stateDir, 'signing');
+  await mkdir(signingDir, { recursive: true });
+  await save(join(signingDir, 'active.json'), packet);
+  console.log(json({ attemptId, phase, feeSOL: Number(fee) / 1e9,
+    priceARIO: quote ? quote.tokenCost / 1e6 : 0, lastValidBlockHeight: lifetime.lastValidBlockHeight }));
+} else {
+  const signed = await load(argument);
+  assert(/^(purchase|acl|attributes)-[0-9a-f-]{36}$/.test(signed.attemptId), 'Invalid attempt ID');
+  const attemptDir = join(stateDir, 'attempts', signed.attemptId);
+  const prepared = await load(join(attemptDir, 'prepared.json'));
+  const transaction = decodeTransaction(signed.transactionBase64);
+  const original = decodeTransaction(prepared.transactionBase64);
+  assert.deepEqual(transaction.messageBytes, original.messageBytes,
+    'Wallet changed the transaction: do not submit until the changes are reviewed');
+  for (const [key, signature] of Object.entries(transaction.signatures)) {
+    assert(signature && await verifySignature(await getPublicKeyFromAddress(address(key)),
+      signature, transaction.messageBytes), `Missing or invalid signature for ${key}`);
+  }
+  const signature = getSignatureFromTransaction(transaction);
+  // Persist both signed bytes and their identifier BEFORE any submission attempt.
+  await save(join(attemptDir, 'signed.json'), { ...signed, signature });
+  console.log(`Transaction: https://solscan.io/tx/${signature}`);
+  const readStatus = async () => {
+    const response = await rpc.getSignatureStatuses([signature], { searchTransactionHistory: true }).send();
+    await save(join(attemptDir, 'status.json'), response);
+    return response.value[0];
+  };
+  let status = await readStatus();
+  if (action === 'submit' && status === null) {
+    const height = await rpc.getBlockHeight({ commitment: 'confirmed' }).send();
+    assert(height <= BigInt(prepared.lifetime.lastValidBlockHeight),
+      'Blockhash expired. Check status and on-chain state before preparing a replacement.');
+    const simulation = await rpc.simulateTransaction(signed.transactionBase64, {
+      encoding: 'base64', commitment: 'confirmed', sigVerify: true,
+    }).send();
+    await save(join(attemptDir, 'signed-simulation.json'), simulation);
+    assert.equal(simulation.value.err, null, json(simulation.value));
+    const result = await rpc.sendTransaction(signed.transactionBase64, {
+      encoding: 'base64', skipPreflight: false, preflightCommitment: 'confirmed', maxRetries: 5n,
+    }).send();
+    assert.equal(result, signature);
+    await save(join(attemptDir, 'submission.json'), { signature, submittedAt: new Date().toISOString() });
+    console.log('RPC accepted the transaction. Now run the status command.');
+  } else if (action === 'submit') {
+    console.log(json(status));
+  } else {
+    for (let attempt = 0; attempt < 24; attempt++) {
+      if (status?.confirmationStatus === 'finalized') break;
+      console.log(status?.confirmationStatus ?? 'No status yet');
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      status = await readStatus();
+    }
+    assert(status?.confirmationStatus === 'finalized',
+      'Not finalised yet. Repeat status; do not infer failure from a missing response.');
+    const details = await rpc.getTransaction(signature, {
+      commitment: 'finalized', encoding: 'json', maxSupportedTransactionVersion: 0,
+    }).send();
+    await save(join(attemptDir, 'transaction.json'), details);
+    assert(details !== null, 'Finalised, but transaction details are not available yet; repeat status.');
+    assert.equal(status.err, null, 'Transaction finalised with an error; inspect the saved details');
+    console.log(`Finalised successfully. Details: ${join(attemptDir, 'transaction.json')}`);
+  }
+}
+EOF
+```
+
+Each attempt has its own directory under `$native_arns_state_dir/attempts/`.
+It contains the prepared transaction, simulations, signed bytes, status responses, and eventual transaction details.
+The helper checks the actual Metaplex asset owner as well as the ANT's cached owner field; a wallet's display alone is not our ownership check.
+
+##### Prepare the Shell Helpers
+
+The following Bash helpers run the existing `prepare-signing`, `submit`, `status`, and `verify` commands in sequence.
+Starting a round deliberately arms automatic submission of that round's signed download; the browser still only signs and saves a file.
+The owner reviews and approves each transaction in Phantom.
+
+Configure the download directory now, before preparing any transaction.
+Keep the generated filenames unchanged: each contains the unique attempt identifier, so an earlier download cannot be mistaken for the new one.
+
+```bash
+# XXX_TODO_XXX: Set this to the browser's actual download directory.
+native_arns_download_dir="$HOME/Downloads"
+
+cat > "$native_arns_tools_dir/sign-and-submit.bash" <<'EOF'
+run_arns_registration_step() {
+  local phase="${1:-}" previous_attempt="" download_deadline
+  case "$phase" in
+    purchase|acl|attributes) ;;
+    *) printf 'Choose purchase, acl, or attributes.\n' >&2; return 2 ;;
+  esac
+
+  if [[ -f "$native_arns_signing_dir/active.json" ]]; then
+    previous_attempt="$(jq -er '.attemptId' "$native_arns_signing_dir/active.json")" || return
+  fi
+
+  SOLANA_RPC_URL="$solana_rpc_url" \
+    node "$native_arns_tools_dir/registration-flow.mjs" \
+      prepare-signing "$native_arns_state_dir" "$phase" || return
+
+  native_arns_attempt="$(jq -er '.attemptId' "$native_arns_signing_dir/active.json")" || return
+  # An already-complete ACL needs no transaction and leaves active.json unchanged.
+  if [[ "$native_arns_attempt" == "$previous_attempt" ]]; then
+    printf 'No new signing attempt was created; nothing to submit.\n'
+    return 0
+  fi
+  jq -e --arg phase "$phase" '.phase == $phase' \
+    "$native_arns_signing_dir/active.json" >/dev/null || return
+
+  native_arns_signed_file="$native_arns_download_dir/$native_arns_attempt.signed.json"
+  printf 'Waiting for: %s\nLoad the fresh packet, check phase %s, and sign in the browser.\n' \
+    "$native_arns_signed_file" "$phase"
+
+  download_deadline=$((SECONDS + 90))
+  until jq -e --arg attempt "$native_arns_attempt" \
+    '.attemptId == $attempt and (.transactionBase64 | type == "string")' \
+    "$native_arns_signed_file" >/dev/null 2>&1; do
+    if (( SECONDS >= download_deadline )); then
+      printf 'No complete matching download received; nothing submitted.\n' >&2
+      return 1
+    fi
+    sleep 0.2
+  done
+
+  SOLANA_RPC_URL="$solana_rpc_url" \
+    node "$native_arns_tools_dir/registration-flow.mjs" \
+      submit "$native_arns_state_dir" "$native_arns_signed_file" || return
+  SOLANA_RPC_URL="$solana_rpc_url" \
+    node "$native_arns_tools_dir/registration-flow.mjs" \
+      status "$native_arns_state_dir" "$native_arns_signed_file" || return
+  SOLANA_RPC_URL="$solana_rpc_url" \
+    node "$native_arns_tools_dir/registration-flow.mjs" \
+      verify "$native_arns_state_dir" || return
+
+  if [[ "$phase" == acl ]]; then
+    jq -e --arg ant "$(jq -er '.ant' "$native_arns_plan_file")" \
+      '(.lookup.Owned | index($ant) != null) and (.lookup.Controlled | index($ant) != null)' \
+      "$native_arns_state_dir/registration.verified.json" || return
+    printf 'ANT is present in both ownership and controller lookup lists.\n'
+  fi
+}
+
+submit_next_arns_purchase() {
+  run_arns_registration_step purchase
+}
+
+run_arns_followup() {
+  case "${1:-}" in
+    acl|attributes) run_arns_registration_step "$1" ;;
+    *) printf 'Usage: run_arns_followup acl|attributes\n' >&2; return 2 ;;
+  esac
+}
+EOF
+
+source "$native_arns_tools_dir/sign-and-submit.bash"
+```
+
+Sourcing the file only defines the functions; it starts no transaction.
+The helper waits up to 90 seconds for a complete JSON download with the matching attempt identifier.
+That timeout limits the wait; it does not extend the blockhash's validity.
+The underlying transaction helper still checks every signature, the exact transaction contents, and expiry before submission.
+
+##### Connect the Browser Wallet First
+
+As in the Wander experiment, use a small local page to reach the browser wallet.
+Here the page uses [Wallet Standard](<https://github.com/wallet-standard/wallet-standard>) to discover Phantom and request a Solana signature.
+The library is bundled locally; the page serves neither private keys nor the entire publication-state directory.
+
+```bash
+native_arns_signing_dir="$native_arns_state_dir/signing"
+install -d -- "$native_arns_signing_dir"
+jq -r '.owner' "$native_arns_plan_file" > "$native_arns_signing_dir/owner-address.txt"
+
+(
+  set -e
+  cd -- "$native_arns_tools_dir"
+  npm install --save-exact --ignore-scripts @wallet-standard/app@1.1.0 esbuild@0.27.1
+)
+
+cat > "$native_arns_tools_dir/wallet-entry.mjs" <<'EOF'
+import { getWallets } from '@wallet-standard/app';
+window.arnsWallets = getWallets();
+EOF
+
+"$native_arns_tools_dir/node_modules/.bin/esbuild" \
+  "$native_arns_tools_dir/wallet-entry.mjs" \
+  --bundle --platform=browser --format=iife \
+  --outfile="$native_arns_signing_dir/wallet-standard.js"
+
+cat > "$native_arns_signing_dir/index.html" <<'EOF'
+<!doctype html>
+<meta charset="utf-8">
+<title>Sign an ArNS transaction</title>
+<h1>Sign an ArNS transaction</h1>
+<p>Follow the walkthrough in the browser's developer console. This page signs but does not submit transactions.</p>
+<script src="./wallet-standard.js"></script>
+EOF
+
+python3 -m http.server 8768 \
+  --bind 127.0.0.1 \
+  --directory "$native_arns_signing_dir" \
+  > "$native_arns_state_dir/http-server.log" 2>&1 &
+native_arns_http_pid=$!
+```
+
+The final `&` runs the server in the background, leaving the same Bash shell available for the remaining commands with all walkthrough variables intact.
+`$!` gives us the server's process ID so we can stop it later.
+Server output goes to `$native_arns_state_dir/http-server.log`; check that file if the local page does not load.
+Keep this shell open throughout the signing steps.
+
+Open [http://127.0.0.1:8768/](<http://127.0.0.1:8768/>) in the browser where Phantom holds the intended Solana account.
+Open **Developer Tools > Console** and run the following **browser JavaScript**:
+
+```javascript
+var expectedOwner = (await (await fetch('./owner-address.txt', { cache: 'no-store' })).text()).trim();
+var arnsWallet = arnsWallets.get().find(wallet =>
+  wallet.name === 'Phantom' && wallet.features['solana:signTransaction']);
+if (!arnsWallet) throw new Error('Phantom with Solana transaction signing was not found.');
+var connected = await arnsWallet.features['standard:connect'].connect();
+var arnsAccount = connected.accounts.find(account => account.address === expectedOwner);
+if (!arnsAccount) throw new Error('Select the intended Solana account in Phantom and reconnect.');
+console.log('Connected owner:', arnsAccount.address);
+
+// Connected owner: BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ
+```
+
+Connecting only establishes which public account will sign.
+If both Phantom and MetaMask are installed, this code deliberately selects Phantom.
+
+##### The Two Browser Blocks Used in Every Round
+
+Read these two blocks now and keep them ready in the browser's developer console.
+Run them only after starting one of the shell commands in the rounds below and seeing **`Waiting for:`** in the terminal.
+Repeat both blocks for each round: the previous `arnsPacket` remains in browser memory until we replace it with the new one.
+
+**1. Load and inspect the fresh packet.**
+
+```javascript
+var arnsPacket = await (await fetch('./active.json', { cache: 'no-store' })).json();
+if (arnsPacket.owner !== arnsAccount.address) throw new Error('Owner mismatch');
+console.log({
+  attempt: arnsPacket.attemptId, phase: arnsPacket.phase, owner: arnsPacket.owner,
+  name: arnsPacket.name, type: arnsPacket.type, years: arnsPacket.years,
+  ant: arnsPacket.ant, initialTarget: arnsPacket.initialTarget,
+  priceARIO: arnsPacket.quote ? arnsPacket.quote.tokenCost / 1e6 : 0,
+  networkFeeSOL: Number(arnsPacket.feeLamports) / 1e9,
+  lastValidBlockHeight: arnsPacket.lifetime.lastValidBlockHeight,
+});
+
+// {attempt: 'purchase-114fcbd5-109a-4e58-a831-1c17409690e6', phase: 'purchase', owner: 'BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ', name: 'weisser-zwerg-native', type: 'lease', …}
+// ant:  "HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg" ...
+// priceARIO: 2399.38512
+```
+
+Check that the attempt identifier matches the terminal and that the phase is the one just started: `purchase`, `acl`, or `attributes`.
+Confirm the owner, name, lease duration, ANT, version 2 manifest, and costs against the plan.
+The initial target remains in all three packets as context; the follow-ups do not change it.
+`priceARIO` should be zero for `acl` and `attributes`.
+`networkFeeSOL` includes the transaction's priority fee; any SOL account deposits are separate.
+
+**2. Request the owner's signature and download the result.**
+
+```javascript
+var transactionBytes = Uint8Array.from(atob(arnsPacket.transactionBase64), c => c.charCodeAt(0));
+var [signedOutput] = await arnsWallet.features['solana:signTransaction'].signTransaction({
+  account: arnsAccount, chain: 'solana:mainnet', transaction: transactionBytes,
+});
+var signedFile = {
+  attemptId: arnsPacket.attemptId,
+  transactionBase64: btoa(String.fromCharCode(...signedOutput.signedTransaction)),
+};
+var download = document.createElement('a');
+download.href = URL.createObjectURL(new Blob([JSON.stringify(signedFile, null, 2) + '\n'],
+  { type: 'application/json' }));
+download.download = `${arnsPacket.attemptId}.signed.json`;
+download.click();
+console.log('Saved signed transaction:', download.download);
+
+// ~/Downloads/purchase-114fcbd5-109a-4e58-a831-1c17409690e6.signed.json
+```
+
+Review the prompt and approve in Phantom, then let the browser save the file under its generated name in the configured download directory.
+This calls `solana:signTransaction`: the browser produces the signed file, while the waiting shell performs submission.
+
+The shell validates the signed transaction, saves its bytes and identifier before contacting the network, runs a signed simulation, and submits with preflight checks enabled.
+The printed Solscan URL is derived from the local signature; printing it alone does not establish submission.
+Likewise, `RPC accepted the transaction` [does not yet mean the transaction is confirmed](<https://solana.com/docs/rpc/http/sendtransaction>).
+The helper continues into `status`, waits for finalisation, and then runs `verify`.
+Wait for that round to finish successfully before starting the next one.
+
+##### Round 1: Purchase the Name
+
+With Phantom connected and the two browser blocks ready, start in the same Bash shell:
+
+```bash
+submit_next_arns_purchase
+```
+
+The command checks that the name remains unregistered and that the current ARIO price matches the reviewed plan.
+If the price has changed, refresh the plan and review the new quote before starting another attempt.
+The temporary creation key signs first, following the [SDK's browser-wallet signing order](<https://github.com/ar-io/ar-io-sdk/blob/v4.5.2/src/solana/spawn-ant.ts>).
+The owner's signature is still missing at this point.
+
+When the terminal prints **`Waiting for:`**, run **both browser blocks** above: (load and inspect) + (request the owner's signature and download).
+The waiting shell submits that download and checks finalisation and ownership.
+
+For the USD equivalents in these three rounds we use: **$0.00123291 per ARIO** and **$79.76 per SOL**.
+USD values are approximate conversions at that snapshot; the token amounts below are the actual transaction debits.
+
+My successful purchase spent **2,399.38512 ARIO ($2.96)** and deducted **0.012021414 SOL ($0.9588)** from my wallet.
+The SOL comprised **0.000290294 SOL ($0.0232)** in network fees, **0.0015 SOL ($0.1196)** for creating the Metaplex asset, and **0.010231120 SOL ($0.8160)** in account deposits.
+The [purchase transaction](<https://solscan.io/tx/TsLNjdppyzMLJcT7vcFTHLh8cbsRJUfVMcAPdJb3nfZSTsKvN2DEXrJqX4tvQGKRa5eXriBaFGZosjgJV78nsFN>) finalised successfully.
+Independent reads confirmed that the name points to the planned ANT, that the Metaplex asset and ANT both identify my Solana account as owner, and that the root `@` record points to the manual version 2 manifest.
+
+> **What to expect in the AR.IO Console after the purchase.**
+> In [Manage Domains](<https://console.ar.io/domains>), the name may still be missing from the normal list because its ownership lookup entry has not yet been added.
+> I saw a banner saying **"1 name you own isn't showing here yet"**, naming `weisser-zwerg-native.ar.io` and offering **Sync ownership**.
+> Its accompanying text said the name had been transferred to my wallet outside the app. That is generic wording: in this experiment I had just created and registered it directly.
+> The Console had detected that I owned the asset, while its ordinary list still lacked the lookup entry.
+> The [Sync ownership action](<https://github.com/ar-io/ar-io-console/blob/b230e681a20d8db08ffac227a20a0df7b8cca9cf/src/features/arns/hooks/useSyncOwnership.ts>) offers reconciliation through the browser; for this walkthrough we will complete both lookup entries with the `acl` round below.
+>
+> This means: **Don't use this Sync ownership action**!
+
+##### Round 2: Add the Ownership and Controller Lookup Entries
+
+After the purchase has finalised and its verification has passed, start the next round:
+
+```bash
+run_arns_followup acl
+```
+
+At **`Waiting for:`**, repeat **both browser blocks**: (load and inspect) + (request the owner's signature and download).
+This transaction records the ANT in the existing owner's `Owned` and `Controlled` lookup lists.
+It makes the existing ownership and controller permissions discoverable by wallet address.
+SOL pays the transaction fee and, if needed, deposits for new lookup accounts or pages.
+
+My [ACL transaction](<https://solscan.io/tx/53NSknYXuAhXgioofboVNXJoyEvxeXSQDoUS2gTSF2uWTrd21EAA8tvq5wiQUQhbiYkxQALuDZpAnHMavHZDJWTh>) deducted **0.000479269 SOL ($0.0382)** in total: **0.000143989 SOL ($0.0115)** for the network fee and **0.000335280 SOL ($0.0267)** to increase the lookup account's rent-exempt balance as its stored data grew.
+The ARIO charge was **0 ARIO**.
+
+If the entries already exist, the preparation command reports that no transaction is needed and the waiting helper skips signing and submission for this round.
+
+> **What to expect in the Console after the ACL update.**
+> Refresh Manage Domains. In my experiment the banner disappeared and `weisser-zwerg-native.ar.io` appeared as **ACTIVE**, with its one-year lease.
+> This happened before the attributes update: adding the lookup entries was what made the name appear in the normal list.
+
+##### Round 3: Synchronise the Registration Attributes
+
+Once the ACL round has completed, start the final round:
+
+```bash
+run_arns_followup attributes
+```
+
+At **`Waiting for:`**, repeat **both browser blocks** once more: (load and inspect) + (request the owner's signature and download).
+The transaction synchronises the registration metadata attached to the ANT asset.
+The name, its owner, and its website target remain the ones already established by the purchase.
+
+My [attributes transaction](<https://solscan.io/tx/2ydenQcqeNswwUPhnJSnay7vL496orBnHBZ9F12nQVvKbos1Uf1QZjJ1LzHuWPCLrwve5wygYvfA7apZz1FgQUNw>) deducted **0.000545309 SOL ($0.0435)** in total: **0.000143989 SOL ($0.0115)** for the network fee and **0.000401320 SOL ($0.0320)** to increase the asset account's rent-exempt balance for the added metadata.
+The ARIO charge was again **0 ARIO**.
+Its retained transaction log reported that four attributes had been synchronised for `weisser-zwerg-native`.
+The helper's subsequent verification confirmed that the owner, controllers, lookup entries, and version 2 target remained correct.
+
+> **What to expect in the Console after the attributes update.**
+> The name is already listed as active after round 2, so this third transaction need not produce another visible change in Manage Domains.
+> It completes the metadata synchronisation. Its finalised transaction and program log provide the evidence that the operation succeeded.
+
+##### What the Three Rounds Cost
+
+The finalised transactions record both the owner's SOL balance changes and the ARIO token balance change.
+Using those actual debits, the three rounds cost the following at the USD rates quoted above:
+
+<table class="article-table">
+  <thead>
+    <tr><th>Round</th><th>ARIO paid</th><th>Total SOL deducted</th><th>Combined USD value</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1. Purchase</td><td>2,399.38512 ARIO ($2.96)</td><td>0.012021414 SOL ($0.9588)</td><td>$3.92</td></tr>
+    <tr><td>2. ACL lookup entries</td><td>0 ARIO ($0.00)</td><td>0.000479269 SOL ($0.0382)</td><td>$0.04</td></tr>
+    <tr><td>3. Registration attributes</td><td>0 ARIO ($0.00)</td><td>0.000545309 SOL ($0.0435)</td><td>$0.04</td></tr>
+    <tr><td><strong>Total</strong></td><td><strong>2,399.38512 ARIO ($2.96)</strong></td><td><strong>0.013045992 SOL ($1.0405)</strong></td><td><strong>$4.00</strong></td></tr>
+  </tbody>
+</table>
+
+Of the total SOL debit, **0.000578272 SOL ($0.0461)** paid Solana network fees, **0.0015 SOL ($0.1196)** paid the Metaplex creation fee, and **0.010967720 SOL ($0.8748)** funded account deposits.
+The deposits remain attached to the created or enlarged accounts, as explained in the earlier discussion of rent; recovering them requires a supported account-closing operation.
+
+> **The network fee does not include every charge.**
+> The transaction's `meta.fee` field contains its Solana network fee.
+> The separate [Metaplex Core creation fee](<https://www.metaplex.com/docs/protocol-fees>) is initially placed in the asset account above its rent-exempt minimum and collected later by the protocol.
+> It is therefore included in the wallet's SOL debit even though it is absent from `meta.fee`; that part of the asset balance is a fee, not a rent deposit.
+
+The total covers the three successful transactions, including their account deposits, but excludes the earlier costs of acquiring and transferring the tokens.
+
+> **The two attempts that expired before submission incurred no on-chain fee.**
+
+USD totals are calculated before rounding.
+
+##### Inspect the Results and Handle Interrupted Attempts
+
+Each round retains its prepared and signed transaction, simulations, and finalised `transaction.json` under `$native_arns_state_dir/attempts/`.
+The latest independent ownership and record check is available here:
+
+```bash
+jq '{record, assetOwner, ant, lookup}' "$native_arns_state_dir/registration.verified.json"
+
+# {
+#   "record": {
+#     "processId": "HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg",
+#     "startTimestamp": 1794556296000,
+#     "undernameLimit": 10,
+#     "purchasePrice": 2399385120,
+#     "type": "lease",
+#     "endTimestamp": 1826092296000
+#   },
+#   "assetOwner": "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#   "ant": {
+#     "Owner": "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#     "Controllers": [
+#       "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ"
+#     ],
+#     "Records": {
+#       "@": {
+#         "transactionId": "nieQ6Foe7yWBqtRJKmf0b_vEOYD8k4FWQOohfmrzzNQ",
+#         "targetProtocol": 0,
+#         "ttlSeconds": 900,
+#         "priority": 0
+#       }
+#     }
+#   },
+#   "lookup": {
+#     "Owned": [
+#       "Fs99yQbhTpQAtntmfrVrGc2LafQ6ykbD6kbcvhGZ3uqm",
+#       "GGT57TEiPiYkdzL3eN3zNSthTE2x5kvsqAuYEN2p2MfJ",
+#       "HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg"
+#     ],
+#     "Controlled": [
+#       "HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg"
+#     ]
+#   }
+# }
+```
+
+The verification checks that the registry's `processId` is the planned ANT, the registration type matches, and the Metaplex asset is owned by `$arns_owner_address`.
+It also checks that the ANT's owner agrees, its controller list contains only that same owner, and its root `@` record points to `$manual_v2_manifest_id` with Arweave as the target protocol.
+The registry response exposes the lease's start and expiry timestamps as well.
+
+If a round stops after downloading but submission or finalisation is uncertain, inspect that same signed transaction before starting another attempt:
+
+```bash
+SOLANA_RPC_URL="$solana_rpc_url" \
+  node "$native_arns_tools_dir/registration-flow.mjs" \
+    status "$native_arns_state_dir" "$native_arns_signed_file"
+
+# Transaction: https://solscan.io/tx/2ydenQcqeNswwUPhnJSnay7vL496orBnHBZ9F12nQVvKbos1Uf1QZjJ1LzHuWPCLrwve5wygYvfA7apZz1FgQUNw
+# Finalised successfully. Details: .../publishing-arweave-ario-basics-site-publication-state/native-arns/attempts/attributes-8a7ecf02-7442-4b61-a443-1ec626c159f9/transaction.json
+```
+
+`status` submits nothing. It polls for up to approximately two minutes and saves the transaction details once finalisation is established.
+Success requires both `confirmationStatus: "finalized"` and `err: null`.
+
+> **An expired attempt needs a fresh transaction and fresh signatures.**
+> If the helper stops at its local `Blockhash expired` check, that invocation has not submitted the transaction.
+> Inspect any earlier submission's status and the on-chain state before replacing an uncertain attempt; a missing RPC response is not evidence of failure.
+> Once an attempt is confirmed expired without landing, rerun the command for that same round, then reload `active.json` and sign the new packet.
+> For a purchase retry, keep the same ANT creation key and retain the earlier attempt's files.
+> Repeating `submit` with the same signed file reuses its signature and bytes, but cannot extend its validity.
+
+If Phantom changes the transaction and the helper rejects it, inspect the difference before proceeding; retain the exact-message check.
+If either follow-up fails, investigate and retry that operation rather than purchasing the name again.
+
+After all three rounds have completed, stop the local server from the same shell:
+
+```bash
+kill "$native_arns_http_pid"
+```
+
+The existing Solana wallet now owns the registered name, its lookup entries are present, and its registration attributes have been synchronised.
+The registration was paid in ARIO, while SOL paid the network fees, the Metaplex creation fee, and the account deposits.
+The name still points to version 2; updating it to version 3 and checking website retrieval are the next parts of the experiment.
+
+#### Update the Target to Version 3
+
+The new name now points to the manual path's version 2 manifest.
+We will change only its root `@` record to the native-upload version 3 manifest, [`k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k`](<https://arweave.net/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/>).
+Use the **manifest data-item ID**, not the ID of its enclosing Arweave bundle transaction: the manifest supplies the website's paths.
+
+This requires **one Solana transaction and one owner approval**.
+The name, lease, ANT, owner, and controllers remain the same.
+The ownership lookup entries and registration attributes established above do not need to be created again for a target change.
+The old manifest and its files also remain available under their immutable IDs.
+
+The SDK's [`setBaseNameRecord` method](<https://github.com/ar-io/ar-io-sdk/blob/v4.5.2/src/solana/ant-writeable.ts>) uses the underlying `set_record` instruction.
+We will construct that instruction with `getSetRecordInstructionAsync` from the already installed `@ar.io/solana-contracts@1.4.0`, retaining the previous separation between preparation, browser signing, submission, and verification.
+
+> **What does this update cost?**
+> My unsigned simulation quoted **0.000143989 SOL** in network fees, including the chosen priority fee (approximately **$0.0115**).
+> It required **0 ARIO** and **no additional record deposit**: an existing record replaces one 43-character Arweave identifier with another, without growing its account.
+> The helper checks that the simulated record size and lamport balance are unchanged and obtains the transaction fee from the RPC.
+> This was a preparation check, not a submitted update; the finalised transaction will record the actual charge.
+
+##### Prepare the Record-Update Helper
+
+Keep the original `registration.plan.json` and `registration.verified.json` as records of the purchase and its initial target.
+The following helper saves each update attempt separately and writes its independent result to `record-update.verified.json`.
+It deliberately expects the version 2 target from the purchase plan, so it stops if the record has already changed.
+
+Restore the version 3 ID from the saved data-item receipt if necessary:
+
+```bash
+native_v3_manifest_id="$(jq -er '.id' "$publication_state_dir/native-v3/manifest.ans104.json")"
+printf 'New manifest target: %s\n' "$native_v3_manifest_id"
+# k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k
+```
+
+The helper has the same four stages as before.
+`prepare-signing` reads the current owner and root record, constructs and simulates the update, and saves an unsigned packet.
+`submit` validates the owner's signature and unchanged transaction bytes before broadcasting; `status` checks finalisation; `verify` reads the resulting on-chain state.
+No private key is read by this helper.
+
+```bash
+cat > "$native_arns_tools_dir/record-update.mjs" <<'EOF'
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import assert from 'node:assert/strict';
+import {
+  AccountRole, address, appendTransactionMessageInstructions, compileTransaction,
+  createNoopSigner, createSolanaRpc, createTransactionMessage,
+  getBase64EncodedWireTransaction, getPublicKeyFromAddress,
+  getSignatureFromTransaction, getTransactionDecoder, pipe,
+  setTransactionMessageFeePayer, setTransactionMessageLifetimeUsingBlockhash,
+  verifySignature,
+} from '@solana/kit';
+import {
+  ARIO_ANT_PROGRAM_ID, SolanaARIOReadable, SolanaANTReadable, getAntRecordPDA,
+} from '@ar.io/sdk';
+import { fetchAssetV1 } from '@ar.io/solana-contracts/mpl-core';
+import { getSetRecordInstructionAsync, parseSetRecordInstruction } from '@ar.io/solana-contracts/ant';
+import {
+  getSetComputeUnitLimitInstruction, getSetComputeUnitPriceInstruction,
+} from '@solana-program/compute-budget';
+
+const [action, stateDir, argument] = process.argv.slice(2);
+assert(['prepare-signing', 'submit', 'status', 'verify'].includes(action) && stateDir && argument,
+  'Usage: record-update.mjs prepare-signing|submit|status|verify state-directory target-id|signed-file');
+const json = value => JSON.stringify(value,
+  (_key, value) => typeof value === 'bigint' ? value.toString() : value, 2) + '\n';
+const load = async file => JSON.parse(await readFile(file, 'utf8'));
+const save = (file, value) => writeFile(file, json(value));
+const plan = await load(join(stateDir, 'registration.plan.json'));
+const rpc = createSolanaRpc(process.env.SOLANA_RPC_URL ?? 'https://api.mainnet-beta.solana.com');
+const owner = address(plan.owner), asset = address(plan.ant);
+const ario = new SolanaARIOReadable({ rpc, commitment: 'finalized' });
+const ant = new SolanaANTReadable({ rpc, processId: asset, commitment: 'finalized' });
+const decode = base64 => getTransactionDecoder().decode(Buffer.from(base64, 'base64'));
+
+async function inspectState() {
+  const [registration, nft, antOwner, controllers, root] = await Promise.all([
+    ario.getArNSRecord({ name: plan.name }), fetchAssetV1(rpc, asset, { commitment: 'finalized' }),
+    ant.getOwner(), ant.getControllers(), ant.getRecord({ undername: '@' }),
+  ]);
+  assert.equal(registration.processId, asset, 'Name points to a different ANT');
+  assert.equal(registration.type, plan.type);
+  assert.equal(nft.data.owner, owner, 'Asset owner changed');
+  assert.equal(antOwner, owner, 'ANT owner differs');
+  assert.deepEqual([...controllers].sort(), [owner], 'Controller permissions changed');
+  assert(root, 'The root record is missing');
+  return JSON.parse(json({ registration, assetOwner: nft.data.owner, antOwner, controllers, root }));
+}
+
+if (action === 'prepare-signing') {
+  assert(/^[A-Za-z0-9_-]{43}$/.test(argument), 'Expected an Arweave manifest item ID');
+  const before = await inspectState();
+  assert.equal(before.root.transactionId, plan.rootRecord.transactionId,
+    'Root no longer points to version 2; inspect the previous attempt before preparing another');
+  assert.notEqual(argument, before.root.transactionId, 'The target has not changed');
+  assert.equal(before.root.targetProtocol, 0);
+  const after = { ...before.root, transactionId: argument };
+  const [recordAddress] = await getAntRecordPDA(asset, '@');
+  const { value: accountBefore } = await rpc.getAccountInfo(recordAddress, {
+    encoding: 'base64', commitment: 'confirmed',
+  }).send();
+  assert(accountBefore, 'Root account is missing');
+  const update = await getSetRecordInstructionAsync({
+    asset, record: recordAddress, caller: createNoopSigner(owner),
+    undername: '@', target: after.transactionId, targetProtocol: 0,
+    ttlSeconds: after.ttlSeconds, priority: null, recordOwner: null,
+  }, { programAddress: ARIO_ANT_PROGRAM_ID });
+  const instructions = [
+    getSetComputeUnitLimitInstruction({ units: 400_000 }),
+    getSetComputeUnitPriceInstruction({ microLamports: BigInt(plan.priorityFeeMicroLamports) }),
+    update,
+  ];
+  const { value: lifetime } = await rpc.getLatestBlockhash({ commitment: 'confirmed' }).send();
+  const transaction = compileTransaction(pipe(createTransactionMessage({ version: 0 }),
+    m => setTransactionMessageFeePayer(owner, m),
+    m => setTransactionMessageLifetimeUsingBlockhash(lifetime, m),
+    m => appendTransactionMessageInstructions(instructions, m)));
+  const wire = getBase64EncodedWireTransaction(transaction);
+  assert(Buffer.from(wire, 'base64').length <= 1232);
+  const simulation = await rpc.simulateTransaction(wire, {
+    encoding: 'base64', commitment: 'confirmed', sigVerify: false,
+    accounts: { addresses: [recordAddress], encoding: 'base64' },
+  }).send();
+  assert.equal(simulation.value.err, null, json(simulation.value));
+  const accountAfter = simulation.value.accounts?.[0];
+  assert(accountAfter, 'Simulation did not return the root account');
+  assert.equal(accountAfter.lamports, accountBefore.lamports, 'Unexpected record deposit change');
+  assert.equal(Buffer.from(accountAfter.data[0], 'base64').length,
+    Buffer.from(accountBefore.data[0], 'base64').length, 'Unexpected record size change');
+  const { value: fee } = await rpc.getFeeForMessage(
+    Buffer.from(transaction.messageBytes).toString('base64'), { commitment: 'confirmed' }).send();
+  assert(fee !== null, 'Blockhash expired; prepare again');
+  const attemptId = `record-${randomUUID()}`;
+  const attemptDir = join(stateDir, 'attempts', attemptId);
+  await mkdir(attemptDir, { recursive: true });
+  const packet = {
+    attemptId, phase: 'record', owner, ant: asset, name: plan.name,
+    undername: '@', before, after, feeLamports: fee, recordDepositLamports: '0', lifetime,
+    decodedInstruction: parseSetRecordInstruction(update),
+    instructions: instructions.map(ix => ({
+      programAddress: ix.programAddress,
+      accounts: ix.accounts?.map(a => ({ address: a.address, role: AccountRole[a.role] })) ?? [],
+      dataBase64: Buffer.from(ix.data).toString('base64'),
+    })),
+    transactionBase64: wire,
+  };
+  await save(join(attemptDir, 'prepared.json'), packet);
+  await save(join(attemptDir, 'simulation.json'), simulation);
+  await save(join(stateDir, 'signing', 'active.json'), packet);
+  console.log(json({ attemptId, phase: packet.phase, name: plan.name, undername: '@',
+    previousTarget: before.root.transactionId, target: after.transactionId,
+    ttlSeconds: after.ttlSeconds, feeSOL: Number(fee) / 1e9,
+    recordDepositSOL: 0, priceARIO: 0, lastValidBlockHeight: lifetime.lastValidBlockHeight }));
+} else {
+  const signed = await load(argument);
+  assert(/^record-[0-9a-f-]{36}$/.test(signed.attemptId), 'Invalid record-update attempt ID');
+  const attemptDir = join(stateDir, 'attempts', signed.attemptId);
+  const prepared = await load(join(attemptDir, 'prepared.json'));
+  assert.equal(prepared.owner, owner);
+  assert.equal(prepared.ant, asset);
+  const transaction = decode(signed.transactionBase64);
+  assert.deepEqual(transaction.messageBytes, decode(prepared.transactionBase64).messageBytes,
+    'Wallet changed the transaction; inspect it before submitting');
+  assert.deepEqual(Object.keys(transaction.signatures), [owner], 'Expected only the owner signer');
+  assert(transaction.signatures[owner] && await verifySignature(await getPublicKeyFromAddress(owner),
+    transaction.signatures[owner], transaction.messageBytes), 'Invalid owner signature');
+  const signature = getSignatureFromTransaction(transaction);
+  await save(join(attemptDir, 'signed.json'), { ...signed, signature });
+  console.log(`Transaction: https://solscan.io/tx/${signature}`);
+  if (action === 'verify') {
+    const current = await inspectState();
+    assert.deepEqual(current.root, prepared.after, 'Root record does not match the intended update');
+    const verification = { signature, name: plan.name, ant: asset, ...current };
+    await save(join(attemptDir, 'verified.json'), verification);
+    await save(join(stateDir, 'record-update.verified.json'), verification);
+    console.log(json(verification));
+    process.exit(0);
+  }
+  const readStatus = async () => {
+    const response = await rpc.getSignatureStatuses([signature], { searchTransactionHistory: true }).send();
+    await save(join(attemptDir, 'status.json'), response);
+    return response.value[0];
+  };
+  let status = await readStatus();
+  if (action === 'submit' && status === null) {
+    const current = await inspectState();
+    assert.deepEqual(current.root, prepared.before.root, 'Record changed since preparation');
+    assert(await rpc.getBlockHeight({ commitment: 'confirmed' }).send()
+      <= BigInt(prepared.lifetime.lastValidBlockHeight),
+    'Blockhash expired. Check status and on-chain state before replacing the attempt.');
+    const simulation = await rpc.simulateTransaction(signed.transactionBase64, {
+      encoding: 'base64', commitment: 'confirmed', sigVerify: true,
+    }).send();
+    await save(join(attemptDir, 'signed-simulation.json'), simulation);
+    assert.equal(simulation.value.err, null, json(simulation.value));
+    const result = await rpc.sendTransaction(signed.transactionBase64, {
+      encoding: 'base64', skipPreflight: false, preflightCommitment: 'confirmed', maxRetries: 5n,
+    }).send();
+    assert.equal(result, signature);
+    await save(join(attemptDir, 'submission.json'), { signature, submittedAt: new Date().toISOString() });
+    console.log('RPC accepted the update. Run status, then verify.');
+  } else if (action === 'submit') {
+    console.log(json(status));
+  } else {
+    for (let attempt = 0; attempt < 24; attempt++) {
+      if (status?.confirmationStatus === 'finalized') break;
+      console.log(status?.confirmationStatus ?? 'No status yet');
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      status = await readStatus();
+    }
+    assert(status?.confirmationStatus === 'finalized', 'Not finalised yet; repeat status');
+    const details = await rpc.getTransaction(signature, {
+      commitment: 'finalized', encoding: 'json', maxSupportedTransactionVersion: 0,
+    }).send();
+    await save(join(attemptDir, 'transaction.json'), details);
+    assert(details?.meta, 'Transaction details unavailable; repeat status');
+    assert.equal(status.err, null, 'Transaction failed; inspect transaction.json');
+    assert.equal(details.meta.err, null);
+    console.log(json({ status: 'finalized', networkFeeSOL: Number(details.meta.fee) / 1e9,
+      ownerDebitSOL: Number(details.meta.preBalances[0] - details.meta.postBalances[0]) / 1e9 }));
+  }
+}
+EOF
+```
+
+The instruction uses `undername: '@'` for the base name and `targetProtocol: 0` for Arweave.
+It preserves the existing TTL, priority, and any record owner; the `null` values for the latter two instruction arguments mean that those optional updates are not requested.
+
+##### Sign and Submit One Update
+
+If the local signing server was stopped at the end of the previous subsection, restart it in the background from the same Bash shell:
+
+```bash
+python3 -m http.server 8768 \
+  --bind 127.0.0.1 \
+  --directory "$native_arns_signing_dir" \
+  > "$native_arns_state_dir/http-server.log" 2>&1 &
+native_arns_http_pid=$!
+```
+
+If it is still running, keep using it instead of starting another copy.
+Open [the local signing page](<http://127.0.0.1:8768/>), unlock Phantom, and run the earlier [wallet-connection block](#connect-the-browser-wallet-first) if the page has been reloaded.
+Keep the signing block from [The Two Browser Blocks Used in Every Round](#the-two-browser-blocks-used-in-every-round) ready as well.
+We will use a different inspection block below because this packet describes a record change rather than a purchase.
+
+Define the shell function first.
+As before, **calling this function arms automatic submission of the matching signed download**; defining it does not start an attempt.
+It reuses `$native_arns_download_dir` if configured, otherwise defaults to `$HOME/Downloads`.
+If the browser saves elsewhere, set `native_arns_download_dir` to that directory before calling the function.
+The helper checks the directory before preparing the transaction and prints the exact file it will watch.
+
+```bash
+submit_arns_v3_update() {
+  local download_deadline stage
+  native_arns_download_dir="${native_arns_download_dir:-$HOME/Downloads}"
+  if [[ ! -d "$native_arns_download_dir" ]]; then
+    printf 'Download directory does not exist: %s\n' "$native_arns_download_dir" >&2
+    return 1
+  fi
+  printf 'Using download directory: %s\n' "$native_arns_download_dir"
+
+  SOLANA_RPC_URL="$solana_rpc_url" \
+    node "$native_arns_tools_dir/record-update.mjs" \
+      prepare-signing "$native_arns_state_dir" "$native_v3_manifest_id" || return
+
+  jq -e '.phase == "record"' "$native_arns_signing_dir/active.json" >/dev/null || return
+  native_arns_update_attempt="$(jq -er '.attemptId' "$native_arns_signing_dir/active.json")" || return
+  native_arns_update_signed_file="$native_arns_download_dir/$native_arns_update_attempt.signed.json"
+  printf 'Waiting for: %s\nLoad the fresh record packet, inspect it, and sign in the browser.\n' \
+    "$native_arns_update_signed_file"
+
+  download_deadline=$((SECONDS + 90))
+  until jq -e --arg attempt "$native_arns_update_attempt" \
+    '.attemptId == $attempt and (.transactionBase64 | type == "string")' \
+    "$native_arns_update_signed_file" >/dev/null 2>&1; do
+    if (( SECONDS >= download_deadline )); then
+      printf 'No complete matching download received; nothing submitted.\n' >&2
+      return 1
+    fi
+    sleep 0.2
+  done
+
+  for stage in submit status verify; do
+    SOLANA_RPC_URL="$solana_rpc_url" \
+      node "$native_arns_tools_dir/record-update.mjs" \
+        "$stage" "$native_arns_state_dir" "$native_arns_update_signed_file" || return
+  done
+}
+```
+
+Read the browser steps below before starting, then run:
+
+```bash
+submit_arns_v3_update
+```
+
+Once the shell prints `Waiting for:`, load and inspect the new packet in the **browser's developer console**:
+
+```javascript
+var arnsPacket = await (await fetch('./active.json', { cache: 'no-store' })).json();
+if (arnsPacket.owner !== arnsAccount.address) throw new Error('Owner mismatch');
+if (arnsPacket.phase !== 'record') throw new Error('Expected a record-update packet');
+console.log({
+  attempt: arnsPacket.attemptId, phase: arnsPacket.phase,
+  owner: arnsPacket.owner, name: arnsPacket.name, ant: arnsPacket.ant,
+  undername: arnsPacket.undername,
+  previousTarget: arnsPacket.before.root.transactionId,
+  newTarget: arnsPacket.after.transactionId,
+  targetProtocol: arnsPacket.after.targetProtocol,
+  ttlSeconds: arnsPacket.after.ttlSeconds,
+  networkFeeSOL: Number(arnsPacket.feeLamports) / 1e9,
+  recordDepositSOL: Number(arnsPacket.recordDepositLamports) / 1e9,
+  lastValidBlockHeight: arnsPacket.lifetime.lastValidBlockHeight,
+});
+```
+
+Confirm the attempt identifier against the terminal, the name `weisser-zwerg-native`, its ANT `HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg`, and the change from the version 2 manifest to the version 3 manifest.
+The undername must be `@`, the target protocol `0`, and the retained TTL `900` seconds in this experiment.
+Then run the earlier **Request the owner's signature and download the result** block, approve in Phantom, and retain the generated `record-….signed.json` filename.
+That signing block uses the freshly loaded `arnsPacket` without modification.
+
+The shell picks up the download, submits it, waits for finalisation, and verifies the changed record.
+The same short blockhash lifetime applies: downloading the signature does not restart the clock.
+There are no `acl` or `attributes` rounds this time.
+
+##### Verify the Changed Record
+
+On success, inspect the independently retrieved result:
+
+```bash
+jq '{signature, name, ant, assetOwner, controllers, root}' "$native_arns_state_dir/record-update.verified.json"
+
+# {
+#   "signature": "4megKn4rStBUQ7yzujokQwaPsd3mmvb6femkiTXys4nuMvRD8rE9oWRNtad2wnUpd2HRYUakqqLbfMdV7JZmngaF",
+#   "name": "weisser-zwerg-native",
+#   "ant": "HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg",
+#   "assetOwner": "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#   "controllers": [
+#     "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ"
+#   ],
+#   "root": {
+#     "transactionId": "k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k",
+#     "targetProtocol": 0,
+#     "ttlSeconds": 900,
+#     "priority": 0
+#   }
+# }
+```
+
+The `root.transactionId` should now be `$native_v3_manifest_id`, with the original TTL and other record settings preserved.
+The helper also checks the name's ANT association, registration type, actual Metaplex owner, ANT owner, and controller list.
+Its `status` output reports both the actual network fee and the owner's total SOL debit from the finalised transaction; for this update they should match.
+The complete transaction is retained under `attempts/$native_arns_update_attempt/transaction.json`.
+Refresh [the name's Console page](<https://console.ar.io/domains/weisser-zwerg-native>) to see the new target in its root record.
+
+In my run, transaction [`4megKn4rStBUQ7yzujokQwaPsd3mmvb6femkiTXys4nuMvRD8rE9oWRNtad2wnUpd2HRYUakqqLbfMdV7JZmngaF`](<https://solscan.io/tx/4megKn4rStBUQ7yzujokQwaPsd3mmvb6femkiTXys4nuMvRD8rE9oWRNtad2wnUpd2HRYUakqqLbfMdV7JZmngaF>) finalised successfully.
+Both the actual network fee and the owner's total debit were **0.000143989 SOL** (approximately **$0.0115** at the earlier snapshot of $79.76 per SOL), matching the quote.
+No ARIO or additional account deposit was required.
+The independent check confirmed the version 3 manifest as the root target, with the **900-second TTL**, ANT ownership, and controller list unchanged.
+
+If submission or finalisation is uncertain, inspect the **same signed attempt** before preparing a replacement:
+
+```bash
+SOLANA_RPC_URL="$solana_rpc_url" \
+  node "$native_arns_tools_dir/record-update.mjs" \
+    status "$native_arns_state_dir" "$native_arns_update_signed_file"
+
+# Transaction: https://solscan.io/tx/4megKn4rStBUQ7yzujokQwaPsd3mmvb6femkiTXys4nuMvRD8rE9oWRNtad2wnUpd2HRYUakqqLbfMdV7JZmngaF
+# {
+#   "status": "finalized",
+#   "networkFeeSOL": 0.000143989,
+#   "ownerDebitSOL": 0.000143989
+# }
+
+# After successful finalisation, independently check the target again:
+SOLANA_RPC_URL="$solana_rpc_url" \
+  node "$native_arns_tools_dir/record-update.mjs" \
+    verify "$native_arns_state_dir" "$native_arns_update_signed_file"
+
+# Transaction: https://solscan.io/tx/4megKn4rStBUQ7yzujokQwaPsd3mmvb6femkiTXys4nuMvRD8rE9oWRNtad2wnUpd2HRYUakqqLbfMdV7JZmngaF
+# {
+#   "signature": "4megKn4rStBUQ7yzujokQwaPsd3mmvb6femkiTXys4nuMvRD8rE9oWRNtad2wnUpd2HRYUakqqLbfMdV7JZmngaF",
+#   "name": "weisser-zwerg-native",
+#   "ant": "HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg",
+#   "registration": {
+#     "processId": "HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg",
+#     "startTimestamp": 1794556296000,
+#     "undernameLimit": 10,
+#     "purchasePrice": 2399385120,
+#     "type": "lease",
+#     "endTimestamp": 1826092296000
+#   },
+#   "assetOwner": "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#   "antOwner": "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#   "controllers": [
+#     "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ"
+#   ],
+#   "root": {
+#     "transactionId": "k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k",
+#     "targetProtocol": 0,
+#     "ttlSeconds": 900,
+#     "priority": 0
+#   }
+# }
+```
+
+These two commands submit nothing.
+If the attempt expired without landing and the record still points to version 2, call `submit_arns_v3_update` again and sign its new packet.
+After a successful update, a new preparation stops because the old-target check no longer matches; use `status` and `verify` to inspect the completed attempt.
+The earlier `registration-flow.mjs verify` still checks the original version 2 target by design, so use the new helper for this step.
+
+Stop the local signing server when finished:
+
+```bash
+kill "$native_arns_http_pid"
+```
+
+> **The same instruction can update an undername.**
+> For `test_weisser-zwerg.ar.io`, use the ANT belonging to **`weisser-zwerg`**, [`GGT57TEiPiYkdzL3eN3zNSthTE2x5kvsqAuYEN2p2MfJ`](<https://solscan.io/account/GGT57TEiPiYkdzL3eN3zNSthTE2x5kvsqAuYEN2p2MfJ>), and `undername: 'test'` instead of `'@'`.
+> Derive its record PDA from that ANT and `test`, then set the target with the same instruction, signed by an authorised owner or controller.
+> Using `test` with the new ANT would instead address `test_weisser-zwerg-native.ar.io`.
+> Updating an existing undername's same-sized target needs no new registration or ARIO payment; creating a missing record may require a SOL account deposit and must respect the name's undername allowance.
+> The helper above is intentionally limited to the new name's existing root record. Adapting it to an undername also requires changing its state checks and record lookup, not merely its displayed URL.
+> This walkthrough leaves `test_weisser-zwerg` pointing to version 2.
+
+At this point, successful finalisation and verification establish that the on-chain name points to version 3.
+Gateway caches and discovery of the manifest inside its native bundle are separate concerns: a correct name update does not itself make a gateway index that bundle.
+The next subsection will check name resolution and website retrieval.
+
+#### Verify Name Resolution and Website Retrieval
+
+The transaction is finalised, but that alone does not establish that a reader can open the website.
+We need to check three things separately: the on-chain record, a gateway's resolution of that name, and retrieval of the HTML and CSS through the resulting manifest.
+This returns to the distinction discussed in [Gateway Discovery and the Limits of Automatic Routing](#gateway-discovery-and-the-limits-of-automatic-routing).
+
+##### Check the On-Chain Target and the Gateway's Answer
+
+First, repeat the preceding helper's read-only verification using the successful update's signed file:
+
+```bash
+SOLANA_RPC_URL="$solana_rpc_url" \
+  node "$native_arns_tools_dir/record-update.mjs" \
+    verify "$native_arns_state_dir" "$native_arns_update_signed_file"
+
+# Transaction: https://solscan.io/tx/4megKn4rStBUQ7yzujokQwaPsd3mmvb6femkiTXys4nuMvRD8rE9oWRNtad2wnUpd2HRYUakqqLbfMdV7JZmngaF
+# {
+#   "signature": "4megKn4rStBUQ7yzujokQwaPsd3mmvb6femkiTXys4nuMvRD8rE9oWRNtad2wnUpd2HRYUakqqLbfMdV7JZmngaF",
+#   "name": "weisser-zwerg-native",
+#   "ant": "HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg",
+#   "registration": {
+#     "processId": "HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg",
+#     "startTimestamp": 1794556296000,
+#     "undernameLimit": 10,
+#     "purchasePrice": 2399385120,
+#     "type": "lease",
+#     "endTimestamp": 1826092296000
+#   },
+#   "assetOwner": "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#   "antOwner": "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ",
+#   "controllers": [
+#     "BT7MoVsngJrJGKe9LztNk2y5rmJqx176DDhoztfVuBoZ"
+#   ],
+#   "root": {
+#     "transactionId": "k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k",
+#     "targetProtocol": 0,
+#     "ttlSeconds": 900,
+#     "priority": 0
+#   }
+# }
+
+native_arns_name="$(jq -er '.name' "$native_arns_state_dir/registration.plan.json")"
+native_arns_ant_id="$(jq -er '.ant' "$native_arns_state_dir/registration.plan.json")"
+native_v3_manifest_id="$(jq -er '.id' "$publication_state_dir/native-v3/manifest.ans104.json")"
+native_arns_retrieval_dir="$native_arns_state_dir/retrieval-v3"
+install -d -- "$native_arns_retrieval_dir"
+
+jq -e --arg target "$native_v3_manifest_id" \
+  '.root.transactionId == $target and .root.targetProtocol == 0 and .root.ttlSeconds == 900' \
+  "$native_arns_state_dir/record-update.verified.json"
+# true
+```
+
+In my run, the record belonged to the expected ANT and owner, and its root pointed to `k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k` with a TTL of 900 seconds.
+Now ask Turbo's gateway what it thinks the name means:
+
+```bash
+curl --fail --silent --show-error --max-time 30 --output "$native_arns_retrieval_dir/turbo-resolution.json" "https://turbo-gateway.com/ar-io/resolver/$native_arns_name"
+
+jq '{txId, antId, ttlSeconds}' "$native_arns_retrieval_dir/turbo-resolution.json"
+# {
+#   "txId": "k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k",
+#   "antId": "HECnBBiMkbqbKkUh9DixxyBkNLSKfTBF7DT81N3CbUXg",
+#   "ttlSeconds": 900
+# }
+
+jq -e --arg target "$native_v3_manifest_id" --arg ant "$native_arns_ant_id" '.txId == $target and .antId == $ant' "$native_arns_retrieval_dir/turbo-resolution.json"
+# true
+```
+
+The [resolver response](<https://turbo-gateway.com/ar-io/resolver/weisser-zwerg-native>) was correct.
+Nevertheless, opening [the name through Turbo](<https://weisser-zwerg-native.turbo-gateway.com/>) returned `404`.
+The gateway knew which manifest it needed but could not retrieve it.
+Changing the name's target again would not address that failure.
+
+##### Compare the Gateway Results
+
+I tested both access paths: the immutable manifest ID and the ArNS name.
+Where the website loaded, I also downloaded its stylesheet and compared both files with the local originals.
+These were the results today:
+
+<table class="article-table">
+  <thead>
+    <tr><th>Gateway domain</th><th>Version 3 by immutable ID</th><th>Version 3 through the ArNS name</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>ar.io</code></td><td>Not tested through the apex website</td><td><a href="https://weisser-zwerg-native.ar.io/">Name URL</a>: an unstyled version 2 page or <code>404</code>; later requests returned <code>404</code> with the correct version 3 target in the headers</td></tr>
+    <tr><td><code>turbo-gateway.com</code></td><td><a href="https://turbo-gateway.com/raw/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k">Manifest item</a>: <code>404</code></td><td><a href="https://weisser-zwerg-native.turbo-gateway.com/">Name URL</a>: HTML and stylesheet requests returned <code>404</code>, despite correct name resolution</td></tr>
+    <tr><td><code>arweave.net</code></td><td><a href="https://arweave.net/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Manifest website</a>: HTML and CSS returned <code>200</code> and matched the local files</td><td><a href="https://weisser-zwerg-native.arweave.net/">Name URL</a>: <code>404</code></td></tr>
+    <tr><td><code>perma.online</code></td><td><a href="https://perma.online/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Manifest website</a>: HTML and CSS returned <code>200</code> and matched</td><td><a href="https://weisser-zwerg-native.perma.online/">Name URL</a>: HTML and CSS returned <code>200</code> and matched</td></tr>
+    <tr><td><code>frostor.xyz</code></td><td><a href="https://frostor.xyz/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Manifest website</a>: HTML and CSS returned <code>200</code> and matched</td><td><a href="https://weisser-zwerg-native.frostor.xyz/">Name URL</a>: HTML and CSS returned <code>200</code> and matched</td></tr>
+    <tr><td><code>aoweave.tech</code></td><td><a href="https://aoweave.tech/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Manifest URL</a>: <code>200</code>, but a JSON response containing the manifest instead of the website</td><td><a href="https://weisser-zwerg-native.aoweave.tech/">Name URL</a>: the same JSON response, despite resolving to the correct manifest</td></tr>
+  </tbody>
+</table>
+
+The [corresponding resolver endpoint at `arweave.net`](<https://arweave.net/ar-io/resolver/weisser-zwerg-native>) also returned `404`.
+That establishes that this name-access path failed during my tests; it does not establish why, or that the gateway cannot serve ArNS names in general.
+Its successful manifest URL independently demonstrated that it could retrieve this publication's files.
+
+Turbo could still retrieve [the original CSS object directly](<https://turbo-gateway.com/raw/AXKDPYfrfbDIZCWHsThDWiQ45yykp9Kr4U7XAG-cU4Q>), returning `200`.
+The CSS had not disappeared.
+Retrieving `/style.css` through the name first requires the manifest's path mapping, so a missing manifest can prevent access even to a stylesheet that the gateway already has.
+
+A further test through `aoweave.tech` showed another distinct behaviour: both URLs returned **HTTP 200** with `Content-Type: application/json`, displaying JSON instead of the page.
+More precisely, the response was an object containing the manifest as a JSON string in its `body` field, alongside metadata such as `raw-id` and `commitments`.
+That nested manifest matched my original **362 bytes** exactly, and the named response's `x-arns-resolved-id` identified the correct version 3 manifest.
+Here the name resolved and the manifest data was available, but the gateway did not use the manifest's `index.path` to serve `index.html` at the tested URLs.
+The cause of that behaviour remains unestablished; it is a different failure from being unable to retrieve the manifest at all.
+It also illustrates why **HTTP 200 alone is insufficient** for this check: the returned representation must be the expected HTML or CSS, which the byte comparisons below verify.
+
+##### Caches, Shared Infrastructure, and Wayfinder
+
+When I first opened [weisser-zwerg-native.ar.io](<https://weisser-zwerg-native.ar.io/>), I alternated between an unstyled page and `Not found`.
+The unstyled page actually said **version 2**.
+The subsequent HTTP checks exposed mixed cached state:
+
+```text
+Root page: HTTP 404
+x-arns-resolved-id: k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k
+
+Stylesheet, first check: HTTP 200
+x-arns-resolved-id: nieQ6Foe7yWBqtRJKmf0b_vEOYD8k4FWQOohfmrzzNQ
+x-cache-status: STALE
+
+Stylesheet, later check: HTTP 404
+x-arns-resolved-id: k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k
+```
+
+To inspect the current responses yourself, retain both the headers and bodies.
+This diagnostic deliberately omits `curl --fail` so a `404` response can be examined; it is not a successful website check merely because `curl` completes:
+
+```bash
+for resource in index style; do
+  case "$resource" in
+    index) path="" ;;
+    style) path="style.css" ;;
+  esac
+  curl --silent --show-error --location --max-time 30 \
+    --dump-header "$native_arns_retrieval_dir/ario-$resource.headers" \
+    --output "$native_arns_retrieval_dir/ario-$resource.body" \
+    --write-out "$resource: HTTP %{http_code}\n" \
+    "https://$native_arns_name.ar.io/$path"
+  rg -i '^HTTP/|^content-type:|^x-arns-resolved-id:|^x-arns-ttl-seconds:|^cache-control:|^x-cache' \
+    "$native_arns_retrieval_dir/ario-$resource.headers"
+done
+```
+
+The HTML and stylesheet are separate requests, and browser, proxy, and gateway caches can retain different responses.
+
+The 900-second TTL permits caching of the name's resolution; it is not a promise that all delivery layers switch versions simultaneously after exactly 15 minutes.
+Inspect the returned target and cache headers instead of assuming that a reload necessarily reaches current on-chain state.
+The [gateway troubleshooting documentation](<https://docs.ar.io/build/run-a-gateway/manage/troubleshooting>) also distinguishes stale cached data from the expected current result.
+Once a response identifies the correct version 3 manifest but returns `404`, however, waiting for the name cache alone does not solve the manifest-retrieval problem.
+
+> **I expected `.ar.io` to select a working gateway automatically.**
+> I initially imagined it as a load balancer in front of the gateway network, selecting a gateway able to serve the requested publication.
+> The observations did not support that expectation.
+> Both `weisser-zwerg-native.ar.io` and `weisser-zwerg-native.turbo-gateway.com` resolved to the same two IP addresses, `162.55.156.39` and `49.13.45.141`, and both exhibited the retrieval failure.
+> For these tested hostnames, `.ar.io` looked like an alternative address-an "alias" in the practical sense-for Turbo's gateway infrastructure.
+
+The DNS comparison can be repeated with:
+
+```bash
+dig +short "$native_arns_name.ar.io" A | sort
+dig +short "$native_arns_name.turbo-gateway.com" A | sort
+# Both returned the same set:
+# 162.55.156.39
+# 49.13.45.141
+```
+
+The Wayfinder browser extension did not resolve the problem either.
+Entering `ar://weisser-zwerg-native` redirected me to [weisser-zwerg-native.turbo-gateway.com](<https://weisser-zwerg-native.turbo-gateway.com/>), which failed to display the publication.
+As explained in the [earlier routing analysis](#gateway-discovery-and-the-limits-of-automatic-routing), the tested extension chose a gateway and redirected there, but did not recover from that content `404` by trying another one.
+A responsive gateway is not necessarily a gateway that can serve the particular manifest and all its files.
+
+##### Retrieve the Complete Website Through Working Gateways
+
+I therefore opened the [gateway directory](<https://gateways.ar.io/#/gateways>) and tried another gateway manually.
+Both the manifest URL and the name URL worked through `perma.online`; I then repeated the experiment successfully through `frostor.xyz`.
+The first request through `perma.online` took noticeably longer, while later requests were fast and reported `x-cache: HIT`.
+
+To repeat the byte comparisons, keep the local `index.html` at version 3 and use the saved version 2 stylesheet as the unchanged reference.
+The following block retrieves both files through both URL forms on each working gateway, retaining the response headers as well:
+
+```bash
+(
+  set -e
+  rg -q -F 'This is version 3 ' "$site_dir/index.html"
+  cmp -- "$v2_source_dir/style.css" "$site_dir/style.css"
+
+  for gateway in perma.online frostor.xyz; do
+    for route in manifest name; do
+      case "$route" in
+        manifest) base="https://$gateway/$native_v3_manifest_id/" ;;
+        name) base="https://$native_arns_name.$gateway/" ;;
+      esac
+      output_dir="$native_arns_retrieval_dir/$gateway/$route"
+      install -d -- "$output_dir"
+
+      curl --fail --silent --show-error --location --max-time 60 \
+        --dump-header "$output_dir/index.headers" \
+        --output "$output_dir/index.html" "$base"
+      cmp -- "$site_dir/index.html" "$output_dir/index.html"
+
+      curl --fail --silent --show-error --location --max-time 60 \
+        --dump-header "$output_dir/style.headers" \
+        --output "$output_dir/style.css" "${base}style.css"
+      cmp -- "$v2_source_dir/style.css" "$output_dir/style.css"
+
+      if [[ "$route" == name ]]; then
+        for headers in "$output_dir/index.headers" "$output_dir/style.headers"; do
+          tr -d '\r' < "$headers" | \
+            rg -q -i "^x-arns-resolved-id: $native_v3_manifest_id$"
+        done
+      fi
+      printf '%s via %s: HTML and CSS match version 3\n' "$gateway" "$route"
+    done
+  done
+)
+# perma.online via manifest: HTML and CSS match version 3
+# perma.online via name: HTML and CSS match version 3
+# frostor.xyz via manifest: HTML and CSS match version 3
+# frostor.xyz via name: HTML and CSS match version 3
+```
+
+All eight file requests returned `200`: the HTML contained **464 bytes** and the CSS **422 bytes**, with every download matching its local reference byte-for-byte.
+The named responses also identified the intended version 3 manifest.
+These comparisons establish agreement with the local files; they do not replace cryptographic verification of Arweave storage proofs.
+In these checks, the gateways reported `x-ar-io-verified: false`, despite delivering the correct bytes.
+
+Open the [named website through `perma.online`](<https://weisser-zwerg-native.perma.online/>) and [through `frostor.xyz`](<https://weisser-zwerg-native.frostor.xyz/>) in a browser as well.
+Both should show the styled **version 3** page.
+
+This completed the direct-payment experiment: native AR paid for the bundled publication, ARIO paid for the name, and SOL paid for its registration transactions and later target update.
+The name and publication worked together through two gateway domains, without uploading another copy or changing the target again.
+
+What remained unresolved in these tests was reliable access through the default `.ar.io` address and automatic Wayfinder selection: working alternatives existed, but I had to find them manually.
+
+##### Gateway Behaviour Overview
+
+I extended the test to all **25 distinct gateway domains** shown in [gateway directory](<https://gateways.ar.io/#/gateways>).
+I requested the version 3 website's root and `style.css` through both its manifest ID and its ArNS name on every gateway.
+
+**Website** means that both requests returned HTTP 200 with the expected content types and exactly the original HTML and CSS bytes.
+**JSON wrapper** means HTTP 200 containing the manifest inside a `body` field, as described above: even requesting `style.css` returned that manifest wrapper instead of the stylesheet.
+The links in the table open each gateway's root URL for the corresponding access path.
+
+<table class="article-table">
+  <thead>
+    <tr><th>Gateway domain</th><th>By manifest ID</th><th>Through the ArNS name</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>turbo-gateway.com</code></td><td><a href="https://turbo-gateway.com/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">404</a></td><td><a href="https://weisser-zwerg-native.turbo-gateway.com/">404</a></td></tr>
+    <tr><td><code>perma.online</code></td><td><a href="https://perma.online/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Website</a></td><td><a href="https://weisser-zwerg-native.perma.online/">Website</a></td></tr>
+    <tr><td><code>vilenarios.com</code></td><td><a href="https://vilenarios.com/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Website</a></td><td><a href="https://weisser-zwerg-native.vilenarios.com/">Website</a></td></tr>
+    <tr><td><code>vevivo.art</code></td><td><a href="https://vevivo.art/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">JSON wrapper</a></td><td><a href="https://weisser-zwerg-native.vevivo.art/">JSON wrapper</a></td></tr>
+    <tr><td><code>ar.mrx.im</code></td><td><a href="https://ar.mrx.im/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Website</a></td><td><a href="https://weisser-zwerg-native.ar.mrx.im/">Website</a></td></tr>
+    <tr><td><code>ariospeedwagon.com</code></td><td><a href="https://ariospeedwagon.com/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">530 (1033)</a></td><td><a href="https://weisser-zwerg-native.ariospeedwagon.com/">530 (1033)</a></td></tr>
+    <tr><td><code>ario.ionode.top</code></td><td><a href="https://ario.ionode.top/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">JSON wrapper</a></td><td><a href="https://weisser-zwerg-native.ario.ionode.top/">404 → JSON wrapper</a></td></tr>
+    <tr><td><code>gatewaypie.com</code></td><td><a href="https://gatewaypie.com/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Website</a></td><td><a href="https://weisser-zwerg-native.gatewaypie.com/">Website</a></td></tr>
+    <tr><td><code>gt1.exnihilio.eu</code></td><td><a href="https://gt1.exnihilio.eu/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">JSON wrapper</a></td><td><a href="https://weisser-zwerg-native.gt1.exnihilio.eu/">JSON wrapper</a></td></tr>
+    <tr><td><code>frostor.xyz</code></td><td><a href="https://frostor.xyz/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Website</a></td><td><a href="https://weisser-zwerg-native.frostor.xyz/">Website</a></td></tr>
+    <tr><td><code>arweave.fllstck.dev</code></td><td><a href="https://arweave.fllstck.dev/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">JSON wrapper</a></td><td><a href="https://weisser-zwerg-native.arweave.fllstck.dev/">404 → 502</a></td></tr>
+    <tr><td><code>arweave.tokyo</code></td><td><a href="https://arweave.tokyo/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Website</a></td><td><a href="https://weisser-zwerg-native.arweave.tokyo/">Website</a></td></tr>
+    <tr><td><code>gt5.exnihilio.eu</code></td><td><a href="https://gt5.exnihilio.eu/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">JSON wrapper</a></td><td><a href="https://weisser-zwerg-native.gt5.exnihilio.eu/">JSON wrapper</a></td></tr>
+    <tr><td><code>ario.dogar.dev</code></td><td><a href="https://ario.dogar.dev/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Connection failed</a></td><td><a href="https://weisser-zwerg-native.ario.dogar.dev/">Connection failed</a></td></tr>
+    <tr><td><code>dirtydeedsdonedirtcheap.site</code></td><td><a href="https://dirtydeedsdonedirtcheap.site/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">JSON wrapper</a></td><td><a href="https://weisser-zwerg-native.dirtydeedsdonedirtcheap.site/">JSON wrapper</a></td></tr>
+    <tr><td><code>ar.tinnguyen.xyz</code></td><td><a href="https://ar.tinnguyen.xyz/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Timed out</a></td><td><a href="https://weisser-zwerg-native.ar.tinnguyen.xyz/">Timed out</a></td></tr>
+    <tr><td><code>ar.anyone.tech</code></td><td><a href="https://ar.anyone.tech/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Website</a></td><td><a href="https://weisser-zwerg-native.ar.anyone.tech/">404</a></td></tr>
+    <tr><td><code>oshvank.site</code></td><td><a href="https://oshvank.site/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">JSON wrapper</a></td><td><a href="https://weisser-zwerg-native.oshvank.site/">JSON wrapper</a></td></tr>
+    <tr><td><code>ark.innostack.xyz</code></td><td><a href="https://ark.innostack.xyz/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">JSON wrapper</a></td><td><a href="https://weisser-zwerg-native.ark.innostack.xyz/">JSON wrapper</a></td></tr>
+    <tr><td><code>ario.zigza.xyz</code></td><td><a href="https://ario.zigza.xyz/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">JSON wrapper</a></td><td><a href="https://weisser-zwerg-native.ario.zigza.xyz/">JSON wrapper</a></td></tr>
+    <tr><td><code>tekin86.site</code></td><td><a href="https://tekin86.site/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">JSON wrapper</a></td><td><a href="https://weisser-zwerg-native.tekin86.site/">JSON wrapper</a></td></tr>
+    <tr><td><code>arh.oohgroup.vn</code></td><td><a href="https://arh.oohgroup.vn/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">Website</a></td><td><a href="https://weisser-zwerg-native.arh.oohgroup.vn/">Website</a></td></tr>
+    <tr><td><code>aoweave.tech</code></td><td><a href="https://aoweave.tech/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">JSON wrapper</a></td><td><a href="https://weisser-zwerg-native.aoweave.tech/">JSON wrapper</a></td></tr>
+    <tr><td><code>umutdogan.me</code></td><td><a href="https://umutdogan.me/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">JSON wrapper</a></td><td><a href="https://weisser-zwerg-native.umutdogan.me/">404</a></td></tr>
+    <tr><td><code>derad.network</code></td><td><a href="https://derad.network/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/">JSON wrapper</a></td><td><a href="https://weisser-zwerg-native.derad.network/">JSON wrapper</a></td></tr>
+  </tbody>
+</table>
+
+I followed HTTPS redirects with certificate validation enabled and allowed up to 45 seconds per request.
+Failed requests were repeated once; an arrow records a changed result on that repeat.
+The `530` responses contained Cloudflare's error code `1033`; `ario.dogar.dev` could not be reached on HTTPS, while `ar.tinnguyen.xyz` did not complete retrieval within the timeout.
+
+**Seven of the 25 gateways delivered the complete website through both access paths.**
+`ar.anyone.tech` additionally served it by manifest ID, but returned `404` through the name.
+The remaining results show why reaching a gateway, resolving a name, and serving a manifest as a website must be checked separately.
+This is a snapshot for this particular publication from my connection, not a general uptime ranking or a guarantee of future behaviour.
