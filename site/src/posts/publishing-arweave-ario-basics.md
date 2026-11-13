@@ -4520,7 +4520,7 @@ For a publisher, this is a material access limitation.
 The successful native upload demonstrated storage and retrieval through a working endpoint; it did not demonstrate reliable access through arbitrary gateways or automatic Wayfinder routing.
 Bundling saved a native transaction fee and preserved the separate uploader identity, but the resulting item URLs still depend on discovery infrastructure that can fail independently of storage.
 
-Two concrete issues deserve upstream investigation: Wayfinder's missing fallback after a content `404`, and Turbo's failure to discover this valid, externally submitted bundle.
+I reported both findings upstream: [inconsistent gateway access to native bundles](<https://github.com/ar-io/ar-io-node/issues/1143>) and [Wayfinder's missing fallback after a content `404`](<https://github.com/ar-io/wayfinder/issues/260>).
 The [working HTTPS publication URL](<https://arweave.net/k-MpMTWVE-3OlzQxdUWIPj1Aoj4pSMcks61n2Kv469k/>) gives readers access now, but it binds that access to a known gateway.
 For my intended publishing model, making the same immutable identifier reliably reachable without that prior knowledge remains an unresolved requirement.
 
