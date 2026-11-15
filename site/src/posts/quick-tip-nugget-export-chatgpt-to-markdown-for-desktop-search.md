@@ -38,6 +38,8 @@ When the email arrives, click the download link and save the exported chat histo
 
 ## Step 2: Extract the zip somewhere on your file system
 
+> For newer exports with `index.html`, a manifest, or numbered conversation files, see the [2026-11-15 update](#2026-11-15-settings-exports-with-manifests-and-restored-attachments) below.
+
 Find a folder on your hard disk where you want to extract the zip file from the ChatGPT export.
 
 The main files in the extracted folder are `chat.html` and `conversations.json`. If your chat history is still small, you can double click on `chat.html` and your full chat history will open in your browser.
@@ -301,7 +303,9 @@ With Markdown exports plus a local desktop search engine, your past conversation
 
 ## Appendix
 
-### Privacy Portal flow and changed export format
+<a id="privacy-portal-flow-and-changed-export-format"></a>
+
+### 2026-04-13 Privacy Portal flow and changed export format
 
 At the time of writing this appendix, the older in-product export flow via `ChatGPT -> Settings -> Data Controls -> Export Data` appears to have an issue, at least for some accounts.
 In my case, this older flow used to send a confirmation email first and a later email with the download link, but then stopped doing so.
@@ -370,3 +374,31 @@ The important part is that all runs use the same output directory so that, in th
 
 In my tests this recovered much more of the source-link information from the newer Privacy Portal export than the unpatched upstream extractor did.
 So if you are using the new Privacy Portal export format, I recommend using that fork until the corresponding changes are available upstream.
+
+### 2026-11-15 Settings exports with manifests and restored attachments
+
+For my export requested on 2026-11-13, the normal `Settings -> Data controls -> Export data` flow worked again.
+However, the ZIP now contained `index.html`, `export_manifest.json`, numbered `conversations-*.json` files, and many `.dat` assets directly at its root.
+The request route alone therefore does not tell us which layout to expect; the conversation graph itself remains compatible with the older format.
+
+I merged upstream fixes into my [chatgpt-conversation-extractor](https://github.com/cs224/chatgpt-conversation-extractor) fork and added support for this export layout:
+
+* **Manifest-aware discovery:** read the conversation files listed in the manifest, with fallbacks for older single-file and numbered-shard exports. All shards contribute to one run, including combined JSON output.
+* **More complete source links:** recover URLs, titles, and snippets from populated `content_references[].items` and fallback lists.
+* **Named attachments:** `.dat` is a generic filename extension; the payloads are ordinary PDFs, images, text, and other files. Export metadata supplies readable names. The extractor creates named symlinks under `output/assets/`, numbering filename conflicts, and links attachments from their messages.
+* **Long pasted text:** files marked as large pastes are included in full in the originating message, under **Pasted text**, unless that text is already present.
+* **Project context:** project chats remain grouped together, with a **Project files** list for files associated with that project, even when no individual message attaches them.
+
+Clone the fork inside the extracted folder containing the conversation data, then use its included Makefile:
+
+```bash
+git clone https://github.com/cs224/chatgpt-conversation-extractor.git
+cd chatgpt-conversation-extractor
+make list-inputs
+make extract FORMAT=both
+```
+
+Markdown lands in `output/md/`, JSON in `output/json/`, and named asset links in `output/assets/`.
+Use plain `make extract` for Markdown only.
+Keep the extracted originals for the symlinks, or use `make extract ASSET_MODE=copy` for a self-contained output tree.
+The original export files remain unchanged.
