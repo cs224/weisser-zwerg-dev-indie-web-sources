@@ -1,0 +1,13 @@
+#!/bin/sh
+# Keep working branches local; publish only master.
+while read -r local_ref local_oid remote_ref remote_oid; do
+    [ "$local_ref" = "(delete)" ] && continue
+    case "$remote_ref" in
+        refs/heads/master)
+            [ "$local_ref" = "refs/heads/master" ] && continue ;;
+        refs/heads/*) ;;
+        *) continue ;;
+    esac
+    echo "Push blocked: only master -> master is allowed. Keep working branches local." >&2
+    exit 1
+done
