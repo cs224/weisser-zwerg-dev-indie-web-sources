@@ -759,6 +759,69 @@ In such a scenario, you may also want your Git repository encrypted on the remot
 
 * [PGP-encrypted git remotes](https://github.com/spwhitton/git-remote-gcrypt)
 
+### 2026-11-16: Trezor-backed encryption with age and SSH signatures
+
+While investigating the [possible fix for GnuPG 2.5](#2026-11-16:-trezor-agent-compatibility-with-gnupg-2.5) and reading [issue #515](https://github.com/romanz/trezor-agent/issues/515#issuecomment-3903665280), I noticed that trezor-agent's author describes a different workflow: he already uses **age for encryption** and plans to replace his GPG signing workflow with **SSH signatures**. The same Trezor can support both operations through trezor-agent, without the GnuPG agent protocol involved in the compatibility problem above.
+
+#### Encrypt files with age
+
+Install [age](https://github.com/FiloSottile/age) with plugin support (version 1.1.0 or later) and make trezor-agent's `age-plugin-trezor` executable available on `PATH`. Then:
+
+1. Run `age-plugin-trezor -i "Trevor Wikey" > identity` to create a plugin identity descriptor. Its output includes a public `age1...` recipient and an `AGE-PLUGIN-TREZOR-1...` identity. The descriptor tells the plugin which hardware-backed identity to use; it does not contain the Trezor's private key.
+2. Encrypt a file to that public recipient with `age -r <recipient> -o document.age document`. Anyone with the recipient string can encrypt to you; your Trezor is not needed for this step.
+3. Decrypt with `age -d -i identity -o document.restored document.age`. Age invokes the plugin, which asks the Trezor to perform the private-key operation. Age handles the bulk file decryption on the computer.
+
+Keep the identity descriptor and the device's recovery information available for future decryption. See the [trezor-agent age guide](https://github.com/romanz/trezor-agent/blob/master/doc/README-age.md) for the complete setup and an example using [passage](https://github.com/FiloSottile/passage) as an age-based password store. The guide currently describes this integration as under development; I have not tested it myself.
+
+#### Sign files and Git commits with SSH keys
+
+SSH keys can also sign ordinary files; no connection to an SSH server is required. Export a Trezor-backed public key with `trezor-agent -e ed25519 signing@example.com`, then run signing commands inside a shell started with `trezor-agent -e ed25519 signing@example.com --shell`. That shell exposes the hardware-backed key through `SSH_AUTH_SOCK`.
+
+For files, `ssh-keygen -Y sign` creates a detached signature using the public-key file to select the corresponding key in the agent. The Trezor performs the signing operation. A verifier uses `ssh-keygen -Y verify`, the original file, the signature, and an **allowed-signers file** associating the expected signer with their public key. Signing and verification must use the same namespace, such as `file`; the verifier needs no Trezor.
+
+For Git, select `gpg.format ssh`, set `user.signingkey` to the Trezor-backed public key, and enable `commit.gpgsign`. Configure `gpg.ssh.allowedSignersFile` for local verification. Despite those configuration names, Git uses SSH signing here. The project's [SSH signatures](https://github.com/romanz/trezor-agent/blob/master/doc/README-SSH.md#ssh-signatures) and [Git commit signing](https://github.com/romanz/trezor-agent/blob/master/doc/README-SSH.md#git-commit-signing) sections provide complete examples.
+
+These are separate encryption and signing workflows: age does not itself authenticate a named sender.
+They also do not automatically migrate existing OpenPGP data or replace GnuPG inside `git-remote-gcrypt`; retain a working GPG environment for those repositories and archives.
+
+#### Which of my workflows could use these alternatives?
+
+Looking across the workflows in my other posts the below treats the question of how much of the underlying idea can be preserved:
+
+* **File and backup encryption - portable.** The [backup-archive example](#motivation) can use age for new archives, with SSH signatures when sender authentication is needed. Hardware-backed encryption is supported through plugins. For my preferred pattern of generating a key offline, retaining a backup, and importing it into a YubiKey, [age-plugin-yubikey](https://github.com/str4d/age-plugin-yubikey) plus the separate [age-plugin-p256](https://github.com/bugficks/age-plugin-p256) implementation offers a potential same-key hardware/software recovery path for its documented `piv-p256` format. I have not tested that combination.
+* **Remote signing - portable; remote decryption needs integration.** The [trusted-signer pattern](../publishing-nostr-basics/#the-trusted-signer-pattern) still works with SSH-agent forwarding: a remote application can request a file or Git signature while the private key remains on local hardware. Application-specific request formats and approval policies still need matching implementations. The age hardware plugins discussed here do not provide a direct replacement for the [forwarded GPG-agent decryption workflow](#conceptual-overview); equivalent remote decryption would require additional integration.
+* **Git and file signatures - portable.** SSH signatures cover both uses. [GitHub](https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification) and [GitLab](https://docs.gitlab.com/user/project/repository/signed_commits/ssh/) support verification of SSH-signed Git objects. This does not imply automatic verification of arbitrary uploaded files and their detached signatures.
+* **Encrypted Git remotes - an integration gap.** The [Git Remote Gcrypt workflow, including importing bundles](../digital-civil-rights-gitea/#git-remote-gcrypt), depends on GnuPG for encrypted storage and manifest signatures. Age-encrypted bundles could implement a backup-file workflow, but the tools discussed here do not preserve gcrypt's push/fetch interface. SSH commit signatures do not replace its manifest signatures.
+* **Email and public-key infrastructure - substantial ecosystem gaps.** The [Mailu tutorial](../digital-civil-rights-mailu/) combines mail-client encryption/signatures, [Proton interoperability](../digital-civil-rights-mailu/#interoperability-with-proton-mail), [WKD discovery](../digital-civil-rights-mailu/#setting-up-openpgp-web-key-directory), [ProtonCA certification and trust](../digital-civil-rights-mailu/#trusting-keys-from-proton), and [keys associated with multiple mail identities](../digital-civil-rights-mailu/#serving-several-mail-domains-with-one-mailu-instance). Age and SSH supply cryptographic operations, but do not reproduce this integrated OpenPGP ecosystem. Equivalent behavior would need interoperable conventions and support in clients, discovery services, and trust-management software.
+* **Expiry, revocation, and recovery - partly portable, with different policy machinery.** The concerns behind [PGP key expiry](#pgp-key-expiry) remain. Policies need machine-readable representation and enforcement, but that information can live outside the bare public key. [OpenSSH certificates, allowed-signers files, and revocation lists](https://man.openbsd.org/ssh-keygen) provide identity, validity, and revocation mechanisms; their distribution and application-specific enforcement still need arranging. Age has no general built-in equivalent to OpenPGP's certificate and revocation infrastructure. Neither system can make a retained private key incapable of decrypting old ciphertext merely by declaring it revoked.
+
+Verification of other people's OpenPGP signatures, such as the [Tor Browser example](#general-information-about-pgp/gpg) and the Docker/Kopia repository keys in my [home-server setup](../home-server-infrastructure/), remains an interoperability requirement. Likewise, old encrypted files and signatures still need their original format supported. Those requirements do not prevent choosing different tooling for new workflows under my own control.
+
+##### The same key on a YubiKey and in an offline recovery backup
+
+This case is especially important to me: I want to generate a key in a controlled environment, retain a protected offline backup, and put a copy on a hardware token for everyday use. This follows the [OpenPGP key-generation and hardware-import approach described earlier](#general-information-about-pgp/gpg): boot a fresh live Linux environment, generate and back up the key, transfer it to the hardware token, then reboot. If the token fails or is unavailable, I want to decrypt with that same backed-up key in software, without having to anticipate a second recipient when encrypting each file.
+
+[age-plugin-p256](https://github.com/bugficks/age-plugin-p256) documents precisely this possibility. It implements the `piv-p256` format used by [age-plugin-yubikey](https://github.com/str4d/age-plugin-yubikey), using a software-held P-256 private key. The outline is:
+
+1. **Generate the key in a controlled environment.** Follow the project's `keygen` instructions to create a P-256 private key and a YubiKey-compatible certificate. This is not the ordinary `AGE-SECRET-KEY-1...` identity produced by `age-keygen`.
+2. **Keep a protected offline backup.** Preserve the private-key file, certificate, and the setup information needed to restore them. Restrict access to the software copy to the environments where you deliberately allow it.
+3. **Import the same key and certificate into the YubiKey's PIV application.** The project's `yk-import` command supports this; select the intended slot and PIN/touch policies. This uses PIV rather than the YubiKey's OpenPGP application.
+4. **Use the hardware for normal decryption.** Obtain the recipient and identity descriptor through `age-plugin-yubikey`, encrypt to the recipient, and decrypt using `age` with that descriptor and the connected token. Keep the software private-key backup off everyday machines.
+5. **Use the backup for recovery.** In a controlled environment, the software implementation can decrypt the same compatible ciphertext using the original private key. No second recipient or re-encryption is required.
+
+The documented standalone recovery command is:
+
+```bash
+./age_plugin_p256.py decrypt \
+  --key key.pem \
+  --in file.age \
+  --out file.txt
+```
+
+The author posted [hardware/software interoperability results in the YubiKey plugin's discussion](https://github.com/str4d/age-plugin-yubikey/issues/75). Before relying on this arrangement, I would encrypt a test file once and verify that both the YubiKey and the offline software key can independently decrypt it. I have checked the documentation, but have not tested or reviewed the implementation. Its documented compatibility is with `piv-p256`; newer recipient formats require separate verification.
+
+This preserves my original key-custody idea while changing the encryption tooling to age. It also differs from the Trezor workflow above: here I explicitly import an externally generated key and retain its software backup, rather than deriving the identity from the Trezor's seed.
+
 ## Footnotes
 
 [^trezor-safe-5]: I haven't personally tested the [Trezor Safe 5](https://trezor.io/trezor-safe-5) yet, so I can't share first-hand insights on its performance or user experience.
