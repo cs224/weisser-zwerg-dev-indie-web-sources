@@ -318,8 +318,10 @@ The first step is to install `git-remote-gcrypt`:
 apt install git-remote-gcrypt
 ```
 
-I will use a hardware GPG key backed by a Trezor as described in [PGP via Roman Zayde’s Trezor-agent](../openpgp-card-hardware-keys-remotely/#venv-set-up).
+I will use a hardware GPG key backed by a Trezor as described in [PGP via Roman Zayde's Trezor-agent](../openpgp-card-hardware-keys-remotely/#venv-set-up).
 That post also explains how to set up the `trezor-venv` alias we use to configure the system for a Trezor-backed GPG key.
+
+> **GnuPG 2.5 compatibility:** If manifest decryption fails with "End of file", see [2026-11-16: Trezor-agent compatibility with GnuPG 2.5](../openpgp-card-hardware-keys-remotely/#2026-11-16:-trezor-agent-compatibility-with-gnupg-2.5). It explains the changed agent protocol and how to use an isolated GnuPG 2.4 executable or test the proposed trezor-agent fix.
 
 I place these `git-remote-gcrypt` remotes under `/opt/offsite_backup_storage/git-remote-gcrypt` so they're included in my daily offsite backups, as described in [Home Server Blueprint: Rock-Solid Home Server with Unattended Reboots, Secure Disk Encryption, and Cost-Effective Offsite Backups](../home-server-infrastructure).
 

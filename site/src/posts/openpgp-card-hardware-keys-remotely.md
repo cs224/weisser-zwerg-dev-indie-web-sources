@@ -68,7 +68,7 @@ This complexity sometimes leads to weakened security in real-world practice.
 Despite these critiques, I still find one big advantage in PGP/GPG: it is a widely adopted standard with plenty of hardware keys available to support it.
 In my opinion, hardware keys are the gold standard for protecting private keys in public/private encryption - there just isn't a great alternative at the moment.
 
-In this blog post, I’ll show you how to make use of the [YubiKey 5](https://www.yubico.com/products/yubikey-5-overview/) (either USB-A or USB-C), a [Nitrokey 3](https://www.nitrokey.com/products/nitrokeys) and the [Trezor Model T](https://trezor.io/trezor-model-t).
+In this blog post, I'll show you how to make use of the [YubiKey 5](https://www.yubico.com/products/yubikey-5-overview/) (either USB-A or USB-C), a [Nitrokey 3](https://www.nitrokey.com/products/nitrokeys) and the [Trezor Model T](https://trezor.io/trezor-model-t).
 
 The YubiKey 5 family and the Nitrokey 3 comes in both USB-A and USB-C versions, making it compatible with most modern systems, while the Trezor Model T also supports PGP functionality.
 
@@ -459,6 +459,8 @@ gpg --decrypt test-secret.txt.gpg > test-secret.1.txt
 
 #### VENV Set-Up
 
+> **GnuPG 2.5 compatibility:** If Trezor-backed decryption fails with "End of file", see [the dated compatibility appendix](#2026-11-16:-trezor-agent-compatibility-with-gnupg-2.5) for the cause and two workarounds.
+
 If you prefer working with Python virtual environments instead of Docker containers, you can still use one Trezor device for multiple PGP identities.
 I use the [UV](https://github.com/astral-sh/uv) Python package manager here, but feel free to use [conda](https://www.anaconda.com/docs/getting-started/miniconda/main), the built-in [venv](https://docs.python.org/3/library/venv.html), or any other tool for managing Python environments.  
 
@@ -527,9 +529,193 @@ You're now ready to use your Trezor-backed PGP key(s) on the remote server, ensu
 
 ## Appendix
 
+### 2026-11-16: Trezor-agent compatibility with GnuPG 2.5
+
+When I tried to push to an existing `git-remote-gcrypt` repository with GnuPG 2.5.24, reading its encrypted manifest failed:
+
+```text
+gcrypt: Decrypting manifest
+gpg: public key decryption failed: End of file
+gpg: decryption failed: End of file
+gcrypt: Failed to decrypt manifest!
+```
+
+The Trezor agent log showed an `AssertionError` at `assert exp[0] == b'ecdh'`. The same manifest decrypted successfully with GnuPG 2.4.4, and I could then push successfully. This was a local GnuPG/agent compatibility problem.
+
+#### What changed in the division of work?
+
+OpenPGP encrypts the file contents with a random symmetric **session key**. For an elliptic-curve recipient, recovering that protected session key involves an ECDH calculation, deriving a key-encryption key from its result, and using that derived key to unwrap the session key. Only then can GnuPG decrypt the file contents.
+
+The newer GnuPG 2.5 agent interface moved two of those steps into the agent:
+
+| Work | Older interface used by GnuPG 2.4 | New interface observed with GnuPG 2.5.24 |
+| --- | --- | --- |
+| ECDH calculation using the private key | Agent asks the Trezor | Agent asks the Trezor |
+| Derive the key-encryption key | GnuPG | Agent |
+| Unwrap the session key | GnuPG | Agent |
+| Decrypt the file contents | GnuPG | GnuPG |
+
+`PKDECRYPT` is a local command from GnuPG to its agent. The new `--kem=PGP` option requests the more complete operation. **KEM** means *key encapsulation mechanism*: the mechanism used to recover key material protected using public-key cryptography. The Trezor's private key stays on the device in both cases.
+
+The old agent expects an `ecdh` label, but the new request contains `ecc`. Its assertion fails and the connection closes, producing "End of file". Simply accepting the new label is insufficient: the old agent would still return the intermediate ECDH result where GnuPG now expects the unwrapped session-key material.
+
+[Issue #515](https://github.com/romanz/trezor-agent/issues/515) reports this failure, including with the `nistp256` curve I use. [PR #540](https://github.com/romanz/trezor-agent/pull/540) implements the additional RFC 6637 key derivation and AES key unwrapping while preserving the old interface. **As of 2026-11-16, the PR is open and unmerged.** An ordinary `git pull` of upstream `master` therefore does not yet supply this fix.
+
+#### Workaround A: use an isolated GnuPG 2.4 executable
+
+This is the approach I tested successfully for decryption and signing, including pushes to existing [encrypted Git remotes](../digital-civil-rights-gitea/#git-remote-gcrypt). The following example follows the VENV section's `~/.local/venv` layout and existing `~/.gnupg/trezor_identity_a` identity. Adapt those paths to your installation. Do not run `trezor-gpg init` again for an existing identity.
+
+On my Ubuntu 24.04 amd64 machine, the package index offered `2.4.4-2ubuntu17.6`. Check availability first; the exact package revision can change:
+
+```bash
+apt-cache policy gpg
+```
+
+Download and extract the package without installing it system-wide:
+
+```bash
+trezor_project="$HOME/.local/venv"
+mkdir -p "$trezor_project/gnupg-2.4"
+(
+  cd "$trezor_project/gnupg-2.4" &&
+  apt download gpg=2.4.4-2ubuntu17.6 &&
+  dpkg-deb -x ./gpg_*.deb .
+)
+"$trezor_project/gnupg-2.4/usr/bin/gpg" --version
+```
+
+Verify that this reports 2.4.4 and runs without missing-library errors. This extracted executable uses the host's shared libraries; these instructions are specific to the tested Ubuntu environment, not a portable GnuPG distribution.
+The extracted package will not receive automatic system package updates.
+
+Create a wrapper so commands using `gpg` select this executable:
+
+```bash
+mkdir -p "$trezor_project/bin"
+cat > "$trezor_project/bin/gpg" <<'EOF'
+#!/bin/sh
+project_dir="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+exec "$project_dir/gnupg-2.4/usr/bin/gpg" "$@"
+EOF
+chmod +x "$trezor_project/bin/gpg"
+```
+
+Replace the earlier alias in `~/.bashrc` with this function:
+
+```bash
+unalias trezor-venv 2>/dev/null
+trezor-venv() {
+    local project_dir="$HOME/.local/venv"
+    source "$project_dir/trezor-venv/bin/activate"
+    export PATH="$project_dir/bin:$PATH"
+    export GNUPGHOME="$HOME/.gnupg/trezor_identity_a"
+    export NEOPG_BINARY="$project_dir/gnupg-2.4/usr/bin/gpg"
+}
+```
+
+`NEOPG_BINARY` is an executable override supported by this trezor-agent version. It ensures the agent's own GPG calls also use 2.4. A `gpgconf` wrapper is not needed for this approach.
+
+The generated agent launcher may reset `PATH`, so update it too. Check that your existing `gpg.conf` points to this `run-agent.sh` before proceeding, and preserve a backup:
+
+```bash
+source ~/.bashrc
+trezor-venv
+cat "$GNUPGHOME/gpg.conf"
+cp -a "$GNUPGHOME/run-agent.sh" "$GNUPGHOME/run-agent.sh.before-gpg24.$(date +%Y%m%d-%H%M%S)"
+
+cat > "$GNUPGHOME/run-agent.sh" <<'EOF'
+#!/bin/sh
+project_dir="$HOME/.local/venv"
+export PATH="$project_dir/trezor-venv/bin:$project_dir/bin:$PATH"
+export NEOPG_BINARY="$project_dir/gnupg-2.4/usr/bin/gpg"
+exec "$project_dir/trezor-venv/bin/trezor-gpg-agent" "$@"
+EOF
+chmod 700 "$GNUPGHOME/run-agent.sh"
+gpgconf --kill gpg-agent
+gpg --version
+```
+
+The next GPG request starts the updated agent. 
+
+> In case you came here from [Git Remote Gcrypt](../digital-civil-rights-gitea/#git-remote-gcrypt): Test with the procedure below before using your ordinary `git fetch` or `git push` commands.
+> An explicit Git `gpg.program` setting takes precedence over `PATH`; check `git config --get gpg.program` if Git still selects a different executable.
+
+#### Workaround B: test trezor-agent with PR #540 applied
+
+Until the PR is merged, this means testing a proposed fix. Keep the working 2.4 setup available. A separate checkout, Python environment, and GPG home let you test the patch without changing the existing installation.
+
+The following commands pin the PR revision inspected on 2026-11-16. They assume `/usr/bin/gpg` is the GnuPG 2.5 executable you want to test:
+
+```bash
+(
+  set -e
+  trezor_project="$HOME/.local/venv"
+  pr_commit=dcb37541f4c06e030025d67ff98cd0c0efb3cf8d
+  git clone https://github.com/romanz/trezor-agent "$trezor_project/trezor-agent-pr540"
+  git -C "$trezor_project/trezor-agent-pr540" fetch origin pull/540/head
+  git -C "$trezor_project/trezor-agent-pr540" checkout --detach "$pr_commit"
+  uv venv "$trezor_project/trezor-pr540-venv" --python 3.12 --seed
+  uv pip install --python "$trezor_project/trezor-pr540-venv/bin/python" -e "$trezor_project/trezor-agent-pr540" -e "$trezor_project/trezor-agent-pr540/agents/trezor"
+)
+```
+
+Run the test in a subshell so its environment changes disappear when you exit it:
+
+```bash
+bash
+export GNUPGHOME="$(mktemp -d /tmp/trezor-pr540.XXXXXX)"
+cp "$HOME/.gnupg/trezor_identity_a/pubring.kbx" "$GNUPGHOME/pubring.kbx"
+export PATH="$HOME/.local/venv/trezor-pr540-venv/bin:/usr/bin:/bin"
+export NEOPG_BINARY=/usr/bin/gpg
+hash -r # hash -r clears Bash's cache of executable locations. 
+        # Bash can remember that gpg resolves to a particular path. Clearing that cache makes the next invocation search PATH again.
+/usr/bin/gpg --version
+
+cat > "$GNUPGHOME/run-agent.sh" <<'EOF'
+#!/bin/sh
+project_dir="$HOME/.local/venv"
+export PATH="$project_dir/trezor-pr540-venv/bin:/usr/bin:/bin"
+export NEOPG_BINARY=/usr/bin/gpg
+exec "$project_dir/trezor-pr540-venv/bin/trezor-gpg-agent" "$@"
+EOF
+chmod 700 "$GNUPGHOME/run-agent.sh"
+printf 'agent-program "%s"\n' "$GNUPGHOME/run-agent.sh" > "$GNUPGHOME/gpg.conf"
+```
+
+Confirm that the reported version is 2.5, then run the verification below. After testing, stop this test agent and leave the subshell:
+
+```bash
+gpgconf --kill gpg-agent
+exit
+```
+
+Once a reviewed fix is merged or released, select a revision containing it.
+When switching your regular environment to that version, update both its activation function and agent launcher to use the intended GPG executable, remove the 2.4 `PATH` override, and restart the agent.
+Editable Python installs use the checkout's source, but a running agent must still be restarted; dependency changes may also require reinstalling the packages.
+
+#### Verify decryption and signing before using an encrypted remote
+
+Connect the Trezor, select the intended environment, and replace the placeholder below with your full public-key fingerprint from `gpg --list-keys`. These commands create a harmless message, encrypt it, decrypt it, and verify a detached signature:
+
+```bash
+(
+  set -e
+  KEY_ID='REPLACE_WITH_YOUR_FULL_KEY_FINGERPRINT'
+  test_dir="$(mktemp -d /tmp/trezor-gpg-test.XXXXXX)"
+  printf 'Trezor GPG compatibility test\n' > "$test_dir/plain.txt"
+  gpg --batch --trust-model always --recipient "$KEY_ID" --output "$test_dir/test.gpg" --encrypt "$test_dir/plain.txt"
+  gpg --output "$test_dir/decrypted.txt" --decrypt "$test_dir/test.gpg"
+  cmp "$test_dir/plain.txt" "$test_dir/decrypted.txt"
+  gpg --local-user "$KEY_ID" --output "$test_dir/plain.sig" --detach-sign "$test_dir/plain.txt"
+  gpg --verify "$test_dir/plain.sig" "$test_dir/plain.txt"
+  echo 'Encryption, decryption, and signature verification succeeded.'
+)
+```
+
+Use `--trust-model always` here only with the fingerprint you have checked. A fresh test home can report uncertain ownership trust even when the signature is cryptographically valid.
+
 ### PGP Key Expiry
 
-Many people - including me - find PGP key expiration confusing. That’s why I've included this appendix:
+Many people - including me - find PGP key expiration confusing. That's why I've included this appendix:
 
 In [OpenPGP Best Practices](https://riseup.net/en/security/message-security/openpgp/best-practices), we read:
 
