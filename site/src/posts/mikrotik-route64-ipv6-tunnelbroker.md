@@ -165,7 +165,7 @@ ssh admin@192.168.88.1 '/export hide-sensitive terse' > mikrotik-$(date +%F).rsc
 #  - Version-specific: Best restored on the same device model and RouterOS version/architecture.
 #  - Not human-readable.
 #  - Intended for "I want the box back exactly as it was" scenarios (including users and passwords).
-#  By default, RouterOS saves the backup in the router’s root file store (what you see under /file).
+#  By default, RouterOS saves the backup in the router's root file store (what you see under /file).
 ssh admin@192.168.88.1 '/system backup save'
 # [admin@MikroTik] > /file print
 # Flags: S - shared 
@@ -407,7 +407,7 @@ Your private key    : YOUR_WG_PRIVATE_KEY
 ```
 
 **Configure the MikroTik hAP ax³ via SSH**:
-I assume that you are using the default factory configuration, where `ether1` is the WAN interface, and `bridge` is the LAN bridge that contains `ether2–ether5` and the WiFi interfaces, and that IPv4 is already working.
+I assume that you are using the default factory configuration, where `ether1` is the WAN interface, and `bridge` is the LAN bridge that contains `ether2-ether5` and the WiFi interfaces, and that IPv4 is already working.
 
 First, make sure that IPv6 support is enabled:
 ```txt
@@ -684,6 +684,87 @@ These commands will give you a good overview of the tunnel status, routing table
 
 ## Appendix
 
+### Reserve a DHCP address for x99
+
+My LAN DHCP server (`defconf`) uses the `default-dhcp` pool, which originally covered `192.168.88.10-192.168.88.254`. I want dynamic assignments to start at `.100` and x99's Ethernet interface to receive `192.168.88.21` by DHCP every time.
+
+On RouterOS, check the pool and leases first:
+
+```routeros
+/ip pool print detail where name=default-dhcp
+# 0 name="default-dhcp" ranges=192.168.88.10-192.168.88.254 
+/ip dhcp-server lease print detail where address=192.168.88.21
+# Flags: X - DISABLED, R - RADIUS, D - DYNAMIC, B - BLOCKED
+/ip dhcp-server lease print detail where mac-address=D0:50:99:64:84:72
+# Flags: X - DISABLED, R - RADIUS, D - DYNAMIC, B - BLOCKED 
+#  0 D address=192.168.88.97 mac-address=D0:50:99:64:84:72 client-id="1:d0:50:99:64:84:72" address-lists="" server=defconf dhcp-option="" agent-circuit-id="" agent-remote-id="" status=bound expires-after=24m35s last-seen=5m25s age=50m24s 
+#      active-address=192.168.88.97 active-mac-address=D0:50:99:64:84:72 active-client-id="1:d0:50:99:64:84:72" active-server=defconf active-agent-circuit-id="" active-agent-remote-id="" host-name="x99" 
+```
+
+I found x99 bound to `192.168.88.97`, with no lease or ARP entry for `.21`. Check your manually configured devices too, since RouterOS does not check static leases for address conflicts. When `.21` is free, narrow the pool, convert x99's lease to static, and change its address:
+
+```routeros
+/ip pool set [find where name=default-dhcp] ranges=192.168.88.100-192.168.88.254
+/ip pool print detail where name=default-dhcp
+# 0 name="default-dhcp" ranges=192.168.88.100-192.168.88.254 
+
+/ip dhcp-server lease make-static [find where server=defconf and mac-address=D0:50:99:64:84:72 and dynamic=yes]
+/ip dhcp-server lease set [find where server=defconf and mac-address=D0:50:99:64:84:72 and dynamic=no] address=192.168.88.21
+/ip dhcp-server lease print detail where address=192.168.88.21
+# Flags: X - DISABLED, R - RADIUS, D - DYNAMIC, B - BLOCKED 
+#  0   address=192.168.88.21 mac-address=D0:50:99:64:84:72 client-id="1:d0:50:99:64:84:72" address-lists="" server=defconf dhcp-option="" agent-circuit-id="" agent-remote-id="" status=bound expires-after=22m12s last-seen=7m48s age=52m47s 
+#      active-address=192.168.88.97 active-mac-address=D0:50:99:64:84:72 active-client-id="1:d0:50:99:64:84:72" active-server=defconf active-agent-circuit-id="" active-agent-remote-id="" host-name="x99" 
+```
+
+> The reservation is now `192.168.88.21`. The `active-address` still shows `192.168.88.97` because x99 is using its old lease until it reconnects.
+
+Allow existing dynamic leases below `.100` to clear before reusing those addresses. On x99, reconnect `enp5s0` to request the new lease. If NetworkManager manages the interface, run these from a local console because the reconnect can interrupt SSH:
+
+```bash
+sudo nmcli device disconnect enp5s0
+sudo nmcli device connect enp5s0
+ip -4 addr show dev enp5s0
+```
+
+Once x99 shows `192.168.88.21`, test `ssh 192.168.88.21` from another machine. Update the entry in your workstation's `/etc/hosts` to `192.168.88.21 x99` so `ssh x99` uses the new address.
+
+#### Use x99.lan in SSH
+
+Enable automatic DNS registration on RouterOS. The DHCP server already uses the `lan` suffix, so it registers `x99.lan` from the hostname sent by x99.
+
+```routeros
+/ip dhcp-server set [find where name=defconf] add-dns-entries=yes
+/ip dns static print where name=x99.lan
+```
+
+Look for the `D` flag on the generated record. On another machine that uses the MikroTik for local DNS, verify the name and connectivity:
+
+```bash
+ping -c 1 x99.lan
+# PING x99.lan (192.168.88.21) 56(84) bytes of data.
+# 64 bytes from x99 (192.168.88.21): icmp_seq=1 ttl=64 time=0.197 ms
+
+getent ahostsv4 x99.lan
+# 192.168.88.21   STREAM x99.lan
+# 192.168.88.21   DGRAM
+# 192.168.88.21   RAW
+
+resolvectl query x99.lan
+# x99.lan: 192.168.88.21                         -- link: eno1
+```
+
+Once the name resolves to `192.168.88.21`, replace `HostName x99.fritz.box` with `HostName x99.lan` in your `Host x99` block in `~/.ssh/config`.
+
+If you only want a DNS record for x99, you can add it explicitly on RouterOS:
+
+```routeros
+/ip dns static add name=x99.lan address=192.168.88.21
+```
+
+If you prefer the workstation's `/etc/hosts` entry, remove the `HostName` line so SSH resolves `x99` directly.
+
+See the [RouterOS DHCP server documentation](https://manual.mikrotik.com/docs/network-management/dhcp/server).
+
 ### My Personal Situation
 
 Until recently I had a setup in which I did not route internet traffic directly from my public facing VPS to my home server.
@@ -844,14 +925,14 @@ However, if your primary goal is simpler:
 
 > "I just want all devices behind the Salt Fiber Box and my MikroTik to have working IPv6."
 
-…then letting the MikroTik do **NAT66** (IPv6‑to‑IPv6 NAT) is a very practical alternative.
+…then letting the MikroTik do **NAT66** (IPv6-to-IPv6 NAT) is a very practical alternative.
 
 > Cloudflare WARP is essentially a big NAT66/NAT64 box at scale (you get egress addresses in their network, but no routed prefix back home).
 
 This appendix shows how to:
 
 1. Look at what can *stay exactly as it is* when switching from ROUTE64 to NAT66.
-2. **Undo** only the ROUTE64/WireGuard‑specific parts.
+2. **Undo** only the ROUTE64/WireGuard-specific parts.
 3. **Configure NAT66** on the MikroTik behind the Salt Fiber Box.
 
 Throughout, I'll stick to the same style as the main article: SSH commands, "look / expect / change" flow, and small explanations of what's going on.
@@ -873,9 +954,9 @@ Here is a quick diff style summary of the changes we'll need to make:
 +/ipv6 nd set [ find default=yes ] dns=fd12:3456:789a:1::1 interface=bridge mtu=1420
 ```
 
-#### What Can Stay As‑Is
+#### What Can Stay As-Is
 
-The good news: most of your LAN‑side logic *does not care* whether your IPv6 comes via a tunnel broker or via NAT66.
+The good news: most of your LAN-side logic *does not care* whether your IPv6 comes via a tunnel broker or via NAT66.
 
 **Topology and basic RouterOS layout**: All of this stays the same:
 * Physical topology:  
@@ -911,7 +992,7 @@ We are only touching the *IPv6* side here.
 * Drop invalid packets.
 * Drop new inbound connections from the internet.
 
-Those rules work *equally well* whether the internet‑facing IPv6 is:
+Those rules work *equally well* whether the internet-facing IPv6 is:
 * The routed `/56` from ROUTE64 over WireGuard, or
 * A single `/64` from Salt with NAT66 on the MikroTik.
 
@@ -949,7 +1030,7 @@ We'll adjust this later, but the important part: *we will keep using ND on `brid
 
 #### What We Need to Undo (ROUTE64 / WireGuard Only)
 
-Now to the clean‑up.
+Now to the clean-up.
 
 We'll remove everything that is *specifically tied* to the ROUTE64 tunnel broker:
 * The WireGuard interface and peer.
@@ -1001,7 +1082,7 @@ You'll now have:
 * `before-route64-undo.rsc` - a text export.
 * `before-route64-undo.backup` - a binary backup.
 
-If you ever want to roll back, you can re‑import the `.rsc` or restore the `.backup`.
+If you ever want to roll back, you can re-import the `.rsc` or restore the `.backup`.
 
 **Remove the IPv6 "internet via WireGuard" route**: When configuring ROUTE64, we added a static IPv6 route for "all global internet" via the WireGuard interface, typically `2000::/3` using `wireguard-route64` as the gateway.
 
@@ -1016,7 +1097,7 @@ dst-address=2000::/3 gateway=wireguard-route64 ...
 ```
 or possibly `::/0` via `wireguard-route64` if you used a full default route.
 
-You may also see a default route via `ether1` and a link‑local gateway (`fe80::…%ether1`); we *keep* that one.
+You may also see a default route via `ether1` and a link-local gateway (`fe80::…%ether1`); we *keep* that one.
 
 Step 2: Remove the WireGuard route:
 ```txt
@@ -1033,7 +1114,7 @@ You should see *no* routes pointing to `wireguard-route64` anymore.
 
 We placed ROUTE64 addresses:
 * On the WireGuard interface (`wireguard-route64`) - one `/64` for the tunnel.
-* On the LAN bridge (`bridge`) – one `/64` (or `/64` plus explicit `::1`) out of your `/56`.
+* On the LAN bridge (`bridge`) - one `/64` (or `/64` plus explicit `::1`) out of your `/56`.
 
 Assume your ROUTE64 `/56` looked like: `2a11:6c7:abcd:2000::/56`. Substitute your actual prefix throughout.
 
@@ -1083,7 +1164,7 @@ Step 3: Check again:
 /ipv6 address print where interface=bridge
 ```
 
-At this point `bridge` should no longer have any `2a11:...` addresses – only link‑local (`fe80::…`) and anything else you may have configured separately.
+At this point `bridge` should no longer have any `2a11:...` addresses - only link-local (`fe80::…`) and anything else you may have configured separately.
 
 **Remove the WireGuard peer and interface**: We first delete the peer(s), then the interface itself.
 
@@ -1139,7 +1220,7 @@ Step 3: Check again:
 
 There should be no `wireguard-route64` interface anymore.
 
-**Clean up interface list membership**: We previously added `wireguard-route64` to the `WAN` interface list so firewall rules could treat it as internet‑facing.
+**Clean up interface list membership**: We previously added `wireguard-route64` to the `WAN` interface list so firewall rules could treat it as internet-facing.
 
 Step 1: Look:
 ```txt
@@ -1164,11 +1245,11 @@ After that step 3: Check again:
 
 Should show only the "real" WAN interface(s), e.g. `ether1`.
 
-**Reset ROUTE64‑specific RA/DNS settings**: If you followed the ROUTE64 section as written, you probably set RA DNS to either:
+**Reset ROUTE64-specific RA/DNS settings**: If you followed the ROUTE64 section as written, you probably set RA DNS to either:
 * Cloudflare IPv6 (`2606:4700:4700::1111`), or
 * The router's ROUTE64 address (`2a11:6c7:abcd:2001::1`).
 
-Those now point at things we just deleted, so let’s neutralise them before reconfiguring for NAT66.
+Those now point at things we just deleted, so let's neutralise them before reconfiguring for NAT66.
 
 **RA DNS on the bridge**:
 
@@ -1191,7 +1272,7 @@ Step 2: Reset:
 /ipv6 nd set [find interface=bridge] advertise-dns=no dns=""
 ```
 
-We'll re‑enable `advertise-dns` later with NAT66‑appropriate DNS addresses.
+We'll re-enable `advertise-dns` later with NAT66-appropriate DNS addresses.
 
 **`/ip dns` configuration**: If you pointed `ip dns servers` at specific resolvers purely for the ROUTE64 setup, you can either keep them or go back to using the ISP's DNS.
 
@@ -1202,7 +1283,7 @@ For now, a good neutral default is:
 ```
 This says:
 * Let the DHCP client on `ether1` get DNS from the Salt Fiber Box.
-* Use those for the router’s resolver (and, if allowed, for the LAN too).
+* Use those for the router's resolver (and, if allowed, for the LAN too).
 
 
 **Sanity check after uninstall**: Quick checks:
@@ -1345,7 +1426,7 @@ We will go with the MikroTik as DNS forwarder.
    /ip dns set servers="" allow-remote-requests=yes
    ```
    Empty `servers` means "use DNS from the DHCP client" (the Salt box's DNS).
-3. Advertise the router’s IPv6 address as DNS via RA:
+3. Advertise the router's IPv6 address as DNS via RA:
    ```txt
    /ipv6 nd set [find interface=bridge] advertise-dns=yes dns=fd12:3456:789a:1::1
    ```
@@ -1389,9 +1470,9 @@ You can see counters with:
 Once clients start talking IPv6, the packet and byte counters will start increasing.
 
 > *Terminology:*
-> *NAT66* means IPv6‑to‑IPv6 NAT. In this case, it's many‑to‑one: many internal ULA addresses → one global IPv6 on `ether1`.
+> *NAT66* means IPv6-to-IPv6 NAT. In this case, it's many-to-one: many internal ULA addresses → one global IPv6 on `ether1`.
 
-#### Re‑use the existing IPv6 firewall rules
+#### Re-use the existing IPv6 firewall rules
 
 Because we kept the stateful IPv6 firewall rules from the ROUTE64 setup (or the default factory configuration (`defconf`)), we don't need to change them for NAT66. They still do exactly what we want:
 * *Input chain*: protect the router itself.
@@ -1417,8 +1498,8 @@ From a **LAN client**:
      ```
    * You should see:
      * A global ULA address in `fd12:3456:789a:1::/64`.
-     * A default route via the MikroTik’s link‑local (`fe80::...`).
-2. Ping the router’s ULA:
+     * A default route via the MikroTik's link-local (`fe80::...`).
+2. Ping the router's ULA:
    ```bash
    ping -6 fd12:3456:789a:1::1
    ```
@@ -1435,7 +1516,7 @@ On the MikroTik:
 ```
 
 You should see:
-* The NAT66 rule’s counters increasing.
+* The NAT66 rule's counters increasing.
 * A default route via `fe80::...%ether1` being used.
 
 If all that works: congratulations, you now have working IPv6 on your LAN via *NAT66*, without the extra moving parts from the tunnel broker.
@@ -1454,7 +1535,7 @@ To wrap up:
   * Simpler: no VPS or tunnel; just the Salt Fiber Box and your MikroTik.
   * Uses the native IPv6 connectivity Salt already gives you.
   * All LAN devices share the router's single global IPv6 (just like IPv4 NAT).
-  * Inbound services require IPv6 port‑forward rules and don't get "nice" global addresses.
+  * Inbound services require IPv6 port-forward rules and don't get "nice" global addresses.
 
 The original post focused on the "clean" IPv6 routing approach.
 This appendix shows that, if you're willing to compromise on IPv6 purity, *NAT66 is indeed the easier route* for the specific "Salt Fiber Box → MikroTik → LAN" setup.

@@ -746,6 +746,339 @@ There are several ways to implement the rental path.
 
 Renting is the lower-risk first step for validation and irregular use; buying becomes compelling when the same large pool of fast accelerator memory is needed regularly.
 
+### Local AI: Where Things Stand (2026-11-06)
+
+The c't 3003 video [Lokale KI: Das ist der aktuelle Stand](https://www.youtube.com/watch?v=a__Rva9Wqek) tests what local models can do on hardware ranging from gaming PCs to a Mac Studio.
+This section compares two Qwen models, shows how to keep local copies of their weights, and looks at how hardware, power use, speculative decoding, and the Strata runtime affect day-to-day use.
+
+#### Qwen3.8-27B vs. Qwen3.8-Flash-Next
+
+Qwen3.8-27B is a dense 27B model. Flash-Next uses a mixture of experts (MoE), so it activates only a subset of its weights for each token.
+[Qwen's model card](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) lists 125B language-model parameters with 6B active, plus separate n-gram embeddings and a multi-token prediction module.
+For each token, a router selects which experts to use at each layer.
+If the GPU runs those experts, their weights need to be available in VRAM when that layer executes.
+A runtime can load them layer by layer, so even the full 6B active subset need not be in VRAM at the same time.
+
+The next token can select different experts, so the runtime still needs access to the full model.
+If it cannot all fit in GPU memory, the runtime can keep other weights in system RAM or on SSD and load them as needed, as discussed in [Old Data-Center GPUs Revisited](#old-data-center-gpus-revisited-tesla-v100).
+GPU memory also needs room for the context cache and working buffers.
+
+The [coding table shown at 4:07](https://youtu.be/a__Rva9Wqek?t=247) matches the scores in [Qwen's Flash-Next release materials](https://qwen.ai/blog?id=qwen3.8-flash-next).
+Flash-Next scores 58.7 versus 42.2 for the 27B model on DeepSWE 1.1, and 62.5 versus 61.7 on SWE-bench Pro.
+[Artificial Analysis](https://artificialanalysis.ai/models/comparisons/qwen3-8-flash-next-vs-qwen3-8-27b) compares the models on a separate evaluation suite.
+
+In the presenter's [Three.js giraffe demo](https://youtu.be/a__Rva9Wqek?t=262), the 27B model completed the task more reliably, while Flash-Next sometimes got stuck in loops.
+That example is a reason to try both models with your own coding agent and tasks.
+
+#### Keep a Local Backup of Open-Weight Models
+
+I keep local copies of model weights for the same reason I keep a [second copy of my home-server backups](../home-server-infrastructure/#second-kopia-backup-on-local-disk-of-other-server).
+I want to be able to recover the files even if the service I originally downloaded them from is unavailable.
+
+I usually get open-weight models from the [Hugging Face Hub](https://huggingface.co/models).
+It plays a similar role for LLM models to the one GitHub plays for open-source code.
+Each model has a repository with version history, a description, and downloadable files.
+Like GitHub, Hugging Face uses Git for version control and can handle large files separately.
+Hugging Face originally used [Git LFS and now uses Xet](https://huggingface.co/docs/hub/storage-backends) for large-file storage.
+
+For a repository whose files are stored entirely in Git, a [Git bundle](https://git-scm.com/docs/git-bundle) is a convenient backup.
+It packages the selected branches and their commit history in a single file you can clone from offline.
+
+A model repository on Hugging Face typically uses Git together with Git LFS or Xet.
+Git tracks small files such as the model description directly and records a small pointer for each large file, such as a file containing model weights.
+The contents of those large files live in the separate Git LFS or Xet store.
+When you were to create a Git bundle, only those pointers would go into the bundle, but the actual file contents would remain missing.
+
+Therefore, to keep a complete offline copy I can actually use, I pick a specific Git revision of each model, download the full contents of the files I need, and put them in a TAR archive.
+I include the source revisions and checksums so I can identify and verify the files after extracting them on another machine.
+
+| Model version | Download size |
+| --- | ---: |
+| [Unsloth Qwen3.8-27B GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/tree/4af51b3542f775b0a8e4b310bfb3f17e01c306c9), UD-Q4_K_M plus vision projector | ~17.5 GB |
+| [Qwen3.8-27B AWQ INT4](https://huggingface.co/derikn/Qwen3.8-27B-AWQ-INT4/tree/a87d52c2c58e104304a687728121e937b3d4cb61) | ~19.6 GB |
+| [NVIDIA Qwen3.8-Flash-Next NVFP4](https://huggingface.co/nvidia/Qwen3.8-Flash-Next-NVFP4/tree/fc694b54fb0174e0913e6adf86691ef85a4ead47) | ~133 GB |
+
+The downloads total about 170 GB. Allow about 200 GB for downloads and working space, plus another 170 GB if the archive and downloads will be on the same disk. The disk must support files larger than 4 GB.
+
+##### Download the models
+
+As in the earlier [Hugging Face CLI section](#hugging-face-cli), I install the CLI with `uv`. Run this in an active Python virtual environment:
+
+```bash
+# If you don't have a python environment yet:
+uv python install 3.12
+cd ~
+# uv venv --python 3.12 --seed # Use this if you want to use your existing python 3.12 on your machine
+uv venv --managed-python --python 3.12 --seed # Use this if you want to use the uv managed python interpreter
+# uv venv --python 3.12 --seed creates .venv in the current directory using Python 3.12.
+# If uv can't find a matching interpreter, it downloads one by default.
+# --seed installs pip into the environment so you can use python -m pip there.
+source ~/.venv/bin/activate
+# Use `deactivate` to deactivate again.
+
+# Then install and check the Hugging Face CLI.
+# For huggingface_hub 1.0 and later, use:
+uv pip install -U huggingface_hub
+hf --version
+# 2.4.0
+```
+
+The [current CLI](https://huggingface.co/docs/huggingface_hub/en/guides/cli) uses the command `hf`.
+
+> The base package includes the hf command.
+> The `[cli]` suffix that we used [earlier](#hugging-face-cli) asks for an optional dependency group called cli.
+> Older versions used that group for optional CLI dependencies, but Hugging Face removed it in 1.0.
+> With a current version, requesting it adds nothing and may produce a warning.
+
+Start with a fresh directory for this set of revisions.
+If a transfer is interrupted, rerun the same commands in that directory.
+Add `--dry-run` to a download command to preview its file selection and download size.
+
+```bash
+mkdir -p "$HOME/models/qwen3.8"
+cd "$HOME/models/qwen3.8"
+
+gguf_repo=unsloth/Qwen3.8-27B-GGUF
+gguf_rev=4af51b3542f775b0a8e4b310bfb3f17e01c306c9
+awq_repo=derikn/Qwen3.8-27B-AWQ-INT4
+awq_rev=a87d52c2c58e104304a687728121e937b3d4cb61
+nvfp4_repo=nvidia/Qwen3.8-Flash-Next-NVFP4
+nvfp4_rev=fc694b54fb0174e0913e6adf86691ef85a4ead47
+
+hf download "$gguf_repo" Qwen3.8-27B-UD-Q4_K_M.gguf mmproj-F16.gguf README.md config.json --revision "$gguf_rev" --local-dir 27b-gguf-q4km
+# warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+# The place to create Hugging Face access tokens: https://huggingface.co/settings/tokens
+# export HF_TOKEN="hf_your_token_here"
+ll -h 27b-gguf-q4km
+# total 17G
+# drwxrwxr-x 1 cs cs  134 Nov 19 07:29 ./
+# drwxrwxr-x 1 cs cs   26 Nov 19 07:26 ../
+# 16G  Qwen3.8-27B-UD-Q4_K_M.gguf
+# 885M mmproj-F16.gguf
+# 3,7K config.json
+# 6,8K README.md
+hf download "$awq_repo"   --revision "$awq_rev"   --local-dir 27b-awq-int4
+hf download "$nvfp4_repo" --revision "$nvfp4_rev" --local-dir flash-next-nvfp4
+
+du -sh *
+# 19G     27b-awq-int4
+# 17G     27b-gguf-q4km
+# 124G    flash-next-nvfp4
+
+
+# To be sure that all files are locally available execute all three download command with a --dry-run:
+
+hf download "$gguf_repo" Qwen3.8-27B-UD-Q4_K_M.gguf mmproj-F16.gguf README.md config.json --revision "$gguf_rev" --local-dir 27b-gguf-q4km --dry-run
+# Download complete: [dry-run] Will download 0 files (out of 4) totalling 0.0.
+# FILE                       SIZE
+# -------------------------- ----
+# Qwen3.8-27B-UD-Q4_K_M.gguf -   
+# README.md                  -   
+# config.json                -   
+# mmproj-F16.gguf            -   
+# Download complete:
+
+hf download "$awq_repo"   --revision "$awq_rev"   --local-dir 27b-awq-int4 --dry-run
+# Download complete: [dry-run] Will download 0 files (out of 21) totalling 0.0.
+# FILE                             SIZE
+# -------------------------------- ----
+# .gitattributes                   -   
+# LICENSE                          -   
+# NOTICE.txt                       -   
+# README.md                        -   
+# chat_template.jinja              -   
+# config.json                      -   
+# generation_config.json           -   
+# model-00001-of-00007.safetensors -   
+# model-00002-of-00007.safetensors -   
+# model-00003-of-00007.safetensors -   
+# model-00004-of-00007.safetensors -   
+# model-00005-of-00007.safetensors -   
+# model-00006-of-00007.safetensors -   
+# model-00007-of-00007.safetensors -   
+# model.safetensors.index.json     -   
+# model_extra_tensors.safetensors  -   
+# preprocessor_config.json         -   
+# processor_config.json            -   
+# quantization_config.json         -   
+# tokenizer.json                   -   
+# tokenizer_config.json            -   
+# Download complete:
+
+hf download "$nvfp4_repo" --revision "$nvfp4_rev" --local-dir flash-next-nvfp4 --dry-run
+# Download complete: [dry-run] Will download 0 files (out of 25) totalling 0.0.
+# FILE                             SIZE
+# -------------------------------- ----
+# .gitattributes                   -   
+# README.md                        -   
+# chat_template.jinja              -   
+# config.json                      -   
+# generation_config.json           -   
+# hf_quant_config.json             -   
+# merges.txt                       -   
+# model-00001-of-00010.safetensors -   
+# model-00002-of-00010.safetensors -   
+# model-00003-of-00010.safetensors -   
+# model-00004-of-00010.safetensors -   
+# model-00005-of-00010.safetensors -   
+# model-00006-of-00010.safetensors -   
+# model-00007-of-00010.safetensors -   
+# model-00008-of-00010.safetensors -   
+# model-00009-of-00010.safetensors -   
+# model-00010-of-00010.safetensors -   
+# model-fp8-mtp-ple.safetensors    -   
+# model.safetensors.index.json     -   
+# preprocessor_config.json         -   
+# processor_config.json            -   
+# tokenizer.json                   -   
+# tokenizer_config.json            -   
+# video_preprocessor_config.json   -   
+# vocab.json                       -   
+# Download complete:
+```
+
+The first command selects one GGUF quantization from a repository that contains many. `mmproj-F16.gguf` is the optional projector for image input.
+The other two commands download the complete model files, including their weight shards, shard indexes, and tokenizer and configuration files.
+
+##### Archive and verify
+
+Once the downloads finish, create one archive per model from inside `~/models/qwen3.8`.
+Each archive contains its own source revision and BLAKE3 checksums, so you can move, verify, or restore each model independently.
+
+> BLAKE3 divides a file into chunks, hashes them in parallel, and combines them into a single digest using a Merkle tree.
+> b3sum uses multiple threads by default, so even one large .safetensors file can use several cores.
+
+Install [`b3sum`](https://github.com/BLAKE3-team/BLAKE3/tree/master/b3sum) on the machine that creates or verifies the archive.
+
+```bash
+archive_model() (
+  cd "$1" || exit 1
+  printf '%s\t%s\t%s\n' "$1" "$2" "$3" > SOURCES.tsv || exit 1
+  # takes a long time
+  # The + tells find to pass many filenames per invocation. {} is where those filenames go.
+  # So -exec b3sum {} + works roughly like b3sum file1 file2 file3, in as many batches as needed.
+  # The \; form would launch a separate b3sum process for every file.
+  # Batching saves process startup overhead. It doesn't run the hashes in parallel.
+  # find . -name .cache -prune -o -type f ! -path './BLAKE3SUMS' -exec b3sum {} + > BLAKE3SUMS || exit 1
+  cd .. || exit 1
+  tar -cf "./qwen3.8-$1.tar" --exclude='*/.cache' "$1"
+)
+
+archive_model 27b-gguf-q4km "$gguf_repo" "$gguf_rev"
+# Compression does not seem to be worthwhile:
+time zstd -3 -k -v -T0 qwen3.8-27b-gguf-q4km.tar
+# *** Zstandard CLI (64-bit) v1.5.6, by Yann Collet ***
+# Note: 6 physical core(s) detected 
+# qwen3.8-27b-gguf-q4km.tar : 98.03%   (  16.3 GiB =>   16.0 GiB, qwen3.8-27b-gguf-q4km.tar.zst) 
+# real    4m12,787s
+# user    1m20,548s
+# sys     0m36,524s
+archive_model 27b-awq-int4 "$awq_repo" "$awq_rev"
+archive_model flash-next-nvfp4 "$nvfp4_repo" "$nvfp4_rev"
+
+ls -lh qwen3.8-*
+#  19G qwen3.8-27b-awq-int4.tar
+#  17G qwen3.8-27b-gguf-q4km.tar
+# 124G qwen3.8-flash-next-nvfp4.tar
+```
+
+These are uncompressed TAR archives.
+They skip the Hugging Face CLI's local download metadata.
+The `hf download --local-dir` commands put the actual files in each model directory.
+
+To restore one of the models, extract its archive into an empty directory and verify it:
+
+```bash
+mkdir qwen3.8-restored
+tar -xf qwen3.8-27b-gguf-q4km.tar -C qwen3.8-restored
+cd qwen3.8-restored/27b-gguf-q4km
+# b3sum -c BLAKE3SUMS
+```
+
+Extraction and verification work offline.
+To run a model offline, also keep a compatible inference runtime and any required dependencies.
+
+#### Hardware, Speed, and Power
+
+The [c't 3003 LlamaBench dashboard](https://youtu.be/a__Rva9Wqek?t=541) uses the default settings of [`llama-bench`](https://github.com/ggml-org/llama.cpp/tree/master/tools/llama-bench) with Qwen3.8-27B UD-Q4_K_M.
+Prompt processing measures how quickly the system ingests input before generating an answer.
+Token generation measures how quickly it produces output and is often limited by memory bandwidth.
+The [power chart](https://youtu.be/a__Rva9Wqek?t=810) reports consumption during inference.
+
+| Tested system | Generation (tok/s) | Prompt processing (tok/s) | Inference power |
+| --- | ---: | ---: | ---: |
+| RTX 4090 | 51.1 | 3,622 | 398 W |
+| Mac Studio M5 Ultra | 48.2 | 1,133 | 259 W |
+| Radeon RX 9070 XT | 34.4 | 1,070 | 391 W |
+| Intel Arc Pro B70 | 25.5 | 887 | 285 W |
+| Mac mini M5 Pro | 16.4 | 388 | 81 W |
+| ASUS Spark N1X | 14.5 | 743 | 60 W |
+| AMD Strix Halo | 13.3 | 419 | 187 W |
+| Mac mini M6 | 8.8 | 229 | 41 W |
+| Ryzen 7950X3D, CPU only | 3.3 | 79 | 210 W (estimated) |
+
+<br>
+
+The Mac Studio nearly matches the RTX 4090 at generation, while the 4090 processes prompts about 3.2 times as fast.
+Prompt processing matters when a coding agent keeps feeding the model source files, logs, and tool output.
+The presenter also reports less than 5 W at idle for the Mac Studio.
+
+The [16 GB Radeon RX 9070 XT](https://youtu.be/a__Rva9Wqek?t=703) illustrates why it matters what fits alongside the weights into VRAM space.
+The tested four-bit setup left room for about 8K context and no image input.
+The presenter reports fitting 128K context with the lower-bit UD-Q3_K_XL version of the 27B model.
+
+The [32 GB Intel Arc Pro B70](https://youtu.be/a__Rva9Wqek?t=725) generated fewer tokens per second but had more memory headroom.
+The presenter also ran ComfyUI image and video workflows on it and noted audible coil whine.
+
+##### Apple Hardware for the Uninitiated
+
+In Apple's naming, the number indicates the chip generation.
+Pro, Max, and Ultra indicate higher tiers within a generation.
+The M6 in this comparison is a newer base chip, while the M5 Pro and M5 Ultra have more GPU cores and higher memory bandwidth.
+
+The [Mac mini](https://www.apple.com/mac-mini/specs/) is Apple's compact desktop, available with M6 or M5 Pro.
+The larger [Mac Studio](https://www.apple.com/mac-studio/specs/) is a workstation desktop with M5 Max or M5 Ultra, more ports, and higher memory and storage ceilings.
+The paired numbers in the video, such as 36/80, are CPU and GPU core counts.
+
+| Configuration | CPU / GPU cores | Memory bandwidth | Idle (Apple) | Inference (c't 3003) |
+| --- | ---: | ---: | ---: | ---: |
+| Mac mini M6 | 12 / 12 | 153-170 GB/s | 4 W | 41 W |
+| Mac mini M5 Pro | 18 / 20 | 307 GB/s | 6 W | 81 W |
+| Mac Studio M5 Ultra | 36 / 80 | 1,200 GB/s | 9 W | 259 W |
+
+<br>
+
+Apple measures idle power at the wall with only Finder open and default power settings.
+Its figures are for the configurations in its [Mac mini](https://support.apple.com/en-asia/103253) and [Mac Studio](https://support.apple.com/en-ie/102027) power tests.
+Separately, the [presenter reports less than 5 W at idle](https://youtu.be/a__Rva9Wqek?t=810) for the Mac Studio used in the video.
+
+For local LLMs, memory capacity determines which models and context sizes fit.
+Memory bandwidth helps determine how quickly the model generates tokens once it fits.
+The M5 Pro has roughly twice the bandwidth of the M6 and generates about 1.9 times as many tokens per second in the test above.
+The M5 Ultra can fit larger models and generates 48.2 tok/s in the same test, with higher power draw during inference.
+
+The video quotes €2,879 for a [Mac mini M5 Pro with 48 GB of unified memory and a 512 GB SSD](https://youtu.be/a__Rva9Wqek?t=862).
+The 48 GB is shared by the CPU and GPU.
+macOS and other applications also use part of it.
+
+#### Speculative Decoding and Strata
+
+[Speculative decoding](https://github.com/ggml-org/llama.cpp/blob/master/docs/speculative.md) speeds up generation by proposing tokens that the main model can verify together.
+The benefit depends on how often it accepts those proposals.
+
+* In the presenter's [Strix Halo measurements](https://youtu.be/a__Rva9Wqek?t=949), the baseline was 13.2 tok/s.
+  Multi-token prediction reached 33.9 tok/s for code (2.57×), 2.51× the baseline for JSON, and 1.59× for prose with the best setting shown.
+*  N-gram speculation reached 136.7 tok/s when copying from context (10.37×), while it barely changed generation speed on original code or prose in the same chart.
+
+[`llama.cpp`](https://github.com/ggml-org/llama.cpp) is a general-purpose runtime.
+[Strata](https://github.com/Niko1221/Strata) specializes in running Flash-Next on consumer hardware, including the RX 9070 XT.
+It can keep some of the MoE weights in system RAM or on SSD and uses speculative decoding.
+In the [Strata segment](https://youtu.be/a__Rva9Wqek?t=1054), the presenter reports more than 100 tok/s on the RTX 4090 with a three-bit version of Flash-Next.
+That run uses a different model, quantization, and runtime from the 27B LlamaBench results above.
+
+> The NVFP4 version in the archive is a separate build of Flash-Next.
+
+
 ## Footnotes
 
 [^dockernetworknamespace]: This means it will run in a separate [network namespace](https://blog.kubesimplify.com/docker-networking-demystified).

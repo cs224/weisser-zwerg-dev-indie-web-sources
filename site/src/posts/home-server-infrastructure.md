@@ -1551,7 +1551,7 @@ This can be a new site or an existing site, but ideally you create a site specif
 
 1. Log in to the Microsoft 365 [admin center](https://admin.microsoft.com/) with an admin account.
 1. Go to the SharePoint admin center (expand the "…" on the left pane and select SharePoint). This will typically be at `https://<tenant-name>-admin.sharepoint.com`.
-1. Under Websites, select Active Websites, then click Create (the “+” icon) and choose Team site (or Communication site, if you prefer).
+1. Under Websites, select Active Websites, then click Create (the "+" icon) and choose Team site (or Communication site, if you prefer).
 1. Provide a site name, e.g., "RCloneBackupSite<machinename>".
   1. You can specify a different owner if desired. I chose a different owner of the new Team site, not the admin account.
 1. Note the site's URL, e.g.: `https://<tenant-name>.sharepoint.com/sites/RCloneBackupSite<machinename>`
@@ -1675,3 +1675,424 @@ Congratulations! You now have:
 
 You can run `rclone sync` or `rclone copy` in scripts or cron jobs to securely upload data without tying backups to a full Microsoft 365 user license.
 This tightly scoped permission design ensures that even if your home server is compromised, the attacker can't access anything beyond the designated backup site.
+
+### Second Kopia Backup on Local Disk of Other Server
+
+My home server, elite, already backs up to SharePoint with Kopia.
+I also want a backup on a disk I can access locally.
+For that, I use x99, a separate machine on my home network with an encrypted volume.
+
+I mount a directory from that volume over SSH so it appears as a local directory on elite.
+When I want a fresh backup, I run Kopia manually on elite with a separate configuration that writes to the mounted directory.
+The SharePoint backup has its own configuration and runs independently.
+
+#### Mount the Backup Target over SSH
+
+On x99, I unlock and mount a VeraCrypt volume at `/media/veracrypt2`.
+The directory `/media/veracrypt2/rsync-target/kopia-backups/elite/` exists on that volume and is writable by the local account on x99 that runs the mount command.
+
+Install `openssh-sftp-server` and `vdeplug` on x99 and [SSHFS](https://github.com/libfuse/sshfs/blob/sshfs-3.7.3/sshfs.rst) on elite. The `vdeplug` package provides `dpipe`, which connects the local SFTP server to SSHFS on elite through an SSH session initiated by x99.
+
+In the first terminal on x99, run:
+
+```bash
+LOCAL_REPOSITORY=/media/veracrypt2/rsync-target/kopia-backups/elite
+ssh elite-root 'install -d -m 0700 /mnt/kopia-secondary'
+
+dpipe /usr/lib/openssh/sftp-server -d "$LOCAL_REPOSITORY" = \
+  ssh -T -o BatchMode=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=3 elite-root '
+    exec 9>/run/lock/reverse-sshfs-kopia-secondary.lock
+    flock -n 9 || exit 1
+    if mountpoint -q /mnt/kopia-secondary; then
+      echo "Mountpoint already occupied" >&2
+      exit 1
+    fi
+    exec sshfs :. /mnt/kopia-secondary -f -o passive,dir_cache=no
+  '
+```
+
+Leave this terminal running. The SFTP server starts in the backup directory and can access other paths permitted to your local x99 account, so use this setup with an elite server you trust.
+
+In a second terminal on x99, connect to elite and check that the mount is active:
+
+```bash
+ssh elite-root
+findmnt --mountpoint /mnt/kopia-secondary -o TARGET,SOURCE,FSTYPE
+```
+
+Confirm that `findmnt` shows `/mnt/kopia-secondary` with filesystem type `fuse.sshfs` before running Kopia.
+If the mount is missing, stop so the backup does not write to elite's local disk.
+
+After the backup finishes, run `fusermount3 -u /mnt/kopia-secondary` on elite.
+The mount command in the first terminal should then exit.
+
+#### One-time Kopia setup on elite
+
+With the mount open in the first terminal, run the Kopia commands as root on elite in the second terminal. Use a fresh Bash session for these examples. Start each session, including later backups, with the following:
+
+```bash
+set -euo pipefail
+umask 077
+unset KOPIA_CONFIG_PATH KOPIA_CACHE_DIRECTORY KOPIA_PASSWORD
+
+SECONDARY_MOUNT=/mnt/kopia-secondary
+SECONDARY_CONFIG="$HOME/.config/kopia/secondary.repository.config"
+exec 8>/run/lock/kopia-secondary-operation.lock
+flock -n 8
+test "$(findmnt -rn -M "$SECONDARY_MOUNT" -o FSTYPE)" = fuse.sshfs
+
+kopia_secondary() {
+  kopia --config-file="$SECONDARY_CONFIG" --no-use-keyring "$@"
+}
+```
+
+For a new, empty destination, create the repository once and choose a repository password. Save it somewhere you can access during recovery.
+
+```bash
+kopia_secondary repository create filesystem --path="$SECONDARY_MOUNT" --disable-repository-format-cache
+# Enter password to create new repository: 
+# Re-enter password for verification: 
+# Initializing repository with:
+#   block hash:          BLAKE2B-256-128
+#   encryption:          AES256-GCM-HMAC-SHA256
+#   key derivation:      scrypt-65536-8-1
+#   splitter:            DYNAMIC-4M-BUZHASH
+# Connected to repository.
+
+# NOTICE: Kopia will check for updates on GitHub every 7 days, starting 24 hours after first use.
+# To disable this behavior, set environment variable KOPIA_CHECK_FOR_UPDATES=false
+# Alternatively you can remove the file "/root/.config/kopia/secondary.repository.config.update-info.json".
+
+# Retention:
+#   Annual snapshots:                 3   (defined for this target)
+#   Monthly snapshots:               24   (defined for this target)
+#   Weekly snapshots:                 4   (defined for this target)
+#   Daily snapshots:                  7   (defined for this target)
+#   Hourly snapshots:                48   (defined for this target)
+#   Latest snapshots:                10   (defined for this target)
+#   Ignore identical snapshots:   false   (defined for this target)
+# Compression disabled.
+
+# To find more information about default policy run 'kopia policy get'.
+# To change the policy use 'kopia policy set' command.
+
+# NOTE: Kopia will perform quick maintenance of the repository automatically every 1h0m0s
+# and full maintenance every 24h0m0s when running as root@elite.
+
+# See https://kopia.io/docs/advanced/maintenance/ for more information.
+
+# NOTE: To validate that your provider is compatible with Kopia, please run:
+
+# $ kopia repository validate-provider
+
+root@elite:~# ll .config/kopia/secondary.repository.config*
+# -rw------- 1 root root 532 Nov 18 15:21 .config/kopia/secondary.repository.config
+# -rw------- 1 root root   8 Nov 18 15:21 .config/kopia/secondary.repository.config.kopia-password
+# -rw------- 1 root root 143 Nov 18 15:21 .config/kopia/secondary.repository.config.update-info.json
+
+
+kopia_secondary repository status
+# Config file:         /root/.config/kopia/secondary.repository.config
+
+# Description:         Repository in Filesystem: /mnt/kopia-secondary
+# Hostname:            elite
+# Username:            root
+# Read-only:           false
+# Format blob cache:   disabled
+
+# Storage type:        filesystem
+# Storage capacity:    421.6 GB
+# Storage available:   165.3 GB
+# Storage config:      {
+#                        "path": "/mnt/kopia-secondary",
+#                        "fileMode": 384,
+#                        "dirMode": 448,
+#                        "dirShards": null
+#                      }
+
+# Unique ID:           733881ab06901cfedf4a888fab4690f6d654c349326b2a4cef338f97c48de635
+# Hash:                BLAKE2B-256-128
+# Encryption:          AES256-GCM-HMAC-SHA256
+# Splitter:            DYNAMIC-4M-BUZHASH
+# Format version:      3
+# Content compression: true
+# Password changes:    true
+# Max pack length:     21 MB
+# Index Format:        v2
+
+# Epoch Manager:       enabled
+# Current Epoch: 0
+
+# Epoch refresh frequency: 20m0s
+# Epoch advance on:        20 blobs or 10.5 MB, minimum 24h0m0s
+# Epoch cleanup margin:    4h0m0s
+# Epoch checkpoint every:  7 epochs
+
+kopia_secondary repository validate-provider
+# Opening 4 equivalent storage connections...
+# Validating storage capacity and usage
+# Validating blob list responses
+# Validating non-existent blob responses
+# Writing blob (5000000 bytes)
+# Validating conditional creates...
+# Validating list responses...
+# Validating partial reads...
+# Validating full reads...
+# Validating metadata...
+# Running concurrency test for 30s...
+# All good.
+# Cleaning up temporary data...
+```
+
+Record the repository's unique ID from the status output.
+
+> Elite uses the same mountpoint even if I mount a different backup disk there.
+> After each reconnect, I compare the ID in `repository status` with my notes to make sure I'm about to write to the intended repository.
+
+> Unique ID: `733881ab06901cfedf4a888fab4690f6d654c349326b2a4cef338f97c48de635`
+
+
+The provider check writes temporary test data to exercise the mounted storage.
+
+Kopia stores policies in each repository.
+Before the first backup, compare the effective policies for the source.
+Here, plain `kopia` uses root's existing SharePoint configuration.
+Check the storage shown by `repository status` before using it as your reference.
+
+```bash
+LOGICAL_SOURCE="root@$(hostname):/mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap"
+kopia repository status
+# Config file:         /root/.config/kopia/repository.config
+
+# Description:         My Offsite BTRFS Snapshots for elite
+# Hostname:            elite
+# Username:            root
+# Read-only:           false
+# Format blob cache:   15m0s
+
+# Storage type:        rclone
+# Storage capacity:    unbounded
+# Storage config:      {
+#                        "remotePath": "rclone-backup-sharepoint-site:elite",
+#                        "startupTimeout": "15s",
+#                        "atomicWrites": true,
+#                        "dirShards": null
+#                      }
+
+# Unique ID:           814d7cb7dbb5cc7e2e94158571218e65fdcee37cd4eebc54065cd52a33ca33a0
+# Hash:                BLAKE2B-256-128
+# Encryption:          AES256-GCM-HMAC-SHA256
+# Splitter:            DYNAMIC-4M-BUZHASH
+# Format version:      3
+# Content compression: true
+# Password changes:    true
+# Max pack length:     21 MB
+# Index Format:        v2
+
+# Epoch Manager:       enabled
+# Current Epoch: 39
+
+# Epoch refresh frequency: 20m0s
+# Epoch advance on:        20 blobs or 10.5 MB, minimum 24h0m0s
+# Epoch cleanup margin:    4h0m0s
+# Epoch checkpoint every:  7 epochs
+
+kopia policy list
+# 8ba48a8121e56465bd0b0f91c4481805 (global)
+
+kopia policy show "$LOGICAL_SOURCE"
+# Policy for root@elite:/mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap:
+
+# Retention:
+#   Annual snapshots:                        3   inherited from (global)
+#   Monthly snapshots:                      12   inherited from (global)
+#   Weekly snapshots:                        4   inherited from (global)
+#   Daily snapshots:                        14   inherited from (global)
+#   Hourly snapshots:                        0   inherited from (global)
+#   Latest snapshots:                        7   inherited from (global)
+#   Ignore identical snapshots:          false   inherited from (global)
+
+# Files policy:
+#   Ignore cache directories:             true   inherited from (global)
+#   No ignore rules:
+#   Read ignore rules from files:                inherited from (global)
+#     .kopiaignore
+#   Scan one filesystem only:            false   inherited from (global)
+
+# ...
+
+# Uploads:
+# ...
+#   Max parallel file reads:                 1   inherited from (global)
+# ...
+
+# Compression:
+#   Compressor:                          pgzip   inherited from (global)
+#   Compress files regardless of extensions.
+#   Compress files of all sizes.
+
+# ...
+
+kopia_secondary policy show "$LOGICAL_SOURCE"
+# Policy for root@elite:/mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap:
+
+# Retention:
+#   Annual snapshots:                        3   inherited from (global)
+#   Monthly snapshots:                      24   inherited from (global)
+#   Weekly snapshots:                        4   inherited from (global)
+#   Daily snapshots:                         7   inherited from (global)
+#   Hourly snapshots:                       48   inherited from (global)
+#   Latest snapshots:                       10   inherited from (global)
+#   Ignore identical snapshots:          false   inherited from (global)
+
+# Files policy:
+#   Ignore cache directories:             true   inherited from (global)
+#   No ignore rules:
+#   Read ignore rules from files:                inherited from (global)
+#     .kopiaignore
+#   Scan one filesystem only:            false   inherited from (global)
+
+# ...
+
+# Uploads:
+# ...
+#   Max parallel file reads:                 -   inherited from (global)
+# ...
+
+# Compression disabled.
+
+# ...
+```
+
+Compare the **Files policy** and retention settings.
+Use `policy list` to spot rules for subdirectories and inspect those targets with `policy show` as well.
+Ignore files such as `.kopiaignore` already present in the Btrfs snapshot are read according to the secondary policy's ignore-file settings.
+
+In my setup, the two **Files policy** sections match.
+Both ignore cache directories and read `.kopiaignore`, and neither has repository-defined ignore patterns for this source.
+The SharePoint repository lists only a global policy, so there are no per-directory policies to copy.
+
+The differences are retention, file-read parallelism, and compression.
+SharePoint keeps 7 latest, 0 hourly, 14 daily, and 12 monthly snapshots.
+The secondary defaults are 10 latest, 48 hourly, 7 daily, and 24 monthly.
+Both keep 4 weekly and 3 annual snapshots.
+SharePoint limits parallel file reads to 1 and uses `pgzip`.
+The secondary has no explicit file-read limit and compression is disabled.
+
+To enable the same compression on the secondary repository, run:
+
+```bash
+kopia_secondary policy set --global --compression=pgzip
+```
+
+Kopia compresses data on elite before writing it through SSHFS.
+This uses more CPU on elite but can reduce network traffic and disk usage on x99.
+Logs and uncompressed dumps can benefit more than the Nextcloud Borg backup if Borg has already compressed its data.
+The policy applies to new writes, and existing snapshots remain readable.
+
+To copy a repository-defined exclusion, add its pattern at the matching scope in the secondary repository.
+For example, the following excludes directories named `cache` for this source.
+Use the actual pattern from your policy, and repeat `--add-ignore` for each rule you need.
+
+```bash
+kopia_secondary policy set --add-ignore 'cache/' "$LOGICAL_SOURCE"
+```
+
+For an occasional manual backup, you could keep the seven latest snapshots for this source and set the time-based retention counts to zero:
+
+```bash
+kopia_secondary policy set --keep-latest=7 --keep-hourly=0 --keep-daily=0 --keep-weekly=0 --keep-monthly=0 --keep-annual=0 "$LOGICAL_SOURCE"
+# Setting policy for root@elite:/mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap
+#  - setting "number of annual backups to keep" to 0.
+#  - setting "number of monthly backups to keep" to 0.
+#  - setting "number of weekly backups to keep" to 0.
+#  - setting "number of daily backups to keep" to 0.
+#  - setting "number of hourly backups to keep" to 0.
+#  - setting "number of latest backups to keep" to 7.
+# Running full maintenance...
+# GC found 0 unused contents (0 B)
+# GC found 0 unused contents that are too recent to delete (0 B)
+# GC found 0 in-use contents (0 B)
+# GC found 2 in-use system-contents (1.1 KB)
+# GC undeleted 0 contents (0 B)
+# Compacting an eligible uncompacted epoch...
+# Advancing epoch markers...
+# Attempting to compact a range of epoch indexes ...
+# Cleaning up unneeded epoch markers...
+# Cleaning up old index blobs which have already been compacted...
+# Cleaned up 0 logs.
+# Finished full maintenance.
+
+kopia_secondary policy show "$LOGICAL_SOURCE"
+```
+
+Choose counts that fit how often you back up and how far back you want to recover.
+With these settings, a snapshot becomes eligible for automatic removal once seven newer snapshots exist for the same source. Its age alone does not cause it to expire.
+
+#### Run a manual backup on elite
+
+Open the mount and start the second shell as above. Reconnect each time so Kopia reads the identity of the repository currently mounted at that path and selects its cache.
+
+```bash
+kopia_secondary repository connect filesystem --path="$SECONDARY_MOUNT" --disable-repository-format-cache
+# Enter password to open repository: 
+# Connected to repository.
+
+kopia_secondary repository status
+# Unique ID:           733881ab06901cfedf4a888fab4690f6d654c349326b2a4cef338f97c48de635
+```
+
+Check the repository ID against your notes before continuing.
+List the Btrfs subvolumes and substitute the dated read-only snapshot you want to back up.
+The stable source label groups successive backups even though the dated input path changes.
+
+```bash
+btrfs subvolume list /mnt/luks_btrfs_volume
+# ...
+# ID 874 gen 760010 top level 5 path @offsite_backup_storage_snapshot-2026-11-17-0401
+# ID 875 gen 762236 top level 5 path @offsite_backup_storage_snapshot-2026-11-18-0406
+
+SNAPSHOT_PATH=/mnt/luks_btrfs_volume/@offsite_backup_storage_snapshot-2026-11-18-0406
+test "$(btrfs property get -ts "$SNAPSHOT_PATH" ro)" = ro=true
+LOGICAL_SOURCE="root@$(hostname):/mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap"
+kopia_secondary policy show "$LOGICAL_SOURCE"
+
+SNAPSHOT_RESULT=$(mktemp /tmp/kopia-secondary-result.XXXXXX)
+kopia_secondary --progress snapshot create --fail-fast --override-source="$LOGICAL_SOURCE" --description="Secondary backup of $SNAPSHOT_PATH" --json "$SNAPSHOT_PATH" > "$SNAPSHOT_RESULT"
+#  / 2 hashing, 55042 hashed (16.9 GB), 0 cached (0 B), uploaded 16.2 GB, estimated 36.7 GB (46.1%) 3m5s left
+#  * 0 hashing, 55197 hashed (36.7 GB), 0 cached (0 B), uploaded 36 GB, estimated 36.7 GB (100.0%) 0s left  
+jq -e '(.incomplete // "") == ""' "$SNAPSHOT_RESULT"
+# true # true means the snapshot manifest reports no incomplete reason, and jq -e exited successfully.
+SECONDARY_SNAPSHOT_ID=$(jq -er '.id' "$SNAPSHOT_RESULT")
+echo $SECONDARY_SNAPSHOT_ID
+# 28b47d2eeb0ff51bc8a9f442e1ca04d6
+
+kopia_secondary cache clear
+# Clearing cache directory: /root/.cache/kopia/a7216637a3325c93.
+kopia_secondary --progress snapshot verify --verify-files-percent=100 "$SECONDARY_SNAPSHOT_ID"
+# ...
+# Processed 56644 objects (36.6 GB). Read 52401 files (36.6 GB).
+# Processed 57009 objects (36.6 GB). Read 52766 files (36.6 GB).
+# Finished processing 57090 objects (36.6 GB). Read 52847 files (36.6 GB).
+
+kopia_secondary snapshot list --all --manifest-id
+# root@elite:/mnt/luks_btrfs_volume/@offsite_backup_storage_backup-snap
+#   2026-11-18 15:55:32 CET kcbc0b751a06e2ffb3673d56e52fac1ca 36.7 GB drwxr-xr-x manifest:28b47d2eeb0ff51bc8a9f442e1ca04d6 files:55189 dirs:4333 (latest-1)
+```
+
+> `snapshot list` counts file entries in the snapshot (55,189). Verification reads each distinct stored file object once (52,847), even when several paths share it. With `--verify-files-percent=100`, Kopia reads every distinct file object, so the lower count is expected.
+
+On X99:
+
+```bash
+du -sh /media/veracrypt2/rsync-target/kopia-backups/elite/
+# 34G     /media/veracrypt2/rsync-target/kopia-backups/elite/
+```
+
+This example uses `jq` to read the backup result.
+Clearing this connection's cache before verification makes Kopia read the stored data through the mount.
+When all Kopia commands finish, unmount as shown above
+
+> `fusermount3 -u /mnt/kopia-secondary` on elite.
+
+and exit the second shell on elite to release its lock.

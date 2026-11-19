@@ -211,3 +211,58 @@ In conclusion, using FIDO2 hardware keys as OpenSSH keys is an excellent way to 
 infrastructure, making it an easy and cost-effective solution. So, if you're looking for a way to enhance your security, consider using FIDO2 hardware
 keys as OpenSSH keys.
 
+## Appendix
+
+### SSH Multiplexing / Pre-Authentication
+
+The multiplexing setup in [Configure ProxyJump](#configure-proxyjump) uses a separate socket path for each host and a 60-second idle timeout.
+For reusable defaults, create a private directory for the control sockets:
+
+```bash
+mkdir -p ~/.ssh/control
+chmod 700 ~/.ssh/control
+```
+
+Add this block near the end of `~/.ssh/config`, after host-specific settings:
+
+```sshconfig
+Host *
+    ControlMaster auto
+    ControlPath ~/.ssh/control/%C
+    ControlPersist 8h
+```
+
+- `ControlMaster auto` reuses a running master or starts a new one when needed.
+- `ControlPath` sets the local Unix socket path. `%C` expands to a hash that includes the remote host, port, and user.
+- `ControlPersist 8h` keeps the master available for up to eight hours after its last session closes.
+
+OpenSSH uses the first value it finds for each option. Remove the corresponding settings from an earlier host block if you want that host to inherit these defaults.
+
+You can open the master before running a script or starting a series of transfers:
+
+```bash
+ssh -MNf myserver
+```
+
+Replace `myserver` with the SSH host alias that has a `ControlPath` configured.
+
+* The `-M` option starts a multiplexing master,
+* `-N` skips opening a shell or running a remote command, and
+* `-f` puts SSH in the background after authentication.
+
+Authenticate with your hardware key when prompted.
+Later `ssh`, `scp`, and `sftp` commands using the same alias share the authenticated connection through its control socket.
+
+```bash
+ssh -O check myserver
+ssh -O exit myserver
+```
+
+Use `check` to see whether the master is running.
+Use `exit` when you are done.
+It closes the master connection and ends any sessions still using it.
+
+The configured idle timeout also applies to a master started with `-MNf`.
+With `ControlPersist no`, an explicitly started `-MNf` master can stay up until you stop it or the connection breaks.
+
+See the OpenSSH manuals for [ssh(1)](https://man.openbsd.org/ssh) and [ssh_config(5)](https://man.openbsd.org/ssh_config).
