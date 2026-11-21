@@ -765,6 +765,201 @@ If you prefer the workstation's `/etc/hosts` entry, remove the `HostName` line s
 
 See the [RouterOS DHCP server documentation](https://manual.mikrotik.com/docs/network-management/dhcp/server).
 
+### DNS Failover from Pi-hole to the ISP Gateway
+
+Devices on my LAN get their IPv4 leases from the MikroTik and use it at `192.168.88.1` for DNS.
+On its WAN side, the MikroTik is itself a DHCP client.
+Pi-hole at `192.168.1.4` supplies its WAN lease and normally answers its upstream DNS queries.
+The ISP gateway at `192.168.1.1` is the default route to the internet throughout.
+
+Two events can trigger a change on the MikroTik:
+
+- **Pi-hole stops answering DNS.** Netwatch switches upstream queries to the ISP gateway, which also answers DNS.
+  Those queries bypass Pi-hole's filtering and encrypted upstream connection.
+  LAN clients keep using the MikroTik for DNS, including local names such as `x99.lan`.
+- **The MikroTik loses its WAN lease.** The current lease can remain valid through a short outage.
+  If it expires before the MikroTik can renew it, a separate DHCP client script enables the saved WAN address (`192.168.1.2/24` on `ether1`) and default route via `192.168.1.1`.
+  The MikroTik can keep using the gateway while it waits for a new lease.
+
+> When I stopped Pi-hole briefly, Netwatch switched DNS to the ISP gateway and a LAN client could still resolve names.
+> When I started Pi-hole again, Netwatch switched DNS back.
+> The WAN lease stayed bound throughout, so the saved address and route remained disabled.
+
+#### Preserve WAN connectivity if the DHCP lease is lost
+
+The fallback consists of two static entries with the same comment.
+These are the values from my last successful lease.
+I create both entries disabled while DHCP is bound:
+
+```routeros
+/ip address add address=192.168.1.2/24 interface=ether1 disabled=yes comment=pihole-last-lease-fallback
+/ip route add dst-address=0.0.0.0/0 gateway=192.168.1.1 distance=1 disabled=yes comment=pihole-last-lease-fallback
+```
+
+The following goes in the `script` field of the existing WAN DHCP client on `ether1`.
+
+> `/ip dhcp-client add comment=defconf interface=ether1 name=ether1 script=...`
+
+When DHCP binds, it saves the leased address and gateway into the disabled entries.
+When the client loses its lease, it enables both entries.
+When DHCP binds again, it disables and refreshes them.
+An export taken during fallback therefore shows the static entries enabled.
+
+```routeros
+:local tag "pihole-last-lease-fallback"
+:local addressCount [/ip address print count-only where comment=$tag]
+:local routeCount [/ip route print count-only where comment=$tag]
+:if ($addressCount != 1) do={
+    :log error "WAN fallback event aborted: expected one fallback address"
+    :error "Unexpected fallback address count"
+}
+:if ($routeCount != 1) do={
+    :log error "WAN fallback event aborted: expected one fallback route"
+    :error "Unexpected fallback route count"
+}
+:local fallbackAddress [/ip address find where comment=$tag]
+:local fallbackRoute [/ip route find where comment=$tag]
+:if ($bound = 1) do={
+    :local dhcpClient [/ip dhcp-client find where interface=$interface]
+    :if ([:len $dhcpClient] != 1) do={
+        :log error "WAN fallback refresh aborted: DHCP client is ambiguous"
+        :error "Unexpected DHCP client count"
+    }
+    :local leaseAddress [/ip dhcp-client get $dhcpClient address]
+    :local leaseGateway $"gateway-address"
+    :if ([:len $leaseAddress] = 0) do={
+        :log error "WAN fallback refresh aborted: lease address is empty"
+        :error "Empty DHCP lease address"
+    }
+    :if ([:len $leaseGateway] = 0) do={
+        :log error "WAN fallback refresh aborted: lease gateway is empty"
+        :error "Empty DHCP lease gateway"
+    }
+    /ip route disable $fallbackRoute
+    /ip address disable $fallbackAddress
+    /ip address set $fallbackAddress address=$leaseAddress interface=$interface
+    /ip route set $fallbackRoute gateway=$leaseGateway distance=1
+    :log info ("WAN DHCP bound; refreshed disabled fallback to " . $leaseAddress . " via " . $leaseGateway)
+} else={
+    /ip address enable $fallbackAddress
+    /ip route enable $fallbackRoute
+    :log warning "WAN DHCP unbound; enabled last-known address and gateway fallback"
+}
+```
+
+This assumes the last leased address is still available to the MikroTik and the gateway is still reachable.
+If you reproduce the setup, use your own WAN lease values and ensure your DHCP server keeps that address reserved for the router.
+
+#### Switch DNS upstream with Netwatch
+
+I use [RouterOS Netwatch](https://help.mikrotik.com/docs/spaces/ROS/pages/8323208/Netwatch) to DNS-query Pi-hole directly for the IPv4 address of `pi.hole` every 30 seconds, with a 3-second timeout.
+Pi-hole answers that name locally, so a failure further upstream can leave the probe healthy.
+
+Netwatch keeps probing Pi-hole even while the ISP gateway handles client queries.
+On each switch, the corresponding script flushes the MikroTik's DNS cache and logs the change.
+The script bodies below go in the entry's `down-script` and `up-script` fields.
+
+```routeros
+/tool netwatch add name=pihole-dns-health type=dns host=pi.hole \
+    dns-server=192.168.1.4 record-type=A port=53 interval=30s timeout=3s \
+    startup-delay=30s ignore-initial-up=yes ignore-initial-down=no disabled=yes \
+    down-script=... \
+    up-script=...
+```
+
+I create the entry with `disabled=yes` so it stays inactive while I attach both scripts and set the initial upstream resolver.
+The enable command below starts monitoring.
+
+Netwatch starts in an unknown state.
+With `ignore-initial-up=yes`, a successful first probe marks Pi-hole as up and skips the up script.
+With `ignore-initial-down=no`, a failed first probe runs the down script and selects the ISP gateway.
+Later transitions between up and down run the corresponding scripts.
+
+> If the router reboots while using the gateway and Pi-hole is reachable when probing resumes, the first successful probe leaves the gateway selected.
+> Set `ignore-initial-up=no` if you want the first probe to select the resolver in either case.
+> See the [Netwatch script behavior](https://manual.mikrotik.com/docs/diagnostics-monitoring-and-troubleshooting/netwatch).
+
+The down script reads the saved gateway from the tagged route, even while that route is disabled.
+It checks that there is exactly one matching route and that the gateway is set before switching DNS:
+
+```routeros
+:local fallbackTag "pihole-last-lease-fallback"
+:local fallbackRoute [/ip route find where comment=$fallbackTag]
+:if ([:len $fallbackRoute] != 1) do={
+    :log error "Pi-hole DNS probe down, but fallback route is ambiguous"
+    :error "Unexpected fallback route count"
+}
+:local fallbackDns [/ip route get $fallbackRoute gateway]
+:if ([:len $fallbackDns] = 0) do={
+    :log error "Pi-hole DNS probe down, but fallback gateway is empty"
+    :error "Empty fallback DNS gateway"
+}
+/ip dns set servers=$fallbackDns
+/ip dns cache flush
+:log warning ("Pi-hole DNS probe down; selected upstream gateway resolver " . $fallbackDns)
+```
+
+The up script restores Pi-hole:
+
+```routeros
+:local primaryDns "192.168.1.4"
+/ip dns set servers=$primaryDns
+/ip dns cache flush
+:log info "Pi-hole DNS probe up; selected Pi-hole as static resolver"
+```
+
+Once the tagged route and both Netwatch scripts are in place, set the initial upstream explicitly and enable the probe.
+I disable learned DNS from WAN DHCP and IPv6 router advertisements so Netwatch controls the upstream:
+
+```routeros
+/ip dhcp-client set [find where interface=ether1] use-peer-dns=no
+/ipv6 nd settings set router-advertisement-ignored-options=dns
+/ip dns set servers=192.168.1.4
+/ip dns cache flush
+/tool netwatch enable [find where name=pihole-dns-health]
+```
+
+Run these read-only commands on the MikroTik to check the upstream DNS resolver and the WAN DHCP lease.
+
+```routeros
+/tool netwatch print detail where name=pihole-dns-health
+/ip dns print
+/ip dhcp-client print detail where interface=ether1
+```
+
+- In `/tool netwatch print detail`, `status` tells me whether Pi-hole answered the direct DNS probe. `up` means the probe succeeded, `down` means it failed, and `unknown` means the probe has yet to return a result.
+- In `/ip dns print`, the `servers` field shows where the MikroTik sends upstream DNS queries. In my setup, `192.168.1.4` is Pi-hole and `192.168.1.1` is the ISP gateway.
+- In `/ip dhcp-client print detail`, look for `status` on `ether1`. `bound` means the MikroTik has a WAN lease.
+  During one check mine showed `status=searching...`, meaning it was looking for a lease.
+  The `Flags:` line is a legend.
+  An `X` beside the DHCP client's row number would mean the client itself was disabled.
+
+To see whether the DHCP script has enabled the fallback, inspect the saved WAN address on `ether1` and the saved default route via the ISP gateway.
+During the same check, their rows looked like this.
+
+```text
+/ip address print detail where comment=pihole-last-lease-fallback
+ 0     ;;; pihole-last-lease-fallback
+       address=192.168.1.2/24 network=192.168.1.0 interface=ether1
+
+/ip route print detail where comment=pihole-last-lease-fallback
+ 0  As   ;;; pihole-last-lease-fallback
+         dst-address=0.0.0.0/0 routing-table=main gateway=192.168.1.1
+```
+
+Read the space between the row number (`0` here) and the comment (`;;;`).
+The address row has no flags, so the saved address is enabled.
+
+The route row shows `As`, where `A` means active and lowercase `s` means static.
+When DHCP obtains a new lease, the script disables the saved address and route.
+An `X` should then appear beside the row number in each of these two outputs.
+
+During one check, Netwatch showed `status=down` and `/ip dns print` showed `servers: 192.168.1.1`.
+Together, those results showed that the Pi-hole probe had failed and the gateway was selected.
+
+After recovery I expect `status=up` and `servers: 192.168.1.4`.
+If the probe shows `up` while the gateway is still selected, check the startup behavior described above for `ignore-initial-up=yes`.
+
 ### My Personal Situation
 
 Until recently I had a setup in which I did not route internet traffic directly from my public facing VPS to my home server.
@@ -1276,7 +1471,12 @@ We'll re-enable `advertise-dns` later with NAT66-appropriate DNS addresses.
 
 **`/ip dns` configuration**: If you pointed `ip dns servers` at specific resolvers purely for the ROUTE64 setup, you can either keep them or go back to using the ISP's DNS.
 
-For now, a good neutral default is:
+> If you use [Pi-hole DNS failover](#dns-failover-from-pi-hole-to-the-isp-gateway), skip the two commands below.
+> Keep `use-peer-dns=no` on `ether1` and leave `/ip dns servers` set to the resolver Netwatch selected.
+> Removing the ROUTE64 tunnel does not require changing either setting.
+
+To use the DNS servers advertised by WAN DHCP, run the following commands.
+
 ```txt
 /ip dhcp-client set [find interface=ether1] use-peer-dns=yes add-default-route=yes
 /ip dns set servers="" allow-remote-requests=yes
@@ -1417,6 +1617,10 @@ Two common options:
 
 We will go with the MikroTik as DNS forwarder.
 
+> If you already use [Pi-hole DNS failover](#dns-failover-from-pi-hole-to-the-isp-gateway), go straight to step 3.
+> Keep `use-peer-dns=no` and leave `/ip dns servers` under Netwatch control.
+> Step 3 advertises the MikroTik's own IPv6 address to LAN clients and works with either upstream resolver.
+
 1. Ensure the IPv4 DHCP client on `ether1` uses the ISP DNS:
    ```txt
    /ip dhcp-client set [find interface=ether1] use-peer-dns=yes add-default-route=yes
@@ -1435,7 +1639,8 @@ Clients will now:
 * Autofill a ULA address in `fd12:3456:789a:1::/64`.
 * Use `fd12:3456:789a:1::1` as their DNS resolver.
 
-The router in turn forwards those queries to the Salt Fiber Box / ISP DNS.
+With ISP DNS configured, the MikroTik forwards upstream queries to the upstream ISP router.
+With Pi-hole failover configured, it normally forwards them to Pi-hole and switches to the upstream ISP router when the DNS probe fails.
 
 > *Terminology:*
 > RDNSS is the "Recursive DNS Server" option inside IPv6 Router Advertisements. In RouterOS it's controlled by `advertise-dns` and `dns=` in `/ipv6 nd`.
