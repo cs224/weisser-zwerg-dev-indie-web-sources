@@ -15,7 +15,7 @@ When I started writing my [Nym Mixnet & dVPN: A Node Operator's Guide (2026)](..
 
 Later, I discovered the main helper for Nym node setups: the *Nym Node CLI*.
 It drives most installation and configuration steps for you, so cloud-init became unnecessary for that guide.
-I finished the operator's guide without mentioning cloud-init.
+I finished the operator's guide without mentioning cloud-init[^cloud-init-generator].
 
 But I still wanted to document what I learned while researching cloud-init.
 
@@ -790,3 +790,8 @@ Concrete redaction tips that worked well for me:
 * Replace public SSH keys if you do not want them tied to a specific host identity.
 * Remove any lines containing `password`, `token`, `secret`, `key`, `Authorization`, or `Bearer`.
 * If you share `cloud-init.log`, scan for rendered config content, not only for obvious credentials.
+
+
+## Footnotes
+
+[^cloud-init-generator]: `nocthost.com` offers in their [Free tools for Linux servers](https://nocthost.com/tools) a [Cloud-init user-data generator](https://nocthost.com/tools/cloud-init-generator).
