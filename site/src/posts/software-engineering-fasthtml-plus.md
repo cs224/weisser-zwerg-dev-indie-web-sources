@@ -466,7 +466,7 @@ The profile provisions Docker, `uv`, and Node tooling via cloud-init, mounts the
 That detail matters because this layer is a reproducible environment that starts from a clean deployment snapshot.
 
 At this stage, the project also moves to real HTTPS entrypoints on `.incus` domains.
-The integration runbook wires local DNS so `fasthtml-plus-integration-test.incus` resolves from the Incus instance name, and `auth.fasthtml-plus-integration-test.incus` resolves as an alias for the auth host.
+The integration runbook wires local DNS so `fasthtml-plus-integration-test.incus` resolves from the Incus instance name, and `auth.fasthtml-plus-integration-test.incus` resolves as an alias for the auth host.[^incusdns]
 TLS for this layer is handled with `mkcert`, not with Let's Encrypt, because this is still a local integration environment rather than a public deployment.
 
 This layer is also where the scaling story starts to become real.
@@ -701,3 +701,4 @@ Once you read the architecture through that lens, the behavior becomes much easi
 [^replicas]: [Scaling in Docker Compose with hands-on Examples](https://docker77.hashnode.dev/scaling-in-docker-compose-with-hands-on-examples)
 [^simplemadeeasy]: Rich Hickey: "Simple Made Easy" from Strange Loop 2011 [video](https://news.ycombinator.com/item?id=3135185).
 [^incidentalcomplexity]: [The Two Root Causes of Software Complexity](https://pressupinc.com/blog/2014/05/root-causes-software-complexity/)
+[^incusdns]: To route host-side `.incus` lookups to the Incus DNS server while keeping public lookups on your normal DNS path, use per-link resolver settings. See [Split DNS for Incus with systemd-resolved](../home-server-infrastructure/#split-dns-for-incus-with-systemd-resolved) for the explanation and persistent systemd setup.

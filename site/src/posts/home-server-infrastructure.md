@@ -1227,22 +1227,21 @@ incus network get incusbr0 dns.domain
 incus network set incusbr0 dns.domain incus
 ```
 
-Next, configure system DNS integration. Retrieve the IPv4 address of the Incus network and add it to your system's DNS settings:
+Next, configure DNS on the Incus bridge, so only `.incus` lookups use its DNS server.
+The following commands apply to the current runtime.
+For the explanation, and a small systemd unit that makes this persistent, see [Split DNS for Incus with systemd-resolved](#split-dns-for-incus-with-systemd-resolved).
+
 ```bash
 # Check the Incus network IPv4 address (example: 10.111.4.1/24)
 incus network get incusbr0 ipv4.address
 # 10.111.4.1/24
 
-mkdir -p /etc/systemd/resolved.conf.d
+# Use the bridge address without the subnet mask
+sudo resolvectl dns incusbr0 10.111.4.1
+sudo resolvectl domain incusbr0 '~incus'
+sudo resolvectl default-route incusbr0 no
 
-# Create a config file for systemd-resolved
-INCUS_NETWORK="10.111.4.1" bash -c "echo -e '[Resolve]\nDNS=$INCUS_NETWORK\nDomains=~incus' > /etc/systemd/resolved.conf.d/incus.conf"
-
-# Restart systemd-resolved to apply changes
-systemctl restart systemd-resolved
-
-# Verify your resolv.conf link
-ls -l /etc/resolv.conf
+resolvectl status incusbr0
 ```
 You can now use hostnames (e.g., `instance-name.incus`) to reach your Incus instances.
 
@@ -2096,3 +2095,223 @@ When all Kopia commands finish, unmount as shown above
 > `fusermount3 -u /mnt/kopia-secondary` on elite.
 
 and exit the second shell on elite to release its lock.
+
+### Split DNS for Incus with systemd-resolved
+
+When you open `https://instance-name.incus` in a browser on your workstation, you want the host to ask the Incus DNS server for that name.
+When you open an ordinary public website, you want it to use your normal DNS configuration instead.
+This separation is called *split DNS*.
+It is useful both for the ordinary Incus bridge introduced above and for the helper-side DNS in the [recursive Incus jail](../incus-agent-jail-recursive-ii-1-concepts/#host-facing-dns-integration).
+
+#### Why a global resolver drop-in does not express that intent
+
+Earlier versions of these instructions put the following settings in a file under `/etc/systemd/resolved.conf.d/`:
+
+```ini
+[Resolve]
+DNS=10.111.4.1
+Domains=~incus
+```
+
+The misleading part is `Domains=~incus`.
+The tilde makes `incus` a *routing-only domain*: a name ending in `.incus` selects that DNS scope, but `incus` is not appended to a short name as a search suffix.
+
+**It does not restrict a globally configured `DNS=` server to that domain.**
+
+When a query matches no routing domain, `systemd-resolved` sends it to the DNS servers on its default-route links **and to its globally configured DNS servers**.
+This behavior is documented in the [systemd 255 routing rules](https://github.com/systemd/systemd/blob/v255/man/systemd-resolved.service.xml).
+
+This explained an unexpected observation during a DNS investigation on my workstation: public-domain queries reached the Incus helper, which returned `REFUSED`.
+The intended configuration belongs to a *link*, such as `incusbr0`:
+
+| Setting on `incusbr0` | Meaning |
+| --- | --- |
+| DNS server | The Incus bridge DNS address, or the helper DNS address for the recursive setup |
+| Routing domain `~incus` | Select this link's DNS configuration for `.incus` names |
+| DNS default route `no` | Do not use this link's DNS servers for unrelated names |
+
+Here, *link* describes the DNS configuration selected by the host resolver.
+It does not mean that the application's request must originate from that network interface.
+Your browser, SSH client, and other applications on the host can all use it.
+Likewise, the DNS default-route flag controls DNS server selection; it does not change your IP default route.
+
+#### Choose the DNS server for your setup
+
+For an ordinary Incus network, ask the bridge's DNS server.
+Inspect the bridge address and domain with:
+
+```bash
+incus network get incusbr0 ipv4.address
+incus network get incusbr0 dns.domain
+```
+
+If the address is `10.111.4.1/24`, the DNS server address is `10.111.4.1`, without `/24`.
+The examples below assume the domain is `incus`.
+If you configured another domain, substitute it in the routing domain too.
+
+> The recursive jail has a different DNS view: its helper publishes the merged names of the hierarchy.
+>
+> For that setup, use the helper's host-visible address, for example `10.227.241.53`, as described in its [DNS integration instructions](../incus-agent-jail-recursive-ii-1-concepts/#dns-integration).
+>
+> **The bridge DNS and helper DNS are alternatives for these two setups, not interchangeable servers to list together.**
+
+#### Make the per-link settings persistent
+
+Commands such as `resolvectl dns`, `resolvectl domain`, and `resolvectl default-route` change runtime settings.
+They need to be applied again after the bridge is recreated or `systemd-resolved` restarts.
+A drop-in under `/etc/systemd/resolved.conf.d/` cannot provide this per-link configuration because that directory configures the resolver globally.
+
+If NetworkManager or systemd-networkd already manages the interface, it can supply persistent per-link DNS settings.
+For an Incus-managed bridge, a small systemd service applies the DNS settings without taking over bridge management.
+Incus documents this approach in [How to integrate with systemd-resolved](https://linuxcontainers.org/incus/docs/main/howto/network_bridge_resolved/).
+
+Open a static unit file:
+
+```bash
+sudoedit /etc/systemd/system/incus-dns-incusbr0.service
+```
+
+Use the following contents, replacing `10.111.4.1` with your chosen DNS server address.
+
+> For the recursive jail, this is where you use the helper address instead.
+
+If your bridge has another name, replace `incusbr0` throughout the file and in its filename.
+
+> You can check the device unit used by the service directly:
+>
+> ```bash
+> systemctl status sys-subsystem-net-devices-incusbr0.device
+> ```
+>
+> You can also work the other way around. Start by finding the Incus bridge name:
+>
+> ```bash
+> incus network list
+> ```
+>
+> For a bridge named `incusbr0`, find the associated systemd device units:
+>
+> ```bash
+> systemctl list-units --type=device --all '*incusbr0*'
+> ```
+>
+> You may see two units for the same bridge:
+>
+> | Device unit | Origin |
+> | --- | --- |
+> | `sys-devices-virtual-net-incusbr0.device` | The bridge's actual sysfs location, `/sys/devices/virtual/net/incusbr0` |
+> | `sys-subsystem-net-devices-incusbr0.device` | An additional identity that systemd's udev rules provide for the network interface named `incusbr0` |
+>
+> The second form identifies a network interface without depending on its location in the device tree.
+> Systemd 255 explicitly creates it through the udev property `SYSTEMD_ALIAS=/sys/subsystem/net/devices/$name`, where `$name` is the interface name.
+> The [rule and its explanation](https://github.com/systemd/systemd/blob/v255/rules.d/99-systemd.rules.in#L41-L47) also clarify that this is an identification string: `/sys/subsystem/net/devices/incusbr0` need not exist as an accessible filesystem path.
+>
+> Although udev calls this an alias, systemd creates a separate device-unit object associated with the same underlying device.
+> Consequently, each unit's `Names=` property can contain only its own name; it need not list both identifiers.
+> This behavior is visible in systemd's [device-unit implementation](https://github.com/systemd/systemd/blob/v255/src/core/device.c#L732-L782).
+> Inspect the two units together with:
+>
+> ```bash
+> systemctl show sys-devices-virtual-net-incusbr0.device sys-subsystem-net-devices-incusbr0.device -p Id -p Names -p SysFSPath
+> ```
+>
+> Both should report `SysFSPath=/sys/devices/virtual/net/incusbr0`, while their `Id=` and `Names=` values remain separate.
+> They track the same bridge appearing and disappearing, so either can identify this bridge in a dependency.
+> The service below follows the official Incus recipe in using the subsystem form: it expresses a dependency on the network interface called `incusbr0` without assuming its `devices/virtual/net` location.
+> All of these inspection commands are read-only.
+
+```ini
+[Unit]
+Description=Host split DNS for .incus on incusbr0
+BindsTo=sys-subsystem-net-devices-incusbr0.device
+Wants=systemd-resolved.service
+After=sys-subsystem-net-devices-incusbr0.device systemd-resolved.service
+PartOf=systemd-resolved.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/resolvectl dns incusbr0 10.111.4.1
+ExecStart=/usr/bin/resolvectl domain incusbr0 ~incus
+ExecStart=/usr/bin/resolvectl default-route incusbr0 no
+ExecStart=/usr/bin/resolvectl dnssec incusbr0 no
+ExecStart=/usr/bin/resolvectl dnsovertls incusbr0 no
+ExecStopPost=-/usr/bin/resolvectl revert incusbr0
+
+[Install]
+WantedBy=sys-subsystem-net-devices-incusbr0.device systemd-resolved.service
+```
+
+The unit runs the `resolvectl` commands once and remembers that it applied them; it is not another continuously running DNS server.
+`BindsTo=` and `After=` tie its lifetime to the bridge device.
+Enabling it under that device starts it when the bridge appears, including after bridge recreation.
+`Wants=` and `After=` start the resolver first, while `PartOf=` propagates resolver stops and restarts to this unit.
+The second `WantedBy=` entry also starts it when the resolver is started again after a separate stop.
+These dependency relationships are described in [systemd.unit](https://github.com/systemd/systemd/blob/v255/man/systemd.unit.xml).
+
+The DNSSEC and DNS-over-TLS settings follow the Incus example for its unsigned local zone and plain DNS service.
+They apply only to this link.
+`ExecStopPost=` clears the link's resolver settings when the unit stops.
+Its leading `-` allows cleanup to finish if the bridge or resolver has already disappeared.
+Use this service as the sole owner of the bridge's resolver settings, because `resolvectl revert` clears all settings for that link.
+
+#### Enable the service
+
+With the bridge available, reload the unit files, and activate the service:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now incus-dns-incusbr0.service
+```
+
+After activation, `systemctl status incus-dns-incusbr0.service` should show `active (exited)`, which is the expected state for this oneshot unit.
+
+#### Verify local and public lookups
+
+Inspect both the global and link-specific state:
+
+```bash
+systemctl status incus-dns-incusbr0.service
+resolvectl status
+# Link N (incusbr0)
+#     Current Scopes: DNS
+#          Protocols: -DefaultRoute -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported
+# Current DNS Server: 10.111.4.1
+#        DNS Servers: 10.111.4.1
+#         DNS Domain: ~incus
+```
+
+The `incusbr0` section should show your chosen DNS server, `~incus`, and `-DefaultRoute`.
+Your ordinary network connection should retain its existing DNS servers.
+
+Use an actual running instance's name in place of `instance-name.incus` below.
+For the recursive setup, you can use `forest-ca.incus` instead.
+
+```bash
+sudo resolvectl flush-caches
+resolvectl query instance-name.incus
+resolvectl query example.org
+getent ahosts instance-name.incus
+```
+
+The local query should report `incusbr0`; the public query should follow your ordinary DNS configuration, such as `eno1` or your VPN, rather than `incusbr0`.
+`getent` also checks name resolution through the host's normal application lookup path.
+Applications must use that host resolver for this policy to apply; a browser configured to use its own DNS-over-HTTPS service can bypass it.
+Check that `/etc/resolv.conf` uses the local resolver stub, normally through a symlink to `/run/systemd/resolve/stub-resolv.conf`, rather than exposing a flat list of upstream servers that loses the split-DNS policy.
+
+To check resolver-restart persistence, run `sudo systemctl restart systemd-resolved` and repeat the status and query checks.
+Repeat them after your next reboot too.
+If you later change the bridge subnet or the helper's address, update the unit's DNS address and run:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart incus-dns-incusbr0.service
+```
+
+#### Stop the service
+
+To remove this per-link configuration and prevent it from being reapplied:
+
+```bash
+sudo systemctl disable --now incus-dns-incusbr0.service
+```

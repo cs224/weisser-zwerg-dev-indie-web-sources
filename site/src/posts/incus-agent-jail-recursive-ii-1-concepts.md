@@ -593,18 +593,18 @@ In practice this means integrating the helper container's DNS service into the h
 
 Conceptually, the goal is to steer `.incus` lookups toward the helper-side DNS without replacing the host's whole resolver path.
 
-An example `systemd-resolved` configuration can look like this:
+Apply the helper DNS settings to the host's Incus bridge:
 
-```txt
-[Resolve]
-DNS=10.227.241.53
-Domains=~incus
+```bash
+sudo resolvectl dns incusbr0 10.227.241.53
+sudo resolvectl domain incusbr0 '~incus'
+sudo resolvectl default-route incusbr0 no
 ```
 
 In that example, `10.227.241.53` would be the helper container's address from the host's point of view.
-The important idea is that the host resolver is explicitly told: "for `.incus`, ask the helper-side recursive DNS."
-This is a simple global drop-in example, not the only possible `systemd-resolved` shape.
-If stricter per-link scoping is required, the same intent can also be expressed through link-specific resolver configuration rather than through one global `DNS=` entry.
+The routing domain selects this link for `.incus`, and `default-route no` keeps unrelated lookups on the host's normal DNS path.
+This also works for applications running directly on the host, including your browser.
+For why a global `DNS=` entry does not provide that separation, migration from the older drop-in, and a persistent systemd unit, see [Split DNS for Incus with systemd-resolved](../home-server-infrastructure/#split-dns-for-incus-with-systemd-resolved).
 
 > This host-facing IPv4 bootstrap detail should not be confused with the address family used for shared infrastructure identities inside the recursive hierarchy.
 > The outer host may use the helper's host-visible IPv4 to find the helper-side DNS surface, but hierarchy-aware nodes deeper in the tree should consume names such as `forest-ca.incus`, `forest-dns.incus`, `apt-cache.incus`, and `images-cache.incus` through recursively reachable IPv6 answers instead.
@@ -1199,32 +1199,43 @@ For a quick test drive on a host using `systemd-resolved`, first inspect the hel
 incus list rip-slim-helper
 ```
 
-Then add a small persistent resolver drop-in on the host, for example at `/etc/systemd/resolved.conf.d/50-incus.conf`:
+Use that address in the bridge's per-link DNS settings:
 
-```txt
-[Resolve]
-DNS=10.227.241.53
-Domains=~incus
+```bash
+sudo resolvectl dns incusbr0 10.227.241.53
+sudo resolvectl domain incusbr0 '~incus'
+sudo resolvectl default-route incusbr0 no
 ```
 
 In that example, `10.227.241.53` is simply the helper container's IPv4 address from the host's point of view.
-If you do not want to write that file by hand, the same drop-in can be generated directly from the current helper state like this:
+These commands change runtime settings.
 
-```bash
-sudo install -d /etc/systemd/resolved.conf.d && printf '[Resolve]\nDNS=%s\nDomains=~incus\n' "$(incus list rip-slim-helper -f json | jq -r '.[0].state.network.eth0.addresses[] | select(.family=="inet" and .scope=="global").address')" | sudo tee /etc/systemd/resolved.conf.d/50-incus.conf >/dev/null
-```
-
-After writing that file, restart the resolver:
-
-```bash
-sudo systemctl restart systemd-resolved
-```
-
-> The important mechanics are:
+> Earlier we used the following recipe which is superseded by this newer correct approach as explained in [Split DNS for Incus with systemd-resolved](../home-server-infrastructure/#split-dns-for-incus-with-systemd-resolved).
+>
+> ```bash
+> sudo install -d /etc/systemd/resolved.conf.d && printf '[Resolve]\nDNS=%s\nDomains=~incus\n' "$(incus list rip-slim-helper -f json | jq -r '.[0].state.network.eth0.addresses[] | select(.family=="inet" and .scope=="global").address')" | sudo tee /etc/systemd/resolved.conf.d/50-incus.conf >/dev/null
+> ```
+> 
+> Followed by:
+> 
+> ```bash
+> sudo systemctl restart systemd-resolved
+> ```
+> 
+> The important mechanics were supposed to be:
 >
 > * `DNS=...` points the host resolver at the helper-side DNS service
 > * `Domains=~incus` tells `systemd-resolved` that `.incus` is a routing-only domain handled there
 > * this is persistent across reboots, unlike one-off `resolvectl dns ...` commands
+
+
+For migration from the earlier `/etc/systemd/resolved.conf.d/50-incus.conf` recipe and persistence across reboots and resolver restarts, follow [Split DNS for Incus with systemd-resolved](../home-server-infrastructure/#split-dns-for-incus-with-systemd-resolved).
+Use the helper's address in that appendix's unit, rather than the ordinary bridge DNS address, and disable the old global drop-in before testing.
+
+> The important mechanics are:
+>
+> * the helper DNS server and `~incus` routing domain belong to the bridge's resolver configuration
+> * `default-route no` excludes that link from unrelated DNS lookups
 >
 > In the current host-facing bootstrap path, the helper is intentionally pinned to host ID `53` on the parent bridge, so on the common `10.227.241.0/24` host bridge it becomes `10.227.241.53`.
 > The cache is likewise pinned to host ID `54`, which is why the corresponding host-visible bridge IPv4 becomes `10.227.241.54`.

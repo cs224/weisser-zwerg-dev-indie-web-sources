@@ -91,7 +91,10 @@ Shakespear: the author persona
 |   +-- site (website): articles, author page, public identity directory
 |   +-- Nostr presence: publications, announcements, and conversations
 |   +-- Hive account: publications, announcements, and conversations
-|   `-- Contact address: correspondence with readers
+|   +-- GitHub profile: repositories, contributions, and discussions
+|   +-- Keybase profile: public keys and proofs linking accounts
+|   +-- Contact address: correspondence with readers
+|   `-- OpenPGP public key and fingerprint: encrypted mail and signature verification
 |
 +-- Discovery and following
 |   +-- Website feed -> subscribers and feed directories
@@ -102,18 +105,31 @@ Shakespear: the author persona
     |   +-- Hosting account (VPS provider, Firebase, ...)
     |   |   +-- Deployment destination -> server or hosted-site project
     |   |   `-- Billing / payment link -> hosting plan or usage charges
+    |   +-- WKD endpoint -> public OpenPGP key lookup for the mail domain
     |   +-- DNS provider account -> zone and records for the site
     |   |   `-- Billing / payment link -> DNS charges, if any
     |   `-- Domain registrar account -> registration and renewal
     |       `-- Billing / payment link -> registration and renewal fees
     +-- Mailbox account(s) -> correspondence and selected recovery paths
+    +-- GitHub / Keybase accounts -> profile, repository, and proof management
     +-- Search Console / webmaster accounts -> verification and search diagnostics
     +-- Subscription-service accounts -> feed listings and email delivery
     +-- Signing credentials -> publication through the relevant identities
+    +-- OpenPGP private keys, backups, and revocation material -> decryption and key management
     `-- Payment sources -> card, wallet, or other funding account
 ```
 
 This is a map of roles and dependencies; the exact accounts depend on the chosen services.
+The public presence can extend beyond articles and social posts: a GitHub profile carries a history of projects and contributions, while Keybase brings together keys and proofs connecting accounts.
+My [homepage](https://weisser-zwerg.dev/) already links to my [GitHub](https://github.com/cs224) and [Keybase](https://keybase.io/cs224) profiles as parts of the same identity.
+Shakespear could choose similar associations for the author persona.
+
+An **OpenPGP key**, managed with GnuPG for example, gives correspondents a way to encrypt mail to Shakespear and verify signed messages.
+Its public key and fingerprint belong in the public directory.
+My [OpenPGP Web Key Directory (WKD) setup in the Mailu article](../digital-civil-rights-mailu/#setting-up-openpgp-web-key-directory) shows how compatible mail clients can discover the public key through an HTTPS service for the e-mail domain.
+It can share the website's hosting, including when it is served from an `openpgpkey` subdomain.
+The corresponding private keys enable decryption and signing; key storage, backups, and revocation arrangements belong to the operational side of the map.
+
 In the conventional hosting option shown here, hosting, DNS, and domain registration may be handled by one provider or by separate accounts.
 For each paid service, the operational description should record what we pay for, the amount or pricing basis, when payment or renewal is due, and where to manage or pay the bill.
 Those administrative and payment links belong to the operating map; the public directory points readers to the site itself.
@@ -130,7 +146,7 @@ What looks like a few publishing destinations quickly becomes a collection of pl
 Making that manageable is a central purpose of `pak`: bring the arrangement into one description, guide its setup, and help keep it current.
 The aim is that an author can operate this presence without having to become an expert in every service.
 
-The [public directory](#making-shakespear-recognizable-across-platforms) draws on the associations Shakespear wants readers to know: the website, author profiles, and contact information.
+The [public directory](#making-shakespear-recognizable-across-platforms) draws on the associations Shakespear wants readers to know: the website, author profiles, contact information, and public keys.
 The complete operational map may also contain administrative and recovery relationships that should remain private.
 
 Before establishing these relationships, I need to decide how much separation from my other life I want.
@@ -299,7 +315,10 @@ Read       https://shakespear.example/
 Subscribe  https://shakespear.example/feed.xml
 Nostr      Profile link and full public key
 Hive       Profile of shakespear-demo
+GitHub     Profile and public repositories
+Keybase    Profile and account proofs
 Contact    letters@shakespear.example
+OpenPGP    Public key download and full fingerprint
 ```
 
 This is the **linktree idea** introduced earlier, hosted as part of the publishing home.
@@ -310,6 +329,7 @@ A shared byline, portrait, and biography help readers recognize Shakespear at ea
 The directory claims that these presences belong together.
 Links back from the Hive and Nostr profiles provide supporting evidence.
 On Nostr, that endorsement can appear in [signed profile metadata](../publishing-nostr-basics/#publish-the-profile-settings), tying it to the public key.
+Keybase proofs offer another way to demonstrate control of the linked website or GitHub account.
 A reader can follow these connections from an address or key they already trust.
 A copied name, portrait, or biography alone gives an impersonator no such continuity with the established presence.
 The appendix examines this [gap between familiar appearances and evidence of identity](#referring-to-someone-and-recognizing-them-again).
