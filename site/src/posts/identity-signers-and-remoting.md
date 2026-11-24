@@ -103,6 +103,17 @@ The [mathematics is sophisticated](https://livebook.manning.com/book/real-world-
 A service could support several algorithms, manage separate keys, and expose the interfaces that different applications expect.
 GnuPG's combined OpenPGP and SSH agent already demonstrates part of that idea.
 
+> **Quantum computing**
+>
+> A sufficiently powerful, fault-tolerant quantum computer could use Shor's algorithm to break RSA and the elliptic-curve algorithms mentioned here, including ECDSA, Ed25519, and Schnorr.
+> An attacker could then recover private keys from public keys and forge signatures.
+> [RFC 9958, section 3.2](https://datatracker.ietf.org/doc/html/rfc9958#section-3.2) explains this threat and why these systems need algorithms based on different mathematical problems.
+>
+> In my [ckenc experiment](https://github.com/cs224/ckenc), I explored post-quantum file encryption by combining CRYSTALS-Kyber with AES.
+> Kyber is the basis of **ML-KEM**, standardized in **FIPS 203**, which establishes a shared secret for use with symmetric encryption.
+> For digital signatures, **ML-DSA**, derived from CRYSTALS-Dilithium and standardized in **FIPS 204**, provides a quantum-resistant option.
+> [NIST's announcement of these standards](https://csrc.nist.gov/news/2024/postquantum-cryptography-fips-approved) explains their respective roles.
+
 ### Authentication vs. Authorization
 
 **Authentication establishes who is making a request.**
@@ -585,3 +596,80 @@ This differs from a service that stores a salted password verifier and requires 
 For a proxy credential or signing interface, I would therefore specify the permitted operations and resources, the identity allowed to use it, its lifetime, and whether requests or credentials can be replayed.
 I would also specify how to revoke both future access and any established sessions or continuing permissions.
 The comparison is about giving each component only what its role requires, while making the consequences of theft or misuse explicit.
+
+### Hybrid Post-Quantum Key Exchange in TLS 1.3
+
+TLS 1.3 provides a practical example of introducing post-quantum cryptography into an existing protocol.
+During the handshake, the client and server negotiate a key-exchange group and establish the shared secret from which they derive the keys that protect their traffic.
+The group **X25519MLKEM768** combines the established X25519 elliptic-curve exchange with the post-quantum **ML-KEM-768** mechanism derived from CRYSTALS-Kyber.
+Both contribute a secret to the TLS key derivation.
+The combination is designed to preserve the secrecy of the resulting keys as long as at least one of the two mechanisms remains secure.
+[RFC 10024](https://www.rfc-editor.org/rfc/rfc10024.html) specifies this group and two related combinations.
+
+Backward compatibility comes through TLS's existing negotiation mechanism.
+A client can offer both hybrid and conventional groups, and the server selects a group that both support.
+Two upgraded endpoints can therefore establish a hybrid shared secret, while an older endpoint can still connect using a conventional group when the configuration permits it.
+That fallback retains conventional security.
+[RFC 9954](https://www.rfc-editor.org/rfc/rfc9954.html#section-1.4) describes these compatibility goals and the construction behind hybrid key exchange.
+
+OpenSSL **3.5** introduced built-in support for these groups and placed X25519MLKEM768 first in its default preference list.
+For the commands below, use OpenSSL 3.5 or newer and check which TLS 1.3 groups your installation provides.
+The [OpenSSL group documentation](https://docs.openssl.org/3.5/man3/SSL_CONF_cmd/) and the [list command](https://docs.openssl.org/3.5/man1/openssl-list/) describe these settings.
+
+```bash
+openssl version
+openssl list -tls1_3 -tls-groups
+```
+
+Look for `X25519MLKEM768` in the group list.
+Then use `s_client` to check a server, replacing `example.com` with the hostname you want to test.
+
+```bash
+openssl s_client \
+  -connect example.com:443 \
+  -servername example.com \
+  -verify_hostname example.com \
+  -verify_return_error \
+  -tls1_3 \
+  -groups X25519MLKEM768 \
+  -brief
+```
+
+This offers only X25519MLKEM768, so a successful handshake demonstrates that both endpoints support the hybrid exchange.
+The `-servername` option supplies the hostname through Server Name Indication (SNI), and `-verify_hostname` checks that the server certificate covers that name.
+The `-verify_return_error` option makes certificate verification errors stop the handshake.
+The `-brief` option prints a connection summary.
+After reading it, press **Ctrl+D** to close the connection.
+The [s_client documentation](https://docs.openssl.org/3.5/man1/openssl-s_client/) explains these options.
+
+In a successful connection summary, look for TLS 1.3 and the negotiated group.
+An illustrative excerpt is shown below.
+
+```text
+Protocol version: TLSv1.3
+...
+Negotiated TLS1.3 group: X25519MLKEM768
+```
+
+To allow conventional fallback, offer X25519 as well.
+
+```bash
+openssl s_client \
+  -connect example.com:443 \
+  -servername example.com \
+  -verify_hostname example.com \
+  -verify_return_error \
+  -tls1_3 \
+  -groups X25519MLKEM768:X25519 \
+  -brief
+```
+
+With this second command, inspect the reported group to see what was actually selected.
+A successful connection using X25519 alone has conventional key exchange.
+The TLS 1.3 cipher-suite name, such as `TLS_AES_256_GCM_SHA384`, describes the symmetric protection and hash function and can accompany either exchange.
+
+Key establishment and authentication also have separate roles.
+The hybrid exchange protects recorded traffic against later decryption by a quantum computer, while the server can still authenticate using an RSA or ECDSA certificate and handshake signature.
+Post-quantum authentication requires its own signature algorithms and certificate support.
+The [scope of RFC 9954](https://www.rfc-editor.org/rfc/rfc9954.html#section-1.3) makes that distinction explicit.
+For the signer discussion in this article, choosing the keys that sign a publication and protecting the TLS connection through which a client reaches a signer remain separate decisions.
