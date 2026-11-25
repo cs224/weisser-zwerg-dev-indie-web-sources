@@ -673,3 +673,95 @@ The hybrid exchange protects recorded traffic against later decryption by a quan
 Post-quantum authentication requires its own signature algorithms and certificate support.
 The [scope of RFC 9954](https://www.rfc-editor.org/rfc/rfc9954.html#section-1.3) makes that distinction explicit.
 For the signer discussion in this article, choosing the keys that sign a publication and protecting the TLS connection through which a client reaches a signer remain separate decisions.
+
+### IndieAuth and IndieKey
+
+[IndieAuth](https://indieweb.org/IndieAuth) is a protocol for signing in with a website URL as an identity and granting applications access to resources associated with that identity.
+An application discovers the authorization server advertised by the website, sends the user there to authenticate and approve the request, and exchanges the resulting authorization code.
+The [IndieAuth specification](https://indieauth.spec.indieweb.org/) builds this identity layer on OAuth 2.0.
+The IndieWeb wiki provides the broader explanation and history.
+
+**IndieAuth.com was one hosted implementation of that protocol.**
+It let a personal website delegate authentication to a service that checked linked identities, such as GitHub accounts, email addresses, or PGP keys.
+The protocol and the service sharing its name have often been confused.
+The retirement of that service does not retire the protocol.
+
+As the [IndieWeb entry for IndieKey](https://indieweb.org/IndieKey) explains, **IndieKey replaces the personal IndieAuth server functionality of IndieAuth.com**.
+It is another implementation and hosted provider of IndieAuth, with passkey authentication and current discovery mechanisms.
+The website URL remains the identity presented to applications; the provider handling authentication changes.
+
+IndieAuth.com also served application developers who wanted a broker for signing other people in.
+[IndieLogin](https://indielogin.com/developers) takes over that role.
+For a website advertising its own authorization and token endpoints, IndieKey is the relevant replacement described here.
+An application can use IndieLogin to discover and communicate with the user's chosen server, including IndieKey.
+
+#### Where the Signing Happens
+
+IndieAuth.com already used a server-held secret to authenticate the claims in its authorization codes.
+Its [implementation](https://github.com/aaronpk/IndieAuth.com/blob/442813c9b4cc2c185590d3d0f2f3dd93648856f2/models/login.rb) encoded the login information as a JWT and encrypted the result before returning it as a code.
+The [JWT library version it used](https://github.com/jwt/ruby-jwt/blob/v1.5.6/lib/jwt.rb#L101) defaulted to HS256, a symmetric HMAC mechanism.
+The application returned the code to the service for verification.
+This is the broader pattern of a trusted process retaining a secret and issuing authenticated claims; HMAC is symmetric message authentication rather than a public-key digital signature.
+
+IndieKey gives us two distinct signing operations:
+
+* **The authenticator signs for the user.** A passkey authenticates the user to IndieKey without giving IndieKey the passkey's private key.
+* **The service signs access grants.** For Micropub and Microsub APIs, IndieKey issues JWT access tokens signed with its own RSA key using RS256: RSA signatures with SHA-256 and PKCS#1 v1.5 padding.
+  The receiving endpoint can check the signature with the published public key and must also check the issuer, audience, expiry, identity, and required scopes.
+
+The [token-verification documentation](https://indiekey.id/docs/resource-servers) describes those checks and the alternative of asking the service through token introspection.
+The service's signing key represents its authority as the selected authorization server, much like the provider authority discussed earlier for OIDC.
+That key is separate from the user's passkey.
+The [login-only exchange](https://indiekey.id/docs/developers#exchange) can return just the authenticated identity; a publicly verifiable API token is a separate feature.
+A signed token grants the access it describes; keeping the signing key private does not prevent someone from using a stolen bearer token.
+Checking signatures locally also means a revoked token can remain accepted until expiry unless the endpoint adds a revocation check.
+
+#### Setting Up IndieKey from Scratch
+
+Following the service's [setup guide](https://indiekey.id/docs), the website owner needs control of the home page and a passkey-capable device:
+
+1. **Create an account at IndieKey.** Choose a username and register a passkey. Add another passkey or save recovery codes so that one lost device does not remove access.
+2. **Add the website's domain.** Use the canonical domain reached after any redirects. IndieKey generates a metadata link specific to that website and account.
+3. **Publish the supplied link in the home page's `<head>`.** Then use IndieKey's verification control to confirm the connection. Keep the link published; it is checked again later.
+4. **Test a sign-in.** Enter the website URL in an IndieAuth application, follow the redirect to IndieKey, authenticate with the passkey, and approve the request.
+
+The discovery tags can look like this, including the two endpoint links for older clients:
+
+```html
+<link rel="indieauth-metadata" href="https://indiekey.id/.well-known/oauth-authorization-server/s/SITE_ID">
+<link rel="authorization_endpoint" href="https://indiekey.id/s/SITE_ID/auth">
+<link rel="token_endpoint" href="https://indiekey.id/token">
+```
+
+`SITE_ID` is a placeholder for the website identifier IndieKey supplies, not the account username.
+Copy the generated URLs from the domain's settings.
+The metadata document supplies the issuer and endpoints, as described in the [discovery documentation](https://indiekey.id/docs/developers#discovery).
+Publishing these links lets even a static website select an external authorization server.
+
+Signing in does not require a publishing API (meaning Micropub or Microsub).
+If applications should publish or manage feeds, the website must also advertise the appropriate Micropub or Microsub endpoint.
+That resource server must validate access tokens and enforce the granted permissions.
+
+#### Migrating from IndieAuth.com to IndieKey
+
+My website's existing configuration advertised the old service like this:
+
+```html
+<link rel="authorization_endpoint" href="https://indieauth.com/auth">
+<link rel="token_endpoint" href="https://tokens.indieauth.com/token">
+```
+
+This is the personal-server case covered by the [migration guide](https://indiekey.id/migrate):
+
+1. **Create the account and add the domain as above.** Publish the generated `indieauth-metadata` link and replace the two old endpoint URLs with the corresponding IndieKey URLs.
+2. **Keep all three discovery links.** Older clients still need the endpoint links, and IndieAuth.com reads the advertised authorization endpoint to forward sign-ins. For that forwarding, the links must be in the delivered HTML; HTTP `Link` headers alone are insufficient.
+3. **Preserve existing app access where needed.** After verification, the domain settings offer compatibility for tokens issued by the old service. Enable it if connected applications still depend on those tokens.
+4. **Update token verification and reconnect apps.** An endpoint hardcoded to check tokens at `https://tokens.indieauth.com/token` needs the compatibility check at `https://indiekey.id/token` instead. An endpoint discovering that URL from the home page follows the new tags. Reauthorize apps before disabling compatibility.
+
+Existing `rel="me"` links may remain, but IndieKey uses the passkey for authentication instead of the linked social account.
+The domain remains the identity being authenticated.
+
+The compatibility check is a transition mechanism.
+For ongoing use, resource servers can verify IndieKey's signed tokens or use authenticated introspection, following the [resource-server instructions](https://indiekey.id/docs/resource-servers).
+If a Micropub or Microsub endpoint is hosted elsewhere, its support for the new issuer and token-verification method needs checking too.
+Changing the discovery links does not itself update another operator's endpoint implementation.
