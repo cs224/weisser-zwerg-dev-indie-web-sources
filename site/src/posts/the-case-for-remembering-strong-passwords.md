@@ -815,3 +815,56 @@ I wanted to share it with others looking for a similar way to regain access to t
 
 There are certainly other ways to do this.
 I would be very interested to hear your comments and feedback, and to learn how you approach the same problem.
+
+## Appendix
+
+### Related Work
+
+The following articles explore related approaches to remembering secrets, choosing different levels of protection, and recovering after device loss.
+
+* **[Paradux: a scheme to recover from maximum personal data disaster](https://upon2020.com/blog/2019/01/paradux-a-scheme-to-recover-from-maximum-personal-data-disaster/)**, by Johannes Ernst.
+  Describes an encrypted collection of backup locations and credentials that can be distributed on public websites or IPFS and opened using a remembered password.
+  It also provides recovery through trusted people if the password is forgotten.
+
+* **[Triple Sec - Simple Digital Security Scheme](https://nau.github.io/triplesec/)**, by Alexander Nemish.
+  Combines a remembered passphrase and PIN, Bitwarden, a separate vault for important material, and a reproducibly derived recovery password.
+  Its encrypted recovery file is shared with trusted people and also supports digital legacy arrangements.
+
+* **[The passwords I actually memorise](https://alexwlchan.net/2026/memorised-passwords/)**, by Alex Chan.
+  Identifies essential passwords to memorize and walks through recovery after losing every device, using remote backups and encrypted MFA recovery codes.
+  It also describes regular checks that those passwords can still be recalled.
+
+* **[Building Your Digital Data Autonomy](https://medium.com/the-art-of-thinking/the-safest-way-to-protect-your-personal-data-7a7999c2232c)**, by The Thinker.
+  Connects digital sovereignty with remembered master passwords and a dedicated recovery account.
+  Its arrangement using Proton and Bitwarden separates recovery infrastructure from everyday accounts while remaining dependent on those providers.
+
+* **[How I Manage My Passwords (Technical Version)](https://medium.com/hackernoon/how-i-manage-my-passwords-technical-version-8549dc1bde1e)**, by Emanuele Cesena.
+  Reconstructs service passwords from a passphrase, username, service name, and counter, with separate passphrases for different account categories.
+  Includes Bash, Python, and JavaScript examples.
+
+* **[An algorithm for freedom](https://spectre.app/blog/2018-01-06-algorithm/)**, by Maarten Billemont.
+  Explains the algorithm behind Spectre's stateless password generation, deriving credentials from a remembered secret, user name, site name, and counter.
+  Covers passwords, PINs, and recovery answers.
+
+* **[Before You Use a Password Manager](https://stuartschechter.org/posts/before-you-use-a-password-manager/)**, by Stuart Schechter.
+  Examines the benefits and risks of storing many credentials together, planning recovery, and deciding which passwords merit separate treatment.
+  Particularly relevant to the authority of a password manager or primary e-mail account.
+
+* **[On Passwords](https://letters.empiresec.co/p/pass)**, by Sovereign Shadow.
+  Discusses memorizing several classes of passwords and PINs, practicing recall, and using password managers, hardware authenticators, and encryption for different purposes.
+
+* **[I've locked myself out of my digital life](https://shkspr.mobi/blog/2022/06/ive-locked-myself-out-of-my-digital-life/)**, by Terence Eden.
+  Uses a hypothetical house fire to expose circular recovery dependencies between devices, cloud accounts, second factors, and password managers.
+  A detailed illustration of why an independent recovery starting point matters.
+
+* **[LessPass How Does It Work?](https://blog.lesspass.com/2016-10-19/how-does-it-work)**, by Guillaume Vincent.
+  Explains generating passwords from a master password, site, login, and configurable options, including a counter for changes.
+  Passwords can be reproduced without synchronizing a database, although per-site settings still need to be retained.
+
+* **[False Perceptions of IT Security: Passwords](https://www.kaspersky.com/blog/false-perception-of-it-security-passwords/7036/)**, by David Jacoby.
+  Describes mentally reproducible passwords built from a memorable phrase and service-specific associations.
+  It also recommends treating e-mail differently because of its ability to reset other accounts.
+
+* **[Creating Strong Passwords](https://ssd.eff.org/module/creating-strong-passwords)**, by the Electronic Frontier Foundation.
+  Lists device, encryption, password-manager, and e-mail passwords as secrets worth memorizing.
+  Its recommendation to use randomly selected words offers a different approach to memorable passphrases.
