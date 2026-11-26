@@ -1518,6 +1518,110 @@ MetaMask's [explanation of multiple recovery phrases](https://support.metamask.c
 
 ## Appendix
 
+### From Memorable Passwords to BIP-39 Recovery Phrases
+
+We can now connect this article with [The Case for Remembering Strong Passwords](../the-case-for-remembering-strong-passwords/).
+There, we constructed a memorable password from a postcode, a familiar name, a variable term, and consistent transformation rules.
+Here, we can use that password to derive the starting bytes for a BIP-39 recovery phrase.
+We add one custom key-derivation step before the standard process:
+
+```text
+Memorable password + reproducible salt and parameters
+  |
+  | Argon2id
+  v
+16 or 32 derived bytes
+  |
+  | SHA-256 checksum + BIP-39 word-list encoding
+  v
+12- or 24-word recovery phrase
+  |
+  | Standard BIP-39 seed derivation, then BIP-32
+  v
+Wallet keys
+```
+
+#### Choosing the Memorable Input and Recipe
+
+In the earlier article's file-encryption examples, the variable middle term was `gpg` or `age`.
+For this example, use `bitcoin` literally between the same public example prefix and suffix:
+
+```text
+SW1A£0AA$bitcoin$t0y0tA
+```
+
+The word `bitcoin` is a label in our own recipe; the resulting recovery phrase can still derive keys for other blockchains.
+Changing the label produces a different root recovery phrase, while changing a BIP-32 path selects another key under an existing root.
+For this recipe, Argon2id receives the string directly as UTF-8 bytes, without additional Unicode normalization.
+
+We use the public salt `bip39-from-memory-v1` to identify this version of the recipe.
+The [Argon2 reference command-line utility](https://github.com/P-H-C/phc-winner-argon2) receives these explicit settings:
+
+| Option | Meaning |
+| --- | --- |
+| `-id` | Argon2id |
+| `-v 13` | Argon2 algorithm version 1.3, encoded as hexadecimal `0x13` or decimal `19` |
+| `-t 3` | Three passes |
+| `-m 20` | `2**20` KiB, or **1 GiB of memory**, matching the larger setting in the earlier article |
+| `-p 1` | Parallelism of one |
+| `-l 16` or `-l 32` | Output length in bytes: 128 or 256 bits |
+| `-r` | Print the derived bytes in hexadecimal notation |
+
+#### A Complete Command-Line Example
+
+Run the following commands in Bash from the root of the companion project, where its `english.txt` word list is available.
+They use the reference `argon2` executable, Perl, and Perl's [`Digest::SHA`](https://perldoc.perl.org/5.38.2/Digest::SHA) module.
+On Debian or Ubuntu, `sudo apt install argon2 perl` supplies these tools.
+The selected Argon2 setting needs 1 GiB of available memory, plus the programs' overhead.
+
+For **12 words**, the entire calculation fits on one command line:
+
+```bash
+printf '%s' 'SW1A£0AA$bitcoin$t0y0tA' | argon2 'bip39-from-memory-v1' -id -v 13 -t 3 -m 20 -p 1 -l 16 -r | perl -MDigest::SHA=sha256 -ne 'chomp; my $e=pack("H*",$_); my $b=unpack("B*",$e).substr(unpack("B*",sha256($e)),0,length($e)/4); open my $f,"<","english.txt" or die $!; chomp(my @w=<$f>); print join(" ",map {$w[oct("0b".$_)]} $b=~/.{11}/g),"\n"'
+```
+
+It prints:
+
+```text
+border begin wrist join text reflect taxi love leopard approve beauty jeans
+```
+
+`printf '%s'` supplies the memorable input without a trailing newline, and the single quotes preserve the literal dollar signs.
+Use a UTF-8 terminal so the pound sign has the same byte representation.
+The Perl part decodes Argon2's hexadecimal output with `pack("H*", ...)` and uses `unpack("B*", ...)` to read its bits most-significant-bit first.
+It hashes the derived bytes with SHA-256 and appends the first four checksum bits.
+Finally, it splits the combined bit string into 11-bit groups and uses their integer values to select words from `english.txt`, exactly as in our [by-foot explanation](#starting-with-entropy-and-adding-a-checksum).
+
+For **24 words**, change only `-l 16` to `-l 32`:
+
+```bash
+printf '%s' 'SW1A£0AA$bitcoin$t0y0tA' | argon2 'bip39-from-memory-v1' -id -v 13 -t 3 -m 20 -p 1 -l 32 -r | perl -MDigest::SHA=sha256 -ne 'chomp; my $e=pack("H*",$_); my $b=unpack("B*",$e).substr(unpack("B*",sha256($e)),0,length($e)/4); open my $f,"<","english.txt" or die $!; chomp(my @w=<$f>); print join(" ",map {$w[oct("0b".$_)]} $b=~/.{11}/g),"\n"'
+```
+
+The result is:
+
+```text
+leisure wait cruise jar embrace evoke boat skill faint fork speak easily used frog door dizzy example myself cage omit aisle marriage health tag
+```
+
+The same Perl expression now appends eight checksum bits.
+Its `length($e)/4` calculates the checksum length from the number of derived bytes: `16/4 = 4`, or `32/4 = 8`.
+Argon2 includes the requested output length in its calculation, so the 16-byte result is a separate derivation, not the first half of the 32-byte result.
+
+#### Recovery Depends on the Password and the Recipe
+
+The generated words are ordinary BIP-39 recovery phrases that we can import into compatible wallets.
+The memorable password is the input to our custom Argon2id step; the optional **BIP-39 passphrase** remains a separate input to the later seed calculation.
+As in the main examples, we can leave that optional passphrase empty.
+
+To reconstruct the same words from memory, retain the exact input-construction rules, text encoding, salt, Argon2 variant and version, resource parameters, output length, and ordered English word list.
+The public salt and recipe can be copied into several backups without revealing our private memorable ingredients.
+If we change the settings later, we create a different recovery phrase, so we retain the original recipe for existing wallets.
+
+The strength comes from the memorable starting secret.
+Encoding the result as 24 words does not give a guessable password 256 bits of unpredictable randomness.
+Argon2id increases the time and memory required for each guess; someone can still test guesses offline by deriving candidate keys and comparing the resulting public addresses.
+
 ### Trezor
 
 One reason I like Trezor is that I can think of it as a **password and key generator rooted in one recovery phrase**.
